@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Skyline upload result</title>
+    <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.1/build/pure-min.css" integrity="sha384-oAOxQR6DkCoMliIh8yFnu25d7Eq/PHS21PClpwjOTeU2jRSq11vu66rf90/cZr47" crossorigin="anonymous">
+</head>
+
+<body>
+    <h1>Overall result</h1>
+    <table class="pure-table">
+        <thead>
+            <tr>
+                <th>Total File#</th>
+                <th>Total Uploaded#</th>
+                <th>Total File Size</th>
+                <th>Average File Size</th>
+
+                <th>Total Spent Time(ms)</th>
+
+                <th>Init Upload Spent Time(ms)</th>
+                <th>Average Upload Spent Time(ms)</th>
+                <th>Average Complete Spent Time(ms)</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td>{{totalFiles}}</td>
+                <td>{{totalCompleted}}</td>
+
+                <td>{{totalFileSize}}</td>
+                <td>{{avgFileSize}}</td>
+                
+                <td>{{finalSpent}}</td>
+
+                <td>{{initSpent}}</td>
+                <td>{{avgPutSpent}}</td>
+                <td>{{avgCompleteSpent}}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h1>Detailed result</h1>
+    
+    <table class="pure-table">
+        <thead>
+            <tr>
+                <th>File Path</th>
+                <th>Target Path</th>
+                <th>File Size</th>
+                <th>Part#</th>
+                <th>Total Put Spent(ms)</th>
+                <th>Min Put Spent(ms)</th>
+                <th>Max Put Spent(ms)</th>
+                <th>Average Put Spent(ms)</th>
+                <th>Complete Spent(ms)</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {{#detailedResult}}
+                <tr>
+                    <td>{{filePath}}</td>
+                    <td>{{targetPath}}</td>
+                    <td>{{fileSizeStr}}</td>
+                    <td>{{partNum}}</td>
+                    <td>{{putSpentFinal}}</td>
+                    <td>{{putSpentMin}}</td>
+                    <td>{{putSpentMax}}</td>
+                    <td>{{putSpentAvg}}</td>
+                    <td>{{completeSpent}}</td>
+                </tr>
+            {{/detailedResult}}
+        </tbody>
+    </table>
+</body>
+</html>

@@ -1,0 +1,25 @@
+{
+  "name": "@assets-skyline/skyline-upload",
+  "version": "0.0.2",
+  "description": "AEM Skyline Asset direct uploading tool",
+  "main": "skyline-upload.js",
+  "repository": {
+    "type": "git",
+    "url": "git@git.corp.adobe.com:assets-skyline/skyline-upload.git"
+  },
+  "author": "Jun Zhang (zjun@adobe.com)",
+  "publishConfig": {
+    "registry": "https://artifactory.corp.adobe.com/artifactory/api/npm/npm-assets-skyline-release-local"
+  },
+  "dependencies": {
+    "filesize": "^4.1.2",
+    "mustache": "^3.0.1",
+    "request": "^2.88.0",
+    "request-promise-native": "^1.0.7",
+    "winston": "^3.2.1",
+    "yargs": "^13.3.0"
+  },
+  "bin": {
+    "skyline-upload": "bin/skyline-upload.js"
+  }
+}
