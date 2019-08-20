@@ -139,7 +139,6 @@ function getLogger(winston) {
             new winston.transports.File({ filename: logFile })
         ]
     });
-
     return log;
 }
 
