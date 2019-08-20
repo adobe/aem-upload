@@ -136,14 +136,9 @@ function getLogger(winston) {
         ),
         transports: [
             new winston.transports.Console(),
-            new winston.transports.File({ filename: 'upload.log' })
+            new winston.transports.File({ filename: logFile })
         ]
     });
-
-    logger.add(new winston.transports.Console({
-        format: winston.format.simple()
-    }));
-
 
     return log;
 }
@@ -374,9 +369,10 @@ function generateResult(result) {
     log.info('Uploading result in JSON:');
     log.info(JSON.stringify(overAllResult, null, 4));
 
-    log.info(`Uploading result is also saved to html file '${htmlResult}'`);
-
     let template = fs.readFileSync('view/result.mst').toString()
     let htmlOutput = mustache.render(template, overAllResult);
     fs.writeFileSync(htmlResult, htmlOutput);
+    log.info(`Uploading result is also saved to html file '${htmlResult}'`);
+
+    log.info(`Log file is saved to log file '${logFile}'`);
 }

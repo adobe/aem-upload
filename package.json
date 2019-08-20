@@ -1,6 +1,6 @@
 {
   "name": "@assets-skyline/skyline-upload",
-  "version": "0.0.2",
+  "version": "0.0.4",
   "description": "AEM Skyline Asset direct uploading tool",
   "main": "skyline-upload.js",
   "repository": {
