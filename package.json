@@ -20,6 +20,6 @@
     "yargs": "^13.3.0"
   },
   "bin": {
-    "skyline-upload": "bin/skyline-upload.js"
+    "skyline-upload": "skyline-upload.js"
   }
 }

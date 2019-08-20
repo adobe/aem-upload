@@ -9,6 +9,8 @@ const yargs = require('yargs');
 const mustache = require('mustache');
 const filesize = require('filesize');
 
+let appRoot = path.dirname(require.main.filename);
+
 // 1. handle CLI parameters
 let { host, auth, targetFolder, localFolder, logFile, htmlResult } = getArgv(yargs);
 
@@ -368,7 +370,7 @@ function generateResult(result) {
     log.info('Uploading result in JSON:');
     log.info(JSON.stringify(overAllResult, null, 4));
 
-    let template = fs.readFileSync('view/result.mst').toString()
+    let template = fs.readFileSync(appRoot + '/view/result.mst').toString()
     let htmlOutput = mustache.render(template, overAllResult);
     fs.writeFileSync(htmlResult, htmlOutput);
     log.info(`Uploading result is also saved to html file '${htmlResult}'`);
