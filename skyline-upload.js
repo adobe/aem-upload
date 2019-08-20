@@ -12,20 +12,27 @@ const filesize = require('filesize');
 let appRoot = path.dirname(require.main.filename);
 
 // 1. handle CLI parameters
-let { host, auth, targetFolder, localFolder, logFile, htmlResult } = getArgv(yargs);
+let { host, auth, targetFolder, fromArr, logFile, htmlResult } = getArgv(yargs);
 
 // 2. setup logger
 const log = getLogger(winston);
 
 // 3. handle local folder
-if (!fs.existsSync(localFolder)) {
-    log.error(`The folder specified '${localFolder}' doesn't exists`);
-    return;
-}
-let { fileNameArr, fileSizeArr, fileListObj } = getLocalFiles(localFolder);
+let fileList = getLocalFiles(fromArr);
 
-let overAllResult = {};
-overAllResult.host = host;
+let overAllResult = {
+    host: host,
+    initSpent: 0,
+    totalFiles: 0,
+    totalCompleted: 0,
+    finalSpent: 0,
+    totalFileSize: 0,
+    avgFileSize: 0,
+    avgPutSpent: 0,
+    avgCompleteSpent: 0,
+    nintyPercentileTotal: 0
+};
+
 let veryStart = process.hrtime();
 
 createAemFolder(host, auth, targetFolder).then(function (result) {
@@ -33,8 +40,13 @@ createAemFolder(host, auth, targetFolder).then(function (result) {
         log.error(`Failed to create AEM target folder '${targetFolder}'`);
         return;
     }
-    // let totalFileSize = fileSizeArr.reduce((x, y) => x += y);
-    // 3.1 start initiate uploading, single for all files
+    // 4.1 start initiate uploading, single for all files
+    let fileNameArr = fileList.map((item) => {
+        return item.fileName;
+    });
+    let fileSizeArr = fileList.map((item) => {
+        return item.fileSize;
+    });
     let initOptions = {
         url: host + targetFolder + '.initiateUpload.json',
         method: 'POST',
@@ -53,13 +65,17 @@ createAemFolder(host, auth, targetFolder).then(function (result) {
         log.info(`Finished initialize uploading, response code: '${response.statusCode}', time elapsed: '${response.elapsedTime}' ms`);
         overAllResult.initSpent = response.elapsedTime;
         let resObj = JSON.parse(body);
+        log.info('Init result: ' + JSON.stringify(resObj, null, 4));
+
         let files = resObj.files;
+
         // completeURI is per target folder
         let completeURI = resObj.completeURI;
         overAllResult.totalFiles = files.length;
 
         let promiseArr = [];
-        files.forEach(function (file) {
+        for (let i = 0; i < files.length; i++) {
+            let file = files[i];
             let uploadURIs = file.uploadURIs;
             let uploadToken = file.uploadToken;
             let fileName = file.fileName;
@@ -67,8 +83,8 @@ createAemFolder(host, auth, targetFolder).then(function (result) {
             let maxPartSize = file.maxPartSize;
             let minPartSize = file.minPartSize;
 
-            let fileSize = fileListObj[fileName].fileSize;
-            let filePath = fileListObj[fileName].filePath;
+            let fileSize = fileList[i].fileSize;
+            let filePath = fileList[i].filePath;
 
             log.info(`Start uploading '${filePath}' to cloud, fileSize: '${fileSize}', uriNum: '${uploadURIs.length}'`);
 
@@ -79,7 +95,7 @@ createAemFolder(host, auth, targetFolder).then(function (result) {
                 targetPath: completeURI.replace('.completeUpload.json', '/') + fileName,
                 fileSize: fileSize,
                 fileSizeStr: filesize(fileSize),
-                partSize: chunkArr[0].fileSize,
+                partSize: filesize(chunkArr[0].partSize),
                 partNum: chunkArr.length,
 
                 putSpentFinal: 0,
@@ -87,7 +103,7 @@ createAemFolder(host, auth, targetFolder).then(function (result) {
                 putSpentMax: 0,
                 putSpentAvg: 0,
                 completeSpent: 0,
-                success: false, 
+                success: false,
                 message: ''
             };
 
@@ -126,7 +142,7 @@ createAemFolder(host, auth, targetFolder).then(function (result) {
                             uploadResult.success = true;
                             log.info(`Finished complete uploading '${filePath}', response code: '${response.statusCode}', time elapsed: '${response.elapsedTime}' ms`);
                         } else {
-                            uploadResult.message = 'complete upload error ' + response.statusCode + err;
+                            uploadResult.message = 'complete upload error ' + response.statusCode + error;
                         }
                         resolve(uploadResult);
                     });
@@ -137,7 +153,7 @@ createAemFolder(host, auth, targetFolder).then(function (result) {
                 });
             });
             promiseArr.push(completePromise);
-        });
+        };
 
         Promise.all(promiseArr).then(function (result) {
             generateResult(result);
@@ -167,7 +183,7 @@ function getLogger(winston) {
 function getArgv(yargs) {
     let currentTimeStr = new Date().getTime();
     const argv = yargs
-        .usage('Usage: skyline_upload [options] folder')
+        .usage('Usage: skyline-upload [options] files&folder...')
         .option('h', { alias: 'host', describe: 'Skyline host', type: 'string', default: 'http://localhost:4502' })
         .option('c', { alias: 'credential', describe: 'Skyline credential', type: 'string', default: 'admin:admin' })
         .option('t', { alias: 'target', describe: 'Skyline target folder', type: 'string', default: '/content/dam/skyline-upload-' + currentTimeStr })
@@ -184,12 +200,12 @@ function getArgv(yargs) {
     }
     let logFile = argv.log;
     let htmlResult = argv.output;
-    let localFolder = argv._[0];
+    let fromArr = argv._;
     let auth = 'Basic ' + Buffer.from(credential).toString('base64');
 
     console.log(`Input skyline host:             ${host}`);
     console.log(`Input skyline target folder:    ${targetFolder}`);
-    console.log(`Input local folder:             ${localFolder}`);
+    console.log(`Input from:                     ${fromArr}`);
     console.log(`Log file:                       ${logFile}`);
     console.log(`Html file:                      ${htmlResult}`);
 
@@ -197,43 +213,53 @@ function getArgv(yargs) {
         host: host,
         auth: auth,
         targetFolder: targetFolder,
-        localFolder: localFolder,
+        fromArr: fromArr,
         logFile: logFile,
         htmlResult: htmlResult
     };
 }
 
-function getLocalFiles(localFolder) {
-    let fileNameArr = [];
-    let fileSizeArr = [];
-    let fileListObj = {};
-    let files = fs.readdirSync(localFolder);
-    files.forEach(function (fileName) {
-        let fileStat = fs.statSync(path.join(localFolder, fileName));
-        if (fileStat.isFile()) {
-            if (fileName.match(/^\./)) {
-                log.debug('Skip hidden file: ' + fileName);
-            } else {
-                let fileSize = fileStat.size;
-
-                fileSizeArr.push(fileSize);
-                fileNameArr.push(fileName);
-
-                fileListObj[fileName] = {
-                    filePath: path.join(localFolder, fileName),
-                    fileSize: fileSize
-                };
-            }
+function getLocalFiles(fromArr) {
+    let fileList = [];
+    fromArr.forEach(function (item) {
+        if (!fs.existsSync(item)) {
+            log.warn(`The specified '${item}' doesn't exists`);
         } else {
-            log.debug('Skip non file: ' + fileName);
+            let fileStat = fs.statSync(item);
+            if (fileStat.isFile()) {
+                let fileName = path.basename(item);
+                let fileSize = fileStat.size;
+                fileList.push({
+                    fileName: fileName,
+                    filePath: item,
+                    fileSize: fileSize
+                });
+            } else if (fileStat.isDirectory()) {
+                let files = fs.readdirSync(item);
+                files.forEach(function (fileName) {
+                    let filePath = path.join(item, fileName);
+                    let fileStat = fs.statSync(filePath);
+                    if (fileStat.isFile()) {
+                        if (fileName.match(/^\./)) {
+                            log.debug('Skip hidden file: ' + fileName);
+                        } else {
+                            let fileSize = fileStat.size;
+                            fileList.push({
+                                fileName: fileName,
+                                filePath: filePath,
+                                fileSize: fileSize
+                            });
+                        }
+                    } else {
+                        log.debug('Skip non file: ' + fileName);
+                    }
+                });
+            }
         }
     });
-    log.info('Local files for uploading: ' + fileNameArr);
-    return {
-        fileNameArr: fileNameArr,
-        fileSizeArr: fileSizeArr,
-        fileListObj: fileListObj
-    }
+
+    log.info('Local files for uploading: : ' + JSON.stringify(fileList, null, 4));
+    return fileList;
 }
 
 // create async func for creating AEM folder for easy reading
@@ -297,6 +323,7 @@ function getChunkArr(uploadURIs, filePath, fileSize, minPartSize, maxPartSize) {
     } else {
         // calculate part size based on number of urls
         partSize = Math.floor((fileSize + urlNum - 1) / urlNum);
+        // if average partSize is smaller than minPartSize, use minPartSize instead
         if (partSize < minPartSize) {
             partSize = minPartSize;
             log.debug(`Calculated part size ${partSize} is less than min part size ${minPartSize}, so set the partSize with minPartSize`);
@@ -367,37 +394,56 @@ function uploadToCloud(chunkArr, result) {
 function generateResult(result) {
     overAllResult.detailedResult = result;
 
-    let successArr = result.filter(function (item) {
-        return item.success = true;
+    let successUploadResultArr = result.filter(function (item) {
+        return (item.success === true);
     });
+    let successUploadNum = successUploadResultArr.length;
 
-    let fileSizeArr = successArr.map((item) => {
-        return item.fileSize;
-    });
-    let totalFileSize = fileSizeArr.reduce((x, y) => x += y);
-    overAllResult.totalFileSize = filesize(totalFileSize);
-    overAllResult.avgFileSize = filesize(Math.round(totalFileSize / successArr.length));
+    // totalCompleted
+    overAllResult.totalCompleted = successUploadNum;
 
-    overAllResult.totalCompleted = successArr.length;
-
+    // finalSpent
     let veryEnd = process.hrtime(veryStart);
     let finalSpent = Math.round(veryEnd[0] * 1000 + veryEnd[1] / 1000000);
     overAllResult.finalSpent = finalSpent;
 
-    let putSpentArr = successArr.map((item) => {
-        return item.putSpentFinal;
-    });
-    let sumPutSpent = putSpentArr.reduce((x, y) => x += y);
-    overAllResult.avgPutSpent = Math.round(sumPutSpent / successArr.length);
+    if (successUploadNum > 0) {
+        // totalFileSize, avgFileSize
+        let fileSizeArr = successUploadResultArr.map((item) => {
+            return item.fileSize;
+        });
+        let totalFileSize = fileSizeArr.reduce((x, y) => x += y);
+        overAllResult.totalFileSize = filesize(totalFileSize);
+        overAllResult.avgFileSize = filesize(Math.round(totalFileSize / successUploadNum));
 
-    let completeSpentArr = successArr.map((item) => {
-        return item.completeSpent;
-    });
-    let sumCompleteSpent = completeSpentArr.reduce((x, y) => x += y);
-    overAllResult.avgCompleteSpent = Math.round(sumCompleteSpent / successArr.length);
+        // avgPutSpent
+        let putSpentArr = successUploadResultArr.map((item) => {
+            return item.putSpentFinal;
+        });
+        let sumPutSpent = putSpentArr.reduce((x, y) => x += y);
+        overAllResult.avgPutSpent = Math.round(sumPutSpent / successUploadNum);
+
+        // avgCompleteSpent
+        let completeSpentArr = successUploadResultArr.map((item) => {
+            return item.completeSpent;
+        });
+        let sumCompleteSpent = completeSpentArr.reduce((x, y) => x += y);
+        overAllResult.avgCompleteSpent = Math.round(sumCompleteSpent / successUploadNum);
+
+        // 90 percentile put+complete
+        let totalSpentArr = successUploadResultArr.map((item) => {
+            return item.putSpentFinal + item.completeSpent;
+        });
+        let sortedTotalSpentArr = totalSpentArr.sort((x, y) => x - y);
+        let nintyPercentileIndex = Math.round(successUploadNum * 0.9) - 1;
+        overAllResult.nintyPercentileTotal = sortedTotalSpentArr[nintyPercentileIndex];
+    }
+
+    // output json result to logger
     log.info('Uploading result in JSON:');
     log.info(JSON.stringify(overAllResult, null, 4));
 
+    // generate html format result
     let template = fs.readFileSync(appRoot + '/view/result.mst').toString()
     let htmlOutput = mustache.render(template, overAllResult);
     fs.writeFileSync(htmlResult, htmlOutput);

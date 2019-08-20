@@ -15,14 +15,14 @@ This project uses [node](http://nodejs.org) and [npm](https://npmjs.com). Go che
 
 ```sh
 # 1. make sure add following auth str to the ~/.npmrc file
-  _auth = xxxxxxxx                # base64 encoding of string “username:apikey”
-  email=ldap@adobe.com
+  _auth = xxxxxxxx                # base64 encoding of string 'ldap:apikey', apikey could be got from here: https://artifactory.corp.adobe.com/artifactory/webapp/#/profile
+  email=<ldap>@adobe.com
   always-auth=true
 
 # 2. make sure login assets-skyline registry first for Adobe internal artifactory, use ldap as credential
 $ npm login --scope=@assets-skyline --registry=https://artifactory.corp.adobe.com/artifactory/api/npm/npm-assets-skyline-release-local/
 
-# 3. install
+# 3. install, make sure the .npmrc is proper setup as above to root user as well
 $ sudo npm install -g @assets-skyline/skyline-upload
 ```
 

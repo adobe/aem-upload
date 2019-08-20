@@ -19,9 +19,10 @@
 
                 <th>Total Spent Time(ms)</th>
 
-                <th>Init Upload Spent Time(ms)</th>
-                <th>Average Upload Spent Time(ms)</th>
-                <th>Average Complete Spent Time(ms)</th>
+                <th>Init Upload Spent(Once)(ms)</th>
+                <th>Average Upload Spent Per Asset(ms)</th>
+                <th>Average Complete Spent Per Asset(ms)</th>
+                <th>90th percentile Spent Per Asset(Upload+Complete)(ms)</th>
             </tr>
         </thead>
 
@@ -38,6 +39,7 @@
                 <td>{{initSpent}}</td>
                 <td>{{avgPutSpent}}</td>
                 <td>{{avgCompleteSpent}}</td>
+                <td>{{nintyPercentileTotal}}</td>
             </tr>
         </tbody>
     </table>
