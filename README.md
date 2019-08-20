@@ -29,7 +29,7 @@ $ sudo npm install -g @assets-skyline/skyline-upload
 # Usage
 ```sh
 $ skyline-upload --help
-Usage: skyline_upload [options] folder
+Usage: skyline-upload [options] folder
 
 Options:
   --help            Show help                                          [boolean]
