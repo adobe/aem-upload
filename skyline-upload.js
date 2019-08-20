@@ -25,6 +25,7 @@ if (!fs.existsSync(localFolder)) {
 let { fileNameArr, fileSizeArr, fileListObj } = getLocalFiles(localFolder);
 
 let overAllResult = {};
+overAllResult.host = host;
 let veryStart = process.hrtime();
 
 createAemFolder(host, auth, targetFolder).then(function (result) {
@@ -73,6 +74,23 @@ createAemFolder(host, auth, targetFolder).then(function (result) {
 
             let chunkArr = getChunkArr(uploadURIs, filePath, fileSize, minPartSize, maxPartSize);
 
+            let uploadResult = {
+                filePath: filePath,
+                targetPath: completeURI.replace('.completeUpload.json', '/') + fileName,
+                fileSize: fileSize,
+                fileSizeStr: filesize(fileSize),
+                partSize: chunkArr[0].fileSize,
+                partNum: chunkArr.length,
+
+                putSpentFinal: 0,
+                putSpentMin: 0,
+                putSpentMax: 0,
+                putSpentAvg: 0,
+                completeSpent: 0,
+                success: false, 
+                message: ''
+            };
+
             let hrstart = process.hrtime();
             let completePromise = new Promise(function (resolve, reject) {
                 uploadToCloud(chunkArr).then(function (putResultArr) {
@@ -93,27 +111,29 @@ createAemFolder(host, auth, targetFolder).then(function (result) {
                         time: true
                     };
                     request(completeOptions, function (error, response, body) {
-                        let spentArr = putResultArr.map((putResult) => {
-                            return putResult.putSpent;
-                        });
-                        let spentSum = spentArr.reduce((x, y) => x += y);
-                        let spentAvg = Math.round(spentSum / spentArr.length);
-                        var uploadResult = {
-                            filePath: filePath,
-                            targetPath: completeURI.replace('.completeUpload.json', '/') + fileName,
-                            fileSize: fileSize,
-                            fileSizeStr: filesize(fileSize),
-                            partSize: chunkArr[0].fileSize,
-                            partNum: chunkArr.length,
-                            putSpentFinal: finalSpentTime,
-                            putSpentMin: Math.min(...spentArr),
-                            putSpentMax: Math.max(...spentArr),
-                            putSpentAvg: spentAvg,
-                            completeSpent: response.elapsedTime
-                        };
-                        log.info(`Finished complete uploading '${filePath}', response code: '${response.statusCode}', time elapsed: '${response.elapsedTime}' ms`);
+                        if (response.statusCode === 200) {
+                            let spentArr = putResultArr.map((putResult) => {
+                                return putResult.putSpent;
+                            });
+                            let spentSum = spentArr.reduce((x, y) => x += y);
+                            let spentAvg = Math.round(spentSum / spentArr.length);
+
+                            uploadResult.putSpentFinal = finalSpentTime;
+                            uploadResult.putSpentMin = Math.min(...spentArr);
+                            uploadResult.putSpentMax = Math.max(...spentArr);
+                            uploadResult.putSpentAvg = spentAvg;
+                            uploadResult.completeSpent = response.elapsedTime;
+                            uploadResult.success = true;
+                            log.info(`Finished complete uploading '${filePath}', response code: '${response.statusCode}', time elapsed: '${response.elapsedTime}' ms`);
+                        } else {
+                            uploadResult.message = 'complete upload error ' + response.statusCode + err;
+                        }
                         resolve(uploadResult);
                     });
+                }).catch(function (err) {
+                    log.error(`Failed to put upload file '${filePath}' to cloud`);
+                    uploadResult.message = 'put upload error ' + err;
+                    resolve(uploadResult);
                 });
             });
             promiseArr.push(completePromise);
@@ -159,6 +179,9 @@ function getArgv(yargs) {
     let host = argv.host;
     let credential = argv.credential;
     let targetFolder = argv.target;
+    if (!targetFolder.startsWith('/content/dam')) {
+        targetFolder = path.join('/content/dam', targetFolder);
+    }
     let logFile = argv.log;
     let htmlResult = argv.output;
     let localFolder = argv._[0];
@@ -344,29 +367,34 @@ function uploadToCloud(chunkArr, result) {
 function generateResult(result) {
     overAllResult.detailedResult = result;
 
-    let fileSizeArr = result.map((item) => {
+    let successArr = result.filter(function (item) {
+        return item.success = true;
+    });
+
+    let fileSizeArr = successArr.map((item) => {
         return item.fileSize;
     });
     let totalFileSize = fileSizeArr.reduce((x, y) => x += y);
     overAllResult.totalFileSize = filesize(totalFileSize);
-    overAllResult.avgFileSize = filesize(Math.round(totalFileSize / result.length));
+    overAllResult.avgFileSize = filesize(Math.round(totalFileSize / successArr.length));
 
-    overAllResult.totalCompleted = result.length;
+    overAllResult.totalCompleted = successArr.length;
+
     let veryEnd = process.hrtime(veryStart);
     let finalSpent = Math.round(veryEnd[0] * 1000 + veryEnd[1] / 1000000);
     overAllResult.finalSpent = finalSpent;
 
-    let putSpentArr = result.map((item) => {
+    let putSpentArr = successArr.map((item) => {
         return item.putSpentFinal;
     });
     let sumPutSpent = putSpentArr.reduce((x, y) => x += y);
-    overAllResult.avgPutSpent = Math.round(sumPutSpent / result.length);
+    overAllResult.avgPutSpent = Math.round(sumPutSpent / successArr.length);
 
-    let completeSpentArr = result.map((item) => {
+    let completeSpentArr = successArr.map((item) => {
         return item.completeSpent;
     });
     let sumCompleteSpent = completeSpentArr.reduce((x, y) => x += y);
-    overAllResult.avgCompleteSpent = Math.round(sumCompleteSpent / result.length);
+    overAllResult.avgCompleteSpent = Math.round(sumCompleteSpent / successArr.length);
     log.info('Uploading result in JSON:');
     log.info(JSON.stringify(overAllResult, null, 4));
 

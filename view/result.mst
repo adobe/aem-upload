@@ -51,11 +51,14 @@
                 <th>Target Path</th>
                 <th>File Size</th>
                 <th>Part#</th>
+                <th>Part Size</th>
                 <th>Total Put Spent(ms)</th>
                 <th>Min Put Spent(ms)</th>
                 <th>Max Put Spent(ms)</th>
                 <th>Average Put Spent(ms)</th>
                 <th>Complete Spent(ms)</th>
+                <th>Success</th>
+                <th>Message</th>
             </tr>
         </thead>
 
@@ -66,11 +69,14 @@
                     <td>{{targetPath}}</td>
                     <td>{{fileSizeStr}}</td>
                     <td>{{partNum}}</td>
+                    <td>{{partSize}}</td>
                     <td>{{putSpentFinal}}</td>
                     <td>{{putSpentMin}}</td>
                     <td>{{putSpentMax}}</td>
                     <td>{{putSpentAvg}}</td>
                     <td>{{completeSpent}}</td>
+                    <td>{{success}}</td>
+                    <td>{{message}}</td>
                 </tr>
             {{/detailedResult}}
         </tbody>
