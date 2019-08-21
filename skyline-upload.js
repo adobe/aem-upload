@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 const fs = require('fs');
+const https = require('https');
 const path = require('path');
 const request = require('request');
 const rp = require('request-promise-native');
@@ -15,11 +16,16 @@ let appRoot = path.dirname(require.main.filename);
 let { host, auth, targetFolder, fromArr, logFile, htmlResult } = getArgv(yargs);
 
 // 2. setup logger
-const log = getLogger(winston);
+const log = getLogger(winston, logFile);
 
 // 3. handle local folder
 let fileList = getLocalFileArr(fromArr);
 
+const myAgent = new https.Agent();
+myAgent.maxSockets = Infinity;
+// let customPool = { maxSockets: Infinity };
+
+let veryStart = process.hrtime();
 let allUploadResult = {
     host: host,
     initSpent: 0,
@@ -32,8 +38,6 @@ let allUploadResult = {
     avgCompleteSpent: 0,
     nintyPercentileTotal: 0
 };
-
-let veryStart = process.hrtime();
 
 createAemFolder(host, auth, targetFolder).then(function (result) {
     if (!result) {
@@ -89,6 +93,8 @@ createAemFolder(host, auth, targetFolder).then(function (result) {
             log.info(`Start uploading '${filePath}' to cloud, fileSize: '${fileSize}', uriNum: '${uploadURIs.length}'`);
 
             let chunkArr = getChunkArr(uploadURIs, filePath, fileSize, minPartSize, maxPartSize);
+
+            log.info(`Get chunkArr '${chunkArr.length}' for file '${filePath}'`);
 
             let uploadResult = {
                 filePath: filePath,
@@ -161,7 +167,7 @@ createAemFolder(host, auth, targetFolder).then(function (result) {
     });
 });
 
-function getLogger(winston) {
+function getLogger(winston, logFileName) {
     const { combine, timestamp, label, printf } = winston.format;
     const myFormat = printf(({ level, message, label, timestamp }) => {
         return `${timestamp} [${label}] ${level}: ${message}`;
@@ -174,7 +180,7 @@ function getLogger(winston) {
         ),
         transports: [
             new winston.transports.Console(),
-            new winston.transports.File({ filename: logFile })
+            new winston.transports.File({ filename: logFileName })
         ]
     });
     return log;
@@ -266,39 +272,39 @@ function getLocalFileArr(fromArr) {
 // async is just a shortcut to create Promise result
 // compare to request, rp is just shortcut to create Promise
 // without using of async and rp, we could use native Promise instead
-async function createAemFolder(host, auth, targetFolder) {
+async function createAemFolder(hostParam, authParam, targetFolderParam) {
     try {
         let result = await rp({
-            url: host + targetFolder + '.0.json',
+            url: hostParam + targetFolderParam + '.0.json',
             method: 'GET',
             headers: {
-                'Authorization': auth
+                'Authorization': authParam
             }
         });
-        log.info(`AEM target folder '${targetFolder}' exists`);
+        log.info(`AEM target folder '${targetFolderParam}' exists`);
         return true;
     } catch (error) {
-        log.info(`AEM target folder '${targetFolder}' doesnot exist, create it`);
+        log.info(`AEM target folder '${targetFolderParam}' doesnot exist, create it`);
     }
 
     try {
         let result = await rp({
-            url: host + targetFolder,
+            url: hostParam + targetFolderParam,
             method: 'POST',
             headers: {
-                'Authorization': auth
+                'Authorization': authParam
             },
             qs: {
-                './jcr:content/jcr:title': path.basename(targetFolder),
-                ':name': path.basename(targetFolder),
+                './jcr:content/jcr:title': path.basename(targetFolderParam),
+                ':name': path.basename(targetFolderParam),
                 './jcr:primaryType': 'sling:Folder',
                 './jcr:content/jcr:primaryType': 'nt:unstructured',
                 '_charset_': 'UTF-8'
             }
         });
-        log.info(`AEM target folder '${targetFolder}' is created`);
+        log.info(`AEM target folder '${targetFolderParam}' is created`);
     } catch (error) {
-        log.error(`Failed to create AEM target folder '${targetFolder}': + '${error}'`);
+        log.error(`Failed to create AEM target folder '${targetFolderParam}': + '${error}'`);
         return false;
     }
     return true;
@@ -367,6 +373,7 @@ function uploadToCloud(chunkArr, result) {
                 headers: {
                     'Content-Length': partSize
                 },
+                agent: myAgent,
                 body: partBody,
                 time: true
             }, function (error, response, body) {
