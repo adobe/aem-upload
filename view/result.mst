@@ -71,7 +71,7 @@
                     <td>{{targetPath}}</td>
                     <td>{{fileSizeStr}}</td>
                     <td>{{partNum}}</td>
-                    <td>{{partSize}}</td>
+                    <td>{{partSizeStr}}</td>
                     <td>{{putSpentFinal}}</td>
                     <td>{{putSpentMin}}</td>
                     <td>{{putSpentMax}}</td>
