@@ -21,5 +21,8 @@
   },
   "bin": {
     "skyline-upload": "skyline-upload.js"
+  },
+  "devDependencies": {
+    "eslint": "^6.2.1"
   }
 }

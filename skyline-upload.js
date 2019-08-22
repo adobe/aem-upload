@@ -114,7 +114,7 @@ createAemFolder(host, auth, targetFolder).then(function (result) {
             };
 
             let hrstart = process.hrtime();
-            let completePromise = new Promise(function (resolve, reject) {
+            let completePromise = new Promise(function (resolve) {
                 uploadToCloud(chunkArr).then(function (putResultArr) {
                     let hrend = process.hrtime(hrstart);
                     let finalSpentTime = Math.round(hrend[0] * 1000 + hrend[1] / 1000000);
@@ -132,7 +132,7 @@ createAemFolder(host, auth, targetFolder).then(function (result) {
                         },
                         time: true
                     };
-                    request(completeOptions, function (error, response, body) {
+                    request(completeOptions, function (error, response) {
                         if (response.statusCode === 200) {
                             let spentArr = putResultArr.map((putResult) => {
                                 return putResult.putSpent;
@@ -159,7 +159,7 @@ createAemFolder(host, auth, targetFolder).then(function (result) {
                 });
             });
             promiseArr.push(completePromise);
-        };
+        }
 
         Promise.all(promiseArr).then(function (result) {
             generateResult(result);
@@ -274,7 +274,7 @@ function getLocalFileArr(fromArr) {
 // without using of async and rp, we could use native Promise instead
 async function createAemFolder(hostParam, authParam, targetFolderParam) {
     try {
-        let result = await rp({
+        await rp({
             url: hostParam + targetFolderParam + '.0.json',
             method: 'GET',
             headers: {
@@ -288,7 +288,7 @@ async function createAemFolder(hostParam, authParam, targetFolderParam) {
     }
 
     try {
-        let result = await rp({
+        await rp({
             url: hostParam + targetFolderParam,
             method: 'POST',
             headers: {
@@ -314,7 +314,7 @@ function getChunkArr(uploadURIs, filePath, fileSize, minPartSize, maxPartSize) {
     if (maxPartSize > 0) {
         const numParts = Math.ceil(fileSize / maxPartSize);
         if (numParts > uploadURIs.length) {
-            throw `number of parts (${numParts}) is more than the number of available part urls (${urls.length})`;
+            throw `number of parts (${numParts}) is more than the number of available part urls (${uploadURIs.length})`;
         }
     }
 
@@ -360,7 +360,7 @@ function getChunkArr(uploadURIs, filePath, fileSize, minPartSize, maxPartSize) {
 }
 
 // upload to cloud, this is per asset, support mutliple parts
-function uploadToCloud(chunkArr, result) {
+function uploadToCloud(chunkArr) {
     return Promise.all(chunkArr.map(function (chunk) {
         return new Promise(function (resolve, reject) {
             let partBody = chunk.partBody;
