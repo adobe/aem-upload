@@ -23,6 +23,7 @@
     "babel-preset-stage-2": "^6.24.1",
     "filesize": "^4.1.2",
     "mustache": "^3.0.1",
+    "regenerator-runtime": "^0.13.3",
     "request": "^2.88.0",
     "request-promise-native": "^1.0.7",
     "rimraf": "^3.0.0",
@@ -31,5 +32,8 @@
   },
   "bin": {
     "skyline-upload": "./dist/skyline-upload.js"
+  },
+  "devDependencies": {
+    "core-js": "^3.2.1"
   }
 }
