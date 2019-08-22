@@ -62,8 +62,8 @@ function getArgv(yargs) {
         .option('h', { alias: 'host', describe: 'Skyline host', type: 'string', default: 'http://localhost:4502' })
         .option('c', { alias: 'credential', describe: 'Skyline credential', type: 'string', default: 'admin:admin' })
         .option('t', { alias: 'target', describe: 'Skyline target folder', type: 'string', default: '/content/dam/skyline-upload-' + currentTimeStr })
-        .option('l', { alias: 'log', describe: 'Log file path', type: 'string', default: 'upload-' + currentTimeStr + '.log' })
-        .option('o', { alias: 'output', describe: 'Result html file path', type: 'string', default: 'result-' + currentTimeStr + '.html' })
+        .option('l', { alias: 'log', describe: 'Log file path', type: 'string', default: './results/upload-' + currentTimeStr + '.log' })
+        .option('o', { alias: 'output', describe: 'Result html file path', type: 'string', default: './results/result-' + currentTimeStr + '.html' })
         .demandCommand(1)
         .argv;
 

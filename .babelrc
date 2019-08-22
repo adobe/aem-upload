@@ -1,9 +1,9 @@
 {
     "presets": [
-      ["env", {
+      ["@babel/env", {
         "targets": {
           "ie": "9"
         }
-      }], "stage-2"
+      }]
     ]
   }

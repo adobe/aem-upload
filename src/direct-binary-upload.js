@@ -4,10 +4,11 @@ import rp from 'request-promise-native';
 import fs from 'fs';
 import path from 'path';
 import filesize from 'filesize';
+import querystring from 'querystring';
 
 export default class DirectBinaryUpload extends UploadBase {
     async uploadFiles(targetUrl, defaultHeaders = {}, toUpload = []) {
-        let veryStart = process.hrtime();
+        let veryStart = new Date().getTime();
 
         const {
             pathname: targetFolder,
@@ -20,12 +21,13 @@ export default class DirectBinaryUpload extends UploadBase {
             method: 'POST',
             headers: {
                 ...defaultHeaders,
+                'content-type': 'application/x-www-form-urlencoded',
             },
-            formData: {
+            body: querystring.stringify({
                 path: targetFolder,
                 fileName: toUpload.map(item => item.fileName),
                 fileSize: toUpload.map(item => item.fileSize),
-            },
+            }),
             time: true,
             json: true,
             resolveWithFullResponse: true,
@@ -86,10 +88,10 @@ export default class DirectBinaryUpload extends UploadBase {
                 message: ''
             };
 
-            let hrstart = process.hrtime();
+            let hrstart = new Date().getTime();
             const putResultArr = await this.uploadToCloud(chunkArr);
-            let hrend = process.hrtime(hrstart);
-            let finalSpentTime = Math.round(hrend[0] * 1000 + hrend[1] / 1000000);
+            let hrend = new Date().getTime();
+            let finalSpentTime = hrend - hrstart;
             this.logInfo(`Finished uploading '${fileName}', took '${finalSpentTime}' ms`);
             let completeOptions = {
                 url: `${urlPrefix}${completeURI}`,
@@ -216,8 +218,18 @@ export default class DirectBinaryUpload extends UploadBase {
     }
 
     getFileChunk(file, start, end) {
-        const { filePath } = file;
-        return fs.createReadStream(filePath, { start, end });
+        const {
+            filePath,
+            blob,
+        } = file;
+
+        if (filePath) {
+            return fs.createReadStream(filePath, { start, end });
+        } else if (blob && blob.slice) {
+            return blob.slice(start, end);
+        } else {
+            throw 'unsupported operation: file must have a filePath or blob';
+        }
     }
 
     generateResult(allUploadResult, veryStart, result) {
@@ -232,8 +244,8 @@ export default class DirectBinaryUpload extends UploadBase {
         allUploadResult.totalCompleted = successUploadNum;
 
         // finalSpent
-        let veryEnd = process.hrtime(veryStart);
-        let finalSpent = Math.round(veryEnd[0] * 1000 + veryEnd[1] / 1000000);
+        let veryEnd = new Date().getTime();
+        let finalSpent = veryEnd - veryStart;
         allUploadResult.finalSpent = finalSpent;
 
         if (successUploadNum > 0) {
