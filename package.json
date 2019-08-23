@@ -1,6 +1,6 @@
 {
   "name": "@assets-skyline/skyline-upload",
-  "version": "0.0.14",
+  "version": "0.0.18",
   "description": "AEM Skyline Asset direct uploading tool",
   "main": "index.js",
   "browser": "./dist/exports.js",
@@ -38,6 +38,7 @@
     "@babel/preset-env": "^7.5.5",
     "@babel/preset-stage-2": "^7.0.0",
     "babel-loader": "^8.0.6",
+    "eslint": "^6.2.1",
     "html-webpack-plugin": "^3.2.0",
     "json-loader": "^0.5.7",
     "rimraf": "^3.0.0",

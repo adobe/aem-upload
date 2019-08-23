@@ -12,6 +12,7 @@
     <table class="pure-table">
         <thead>
             <tr>
+                <th>Host</th>
                 <th>Total File#</th>
                 <th>Total Uploaded#</th>
                 <th>Total File Size</th>
@@ -28,6 +29,7 @@
 
         <tbody>
             <tr>
+                <td>{{host}}</td>
                 <td>{{totalFiles}}</td>
                 <td>{{totalCompleted}}</td>
 
