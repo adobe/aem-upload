@@ -62,8 +62,9 @@ function getArgv(yargs) {
         .option('h', { alias: 'host', describe: 'Skyline host', type: 'string', default: 'http://localhost:4502' })
         .option('c', { alias: 'credential', describe: 'Skyline credential', type: 'string', default: 'admin:admin' })
         .option('t', { alias: 'target', describe: 'Skyline target folder', type: 'string', default: '/content/dam/skyline-upload-' + currentTimeStr })
-        .option('l', { alias: 'log', describe: 'Log file path', type: 'string', default: './results/upload-' + currentTimeStr + '.log' })
-        .option('o', { alias: 'output', describe: 'Result html file path', type: 'string', default: './results/result-' + currentTimeStr + '.html' })
+        .option('l', { alias: 'log', describe: 'Log file path', type: 'string', default: 'upload-' + currentTimeStr + '.log' })
+        .option('o', { alias: 'output', describe: 'Result html file path', type: 'string', default: 'result-' + currentTimeStr + '.html' })
+        .option('s', { alias: 'serial', describe: 'Upload files serially instead of concurrently', type: 'boolean', default: false })
         .demandCommand(1)
         .argv;
 
@@ -77,12 +78,14 @@ function getArgv(yargs) {
     let htmlResult = argv.output;
     let fromArr = argv._;
     let auth = 'Basic ' + Buffer.from(credential).toString('base64');
+    let serial = argv.serial;
 
     console.log(`Input skyline host:             ${host}`);
     console.log(`Input skyline target folder:    ${targetFolder}`);
     console.log(`Input from:                     ${fromArr}`);
     console.log(`Log file:                       ${logFile}`);
     console.log(`Html file:                      ${htmlResult}`);
+    console.log(`Serial:                         ${serial}`);
 
     return {
         host: host,
@@ -90,6 +93,7 @@ function getArgv(yargs) {
         targetFolder: targetFolder,
         fromArr: fromArr,
         logFile: logFile,
-        htmlResult: htmlResult
+        htmlResult: htmlResult,
+        serial,
     };
 }

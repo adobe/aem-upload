@@ -10,7 +10,7 @@
   },
   "scripts": {
     "start": "node ./src/skyline-upload.js",
-    "build": "./node_modules/.bin/rimraf dist && babel ./src --out-dir dist",
+    "build": "./node_modules/.bin/rimraf dist && eslint ./src && babel ./src --out-dir dist",
     "prepublishOnly": "npm run build"
   },
   "author": "Jun Zhang (zjun@adobe.com)",

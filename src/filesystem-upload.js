@@ -5,7 +5,7 @@ import path from 'path';
 import rp from 'request-promise-native';
 
 export default class FileSystemUpload extends UploadBase {
-    async upload({ host, auth, targetFolder, fromArr }) {
+    async upload({ host, auth, targetFolder, fromArr, serial }) {
         let fileList = this.getLocalFileArr(fromArr);
 
         const result = await this.createAemFolder(host, auth, targetFolder);
@@ -27,6 +27,7 @@ export default class FileSystemUpload extends UploadBase {
             url: `${host}${targetFolder}`,
             headers: { 'Authorization': auth },
             toUpload: uploadArr,
+            concurrent: !serial,
         });
     }
 

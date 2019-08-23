@@ -5,7 +5,11 @@ import path from 'path';
 import filesize from 'filesize';
 import querystring from 'querystring';
 
-import { timedRequest } from './utils';
+import {
+    timedRequest,
+    concurrentLoop,
+    serialLoop,
+} from './utils';
 
 export default class DirectBinaryUpload extends UploadBase {
     async uploadFiles(options = {}) {
@@ -13,6 +17,7 @@ export default class DirectBinaryUpload extends UploadBase {
             url,
             headers = {},
             toUpload = [],
+            concurrent = true,
         } = options;
         let veryStart = new Date().getTime();
 
@@ -58,124 +63,145 @@ export default class DirectBinaryUpload extends UploadBase {
             totalFiles: fileListInit.length,
         };
 
-        let promiseArr = [];
-        let uploadResults = [];
-        for (let i = 0; i < fileListInit.length; i++) {
-            let file = fileListInit[i];
-            let uploadURIs = file.uploadURIs;
-            let uploadToken = file.uploadToken;
-            let fileName = file.fileName;
-            let mimeType = file.mimeType;
-            let maxPartSize = file.maxPartSize;
-            let minPartSize = file.minPartSize;
+        let uploadResults;
 
-            let fileSize = toUpload[i].fileSize;
-
-            this.logInfo(`Start uploading '${fileName}' to cloud, fileSize: '${fileSize}', uriNum: '${uploadURIs.length}'`);
-
-            let chunkArr = this.getChunkArr(uploadURIs, toUpload[i], minPartSize, maxPartSize);
-
-            let uploadResult = {
-                fileName,
-                targetPath: path.join(targetFolder, fileName),
-                fileSize: fileSize,
-                fileSizeStr: filesize(fileSize),
-                partSizeStr: filesize(chunkArr[0].partSize),
-                partNum: chunkArr.length,
-
-                putSpentFinal: 0,
-                putSpentMin: 0,
-                putSpentMax: 0,
-                putSpentAvg: 0,
-                completeSpent: 0,
-                success: false,
-                message: ''
-            };
-
-            let hrstart = new Date().getTime();
-            const putResultArr = await this.uploadToCloud(options, chunkArr);
-            let hrend = new Date().getTime();
-            let finalSpentTime = hrend - hrstart;
-            this.logInfo(`Finished uploading '${fileName}', took '${finalSpentTime}' ms`);
-            let completeOptions = {
-                url: `${urlPrefix}${completeURI}`,
-                method: 'POST',
-                headers: {
-                    ...headers,
-                    'content-type': 'application/x-www-form-urlencoded',
-                },
-                data: querystring.stringify({
-                    fileName: fileName,
-                    mimeType: mimeType,
-                    uploadToken: uploadToken
-                }),
-            };
-
-            const response = await timedRequest(completeOptions);
-            const {
-                elapsedTime: completeElapsedTime = 0,
-                status: completeStatusCode,
-            } = response;
-            let spentArr = putResultArr.map((putResult) => {
-                return putResult.putSpent;
-            });
-            let spentSum = spentArr.reduce((x, y) => x += y);
-            let spentAvg = Math.round(spentSum / spentArr.length);
-
-            uploadResult.putSpentFinal = finalSpentTime;
-            uploadResult.putSpentMin = Math.min(...spentArr);
-            uploadResult.putSpentMax = Math.max(...spentArr);
-            uploadResult.putSpentAvg = spentAvg;
-            uploadResult.completeSpent = completeElapsedTime;
-            uploadResult.success = true;
-            uploadResults.push(uploadResult);
-            this.logInfo(`Finished complete uploading '${fileName}', response code: '${completeStatusCode}', time elapsed: '${completeElapsedTime}' ms`);
-        };
+        const fullCompleteUri = `${urlPrefix}${completeURI}`;
+        if (concurrent) {
+            uploadResults = await concurrentLoop(fileListInit, (file, index) => this.processFile(options, fullCompleteUri, file, toUpload[index], targetFolder));
+        } else {
+            uploadResults = await serialLoop(fileListInit, (file, index) => this.processFile(options, fullCompleteUri, file, toUpload[index], targetFolder));
+        }
 
         return this.generateResult(allUploadResult, veryStart, uploadResults);
     }
 
+    async processFile(options, completeURI, initFileToProcess, fileInfoToProcess, targetFolder) {
+        const { headers = {} } = options;
+        let file = initFileToProcess;
+        let uploadURIs = file.uploadURIs;
+        let uploadToken = file.uploadToken;
+        let fileName = file.fileName;
+        let mimeType = file.mimeType;
+        let maxPartSize = file.maxPartSize;
+        let minPartSize = file.minPartSize;
+
+        let fileSize = fileInfoToProcess.fileSize;
+
+        this.logInfo(`Start uploading '${fileName}' to cloud, fileSize: '${fileSize}', uriNum: '${uploadURIs.length}'`);
+
+        let chunkArr = this.getChunkArr(uploadURIs, fileInfoToProcess, minPartSize, maxPartSize);
+
+        let uploadResult = {
+            fileName,
+            targetPath: path.join(targetFolder, fileName),
+            fileSize: fileSize,
+            fileSizeStr: filesize(fileSize),
+            partSizeStr: filesize(chunkArr[0].partSize),
+            partNum: chunkArr.length,
+
+            putSpentFinal: 0,
+            putSpentMin: 0,
+            putSpentMax: 0,
+            putSpentAvg: 0,
+            completeSpent: 0,
+            success: false,
+            message: ''
+        };
+
+        let hrstart = new Date().getTime();
+        const putResultArr = await this.uploadToCloud(options, chunkArr);
+        let hrend = new Date().getTime();
+        let finalSpentTime = hrend - hrstart;
+        this.logInfo(`Finished uploading '${fileName}', took '${finalSpentTime}' ms`);
+        let completeOptions = {
+            url: completeURI,
+            method: 'POST',
+            headers: {
+                ...headers,
+                'content-type': 'application/x-www-form-urlencoded',
+            },
+            data: querystring.stringify({
+                fileName: fileName,
+                mimeType: mimeType,
+                uploadToken: uploadToken
+            }),
+        };
+
+        const response = await timedRequest(completeOptions);
+        const {
+            elapsedTime: completeElapsedTime = 0,
+            status: completeStatusCode,
+        } = response;
+        let spentArr = putResultArr.map((putResult) => {
+            return putResult.putSpent;
+        });
+        let spentSum = spentArr.reduce((x, y) => x += y);
+        let spentAvg = Math.round(spentSum / spentArr.length);
+
+        uploadResult.putSpentFinal = finalSpentTime;
+        uploadResult.putSpentMin = Math.min(...spentArr);
+        uploadResult.putSpentMax = Math.max(...spentArr);
+        uploadResult.putSpentAvg = spentAvg;
+        uploadResult.completeSpent = completeElapsedTime;
+        uploadResult.success = true;
+        this.logInfo(`Finished complete uploading '${fileName}', response code: '${completeStatusCode}', time elapsed: '${completeElapsedTime}' ms`);
+
+        return uploadResult;
+    }
+
     // upload to cloud, this is per asset, support mutliple parts
     async uploadToCloud(options, chunkArr) {
-        const { useContentLengthHeader = true } = options;
-        const results = [];
-        for (let i = 0; i < chunkArr.length; i += 1) {
-            const {
-                partBody,
-                partSize,
-                uploadUrl,
-                fileName,
-                partIndex,
-             } = chunkArr[i];
+        const {
+            concurrent = true,
+        } = options;
+        let results;
 
-             const reqOptions = {
-                url: uploadUrl,
-                method: 'PUT',
-                data: partBody,
-            };
-
-            if (useContentLengthHeader) {
-                reqOptions.headers = {
-                    'content-length': partSize,
-                };
-            }
-
-            const response = await timedRequest(reqOptions);
-
-            const {
-                status: statusCode,
-                elapsedTime = 0,
-            } = response;
-
-            this.logInfo(`Put upload part done for file: '${fileName}', partIndex: '${partIndex}', partSize: '${partSize}', spent: '${elapsedTime}' ms, status: ${statusCode}`);
-
-            results.push({
-                ...chunkArr[i],
-                putSpent: elapsedTime,
-            })
+        if (concurrent) {
+            results = await concurrentLoop(chunkArr, chunk => this.uploadChunkToCloud(options, chunk));
+        } else {
+            results = await serialLoop(chunkArr, chunk => this.uploadChunkToCloud(options, chunk));
         }
 
         return results;
+    }
+
+    async uploadChunkToCloud(options, chunk) {
+        const {
+            useContentLengthHeader = true,
+        } = options;
+        const {
+            partBody,
+            partSize,
+            uploadUrl,
+            fileName,
+            partIndex,
+         } = chunk;
+
+         const reqOptions = {
+            url: uploadUrl,
+            method: 'PUT',
+            data: partBody,
+        };
+
+        if (useContentLengthHeader) {
+            reqOptions.headers = {
+                'content-length': partSize,
+            };
+        }
+
+        const response = await timedRequest(reqOptions);
+
+        const {
+            status: statusCode,
+            elapsedTime = 0,
+        } = response;
+
+        this.logInfo(`Put upload part done for file: '${fileName}', partIndex: '${partIndex}', partSize: '${partSize}', spent: '${elapsedTime}' ms, status: ${statusCode}`);
+
+        return {
+            ...chunk,
+            putSpent: elapsedTime,
+        };
     }
 
     getChunkArr(uploadURIs, fileInfo, minPartSize, maxPartSize) {
@@ -183,7 +209,7 @@ export default class DirectBinaryUpload extends UploadBase {
         if (maxPartSize > 0) {
             const numParts = Math.ceil(fileSize / maxPartSize);
             if (numParts > uploadURIs.length) {
-                throw `number of parts (${numParts}) is more than the number of available part urls (${urls.length})`;
+                throw `number of parts (${numParts}) is more than the number of available part urls (${uploadURIs.length})`;
             }
         }
 
