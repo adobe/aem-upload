@@ -35,7 +35,7 @@
 
                 <td>{{totalFileSize}}</td>
                 <td>{{avgFileSize}}</td>
-                
+
                 <td>{{finalSpent}}</td>
 
                 <td>{{initSpent}}</td>
@@ -47,11 +47,11 @@
     </table>
 
     <h1>Detailed result</h1>
-    
+
     <table class="pure-table">
         <thead>
             <tr>
-                <th>File Path</th>
+                <th>File Name</th>
                 <th>Target Path</th>
                 <th>File Size</th>
                 <th>Part#</th>
@@ -69,7 +69,7 @@
         <tbody>
             {{#detailedResult}}
                 <tr>
-                    <td>{{filePath}}</td>
+                    <td>{{fileName}}</td>
                     <td>{{targetPath}}</td>
                     <td>{{fileSizeStr}}</td>
                     <td>{{partNum}}</td>
