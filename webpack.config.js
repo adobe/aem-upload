@@ -7,6 +7,7 @@ module.exports = {
     polyfill: '@babel/polyfill',
     app: './src/exports.js',
   },
+  mode: 'production',
   plugins: [
     new HtmlWebpackPlugin(),
   ],

@@ -1,43 +1,47 @@
 import UploadBase from './upload-base';
 import URL from 'url';
-import rp from 'request-promise-native';
 import fs from 'fs';
 import path from 'path';
 import filesize from 'filesize';
 import querystring from 'querystring';
 
+import { timedRequest } from './utils';
+
 export default class DirectBinaryUpload extends UploadBase {
-    async uploadFiles(targetUrl, defaultHeaders = {}, toUpload = []) {
+    async uploadFiles(options = {}) {
+        const {
+            url,
+            headers = {},
+            toUpload = [],
+        } = options;
         let veryStart = new Date().getTime();
 
         const {
             pathname: targetFolder,
             protocol,
             host,
-        } = URL.parse(targetUrl);
+        } = URL.parse(url);
         const urlPrefix = host ? `${protocol}//${host}` : '';
         const initOptions = {
-            url: `${targetUrl}.initiateUpload.json`,
+            url: `${url}.initiateUpload.json`,
             method: 'POST',
             headers: {
-                ...defaultHeaders,
+                ...headers,
                 'content-type': 'application/x-www-form-urlencoded',
             },
-            body: querystring.stringify({
+            data: querystring.stringify({
                 path: targetFolder,
                 fileName: toUpload.map(item => item.fileName),
                 fileSize: toUpload.map(item => item.fileSize),
             }),
-            time: true,
-            json: true,
-            resolveWithFullResponse: true,
+            responseType: 'json',
         };
 
-        const response = await rp(initOptions);
+        const response = await timedRequest(initOptions);
         const {
-            body: resObj,
-            statusCode,
-            elapsedTime,
+            data: resObj,
+            status: statusCode,
+            elapsedTime = 0,
         } = response;
 
         this.logInfo(`Finished initialize uploading, response code: '${statusCode}', time elapsed: '${elapsedTime}' ms`);
@@ -89,7 +93,7 @@ export default class DirectBinaryUpload extends UploadBase {
             };
 
             let hrstart = new Date().getTime();
-            const putResultArr = await this.uploadToCloud(chunkArr);
+            const putResultArr = await this.uploadToCloud(options, chunkArr);
             let hrend = new Date().getTime();
             let finalSpentTime = hrend - hrstart;
             this.logInfo(`Finished uploading '${fileName}', took '${finalSpentTime}' ms`);
@@ -97,18 +101,21 @@ export default class DirectBinaryUpload extends UploadBase {
                 url: `${urlPrefix}${completeURI}`,
                 method: 'POST',
                 headers: {
-                    ...defaultHeaders,
+                    ...headers,
+                    'content-type': 'application/x-www-form-urlencoded',
                 },
-                qs: {
+                data: querystring.stringify({
                     fileName: fileName,
                     mimeType: mimeType,
                     uploadToken: uploadToken
-                },
-                time: true,
-                resolveWithFullResponse: true,
+                }),
             };
 
-            const response = await rp(completeOptions);
+            const response = await timedRequest(completeOptions);
+            const {
+                elapsedTime: completeElapsedTime = 0,
+                status: completeStatusCode,
+            } = response;
             let spentArr = putResultArr.map((putResult) => {
                 return putResult.putSpent;
             });
@@ -119,17 +126,18 @@ export default class DirectBinaryUpload extends UploadBase {
             uploadResult.putSpentMin = Math.min(...spentArr);
             uploadResult.putSpentMax = Math.max(...spentArr);
             uploadResult.putSpentAvg = spentAvg;
-            uploadResult.completeSpent = response.elapsedTime;
+            uploadResult.completeSpent = completeElapsedTime;
             uploadResult.success = true;
             uploadResults.push(uploadResult);
-            this.logInfo(`Finished complete uploading '${fileName}', response code: '${response.statusCode}', time elapsed: '${response.elapsedTime}' ms`);
+            this.logInfo(`Finished complete uploading '${fileName}', response code: '${completeStatusCode}', time elapsed: '${completeElapsedTime}' ms`);
         };
 
         return this.generateResult(allUploadResult, veryStart, uploadResults);
     }
 
     // upload to cloud, this is per asset, support mutliple parts
-    async uploadToCloud(chunkArr) {
+    async uploadToCloud(options, chunkArr) {
+        const { useContentLengthHeader = true } = options;
         const results = [];
         for (let i = 0; i < chunkArr.length; i += 1) {
             const {
@@ -140,20 +148,23 @@ export default class DirectBinaryUpload extends UploadBase {
                 partIndex,
              } = chunkArr[i];
 
-            const response = await rp({
+             const reqOptions = {
                 url: uploadUrl,
                 method: 'PUT',
-                headers: {
-                    'Content-Length': partSize
-                },
-                body: partBody,
-                time: true,
-                resolveWithFullResponse: true,
-            });
+                data: partBody,
+            };
+
+            if (useContentLengthHeader) {
+                reqOptions.headers = {
+                    'content-length': partSize,
+                };
+            }
+
+            const response = await timedRequest(reqOptions);
 
             const {
-                statusCode,
-                elapsedTime,
+                status: statusCode,
+                elapsedTime = 0,
             } = response;
 
             this.logInfo(`Put upload part done for file: '${fileName}', partIndex: '${partIndex}', partSize: '${partSize}', spent: '${elapsedTime}' ms, status: ${statusCode}`);

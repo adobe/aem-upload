@@ -1,1 +1,1 @@
-require('./src/skyline-upload');
+require('./dist/skyline-upload');

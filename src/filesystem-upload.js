@@ -23,7 +23,11 @@ export default class FileSystemUpload extends UploadBase {
         });
 
         const directUpload = new DirectBinaryUpload(this.options);
-        return await directUpload.uploadFiles(`${host}${targetFolder}`, { 'Authorization': auth }, uploadArr);
+        return await directUpload.uploadFiles({
+            url: `${host}${targetFolder}`,
+            headers: { 'Authorization': auth },
+            toUpload: uploadArr,
+        });
     }
 
     getLocalFileArr(fromArr) {
