@@ -1,7 +1,7 @@
 - [Background](#background)
 - [Install](#install)
-      - [If using this Adobe internal](#if-using-this-adobe-internal)
-      - [If could not reach out Adobe internal artifactory](#if-could-not-reach-out-adobe-internal-artifactory)
+  - [If using this Adobe internal](#if-using-this-adobe-internal)
+  - [If could not reach out Adobe internal artifactory](#if-could-not-reach-out-adobe-internal-artifactory)
 - [Usage](#usage)
 - [Features](#features)
 - [Todo](#todo)
@@ -15,7 +15,7 @@ Unlike legacy AEM Assets, a single upload post request to createAsset servlet is
 # Install
 This project uses [node](http://nodejs.org) and [npm](https://npmjs.com). Go check them out if you don't have them locally installed.
 
-#### If using this Adobe internal
+## If using this Adobe internal
 ```sh
 # 1. Login internal assets-skyline registry first, use LDAP as credential
 $ npm login --scope=@assets-skyline --registry=https://artifactory.corp.adobe.com/artifactory/api/npm/npm-assets-skyline-release/
@@ -28,7 +28,7 @@ $ npm config set @assets-skyline:registry https://artifactory.corp.adobe.com/art
 $ sudo npm install -g @assets-skyline/skyline-upload
 ```
 
-#### If could not reach out Adobe internal artifactory
+## If could not reach out Adobe internal artifactory
 ```sh
 # 1. Download this code repo as zip by: "Clone or download" > "Download ZIP", then copy the zip file to target server and unzip it
 
