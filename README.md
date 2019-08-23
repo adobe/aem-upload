@@ -30,10 +30,14 @@ $ sudo npm install -g @assets-skyline/skyline-upload
 
 #### If could not reach out Adobe internal artifactory
 ```sh
+# 1. Download this code repo as zip by: "Clone or download" > "Download ZIP", then copy the zip file to target server and unzip it
 
+# 2. Enter into unziped folder and do these commands
+$ cd skyline-upload-master
+$ npm install
+$ npm run build
+$ sudo npm install -g .
 ```
-
-
 
 # Usage
 ```sh
