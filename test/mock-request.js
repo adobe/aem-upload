@@ -23,6 +23,15 @@ const mime = require('mime');
 
 const mock = new MockAdapter(axios);
 
+/**
+ * Retrieves the host being used by the mock framework.
+ *
+ * @returns {string} A URL host value.
+ */
+mock.getHost = () => {
+    return 'http://localhost';
+};
+
 /*
  * Contains a mock implementation of the Axios module, extended with some convenience methods
  * specific to the direct binary upload process.
@@ -34,7 +43,7 @@ const mock = new MockAdapter(axios);
   * @returns {string} Absolute URL.
   */
 mock.getUrl = (targetPath) => {
-    return `http://localhost/content/dam${targetPath}`;
+    return `${mock.getHost()}/content/dam${targetPath}`;
 };
 
 const origReset = mock.reset;

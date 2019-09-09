@@ -21,9 +21,7 @@ const querystring = require('querystring');
 const { importFile } = require('./testutils');
 const MockRequest = require('./mock-request');
 
-const DirectBinaryUpload = importFile('direct-binary-upload', {
-    './upload-file': {},
-});
+const DirectBinaryUpload = importFile('direct-binary-upload');
 
 const DirectBinaryUploadOptions = importFile('direct-binary-upload-options');
 const ErrorCodes = importFile('error-codes');
@@ -265,15 +263,15 @@ describe('DirectBinaryUploadTest', () => {
             const part1 = file1Parts[0];
             const part2 = file1Parts[1];
 
-            if (!partSucceeded) {
-                should(part2.isSuccessful()).not.be.ok();
-                should(part2.getError()).be.ok();
-            } else {
+            if (partSucceeded) {
+                should(part1.isSuccessful()).be.ok();
+                should(part1.getError()).not.be.ok();
                 should(part2.isSuccessful()).be.ok();
                 should(part2.getError()).not.be.ok();
+            } else {
+                should(part1.isSuccessful()).not.be.ok();
+                should(part1.getError()).be.ok();
             }
-            should(part1.isSuccessful()).be.ok();
-            should(part1.getError()).not.be.ok();
 
             should(file2.isSuccessful()).be.ok();
             should(file2.getErrors().length).not.be.ok();

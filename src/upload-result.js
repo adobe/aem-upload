@@ -16,6 +16,7 @@
 **************************************************************************/
 
 import { getAverage } from './utils';
+import UploadOptionsBase from './upload-options-base';
 
 /**
  * Retrieves a list of all file results that were successful.
@@ -37,11 +38,16 @@ function getSuccessfulFileResults(fileResults) {
  * Represents results for the upload process as a whole, which might include multiple files. Results
  * include information such as total upload time, total file size, total number of files, etc.
  */
-export default class UploadResult {
+export default class UploadResult extends UploadOptionsBase {
     /**
      * Constructs a new instance of the results, which can be used to add more information.
+     *
+     * @param {object} options Options as provided when the upload instance was instantiated.
+     * @param {DirectBinaryUploadOptions} uploadOptions Options as provided when the upload was initiated.
      */
-    constructor() {
+    constructor(options, uploadOptions) {
+        super(options, uploadOptions);
+
         this.initTime = 0;
         this.totalTime = 0;
         this.fileUploadResults = [];
@@ -233,7 +239,8 @@ export default class UploadResult {
      */
     toJSON() {
         return {
-            initSpend: this.getInitTime(),
+            host: this.getUploadOptions().getUrlPrefix(),
+            initSpent: this.getInitTime(),
             totalFiles: this.getTotalFiles(),
             totalTime: this.getElapsedTime(),
             totalCompleted: this.getTotalCompletedFiles(),

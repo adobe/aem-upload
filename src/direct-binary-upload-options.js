@@ -50,10 +50,12 @@ export default class DirectBinaryUploadOptions {
     }
 
     /**
-     * An array of UploadFile instances representing the files that will be uploaded
+     * An array of object instances representing the files that will be uploaded
      * to the target URL.
      *
-     * @param {UploadFile} uploadFiles Files to upload to the target.
+     * @param {Array} uploadFiles Files to upload to the target. Each file must contain
+     *  at least the following properties: fileName, fileSize, and either filePath OR blob.
+     *  See UploadFile for more information.
      * @returns {DirectBinaryUploadOptions} The current options instance. Allows for chaining.
      */
     withUploadFiles(uploadFiles) {

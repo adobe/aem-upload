@@ -1,4 +1,22 @@
 #!/usr/bin/env node
+
+/*************************************************************************
+* ADOBE CONFIDENTIAL
+* ___________________
+*
+* Copyright 2019 Adobe
+* All Rights Reserved.
+*
+* NOTICE: All information contained herein is, and remains
+* the property of Adobe and its suppliers, if any. The intellectual
+* and technical concepts contained herein are proprietary to Adobe
+* and its suppliers and are protected by all applicable intellectual
+* property laws, including trade secret and copyright laws.
+* Dissemination of this information or reproduction of this material
+* is strictly forbidden unless prior written permission is obtained
+* from Adobe.
+**************************************************************************/
+
 import 'core-js/stable';
 import 'regenerator-runtime';
 
@@ -26,7 +44,7 @@ fileUpload.upload(options)
         log.info('finished uploading files');
         // generate html format result
         let mstTemplate = fs.readFileSync(appRoot + '/view/result.mst').toString();
-        let htmlOutput = mustache.render(mstTemplate, allUploadResult);
+        let htmlOutput = mustache.render(mstTemplate, allUploadResult.toJSON());
         fs.writeFileSync(htmlResult, htmlOutput);
         log.info(`Uploading result is saved to html file '${htmlResult}'`);
     })

@@ -51,7 +51,7 @@ export default class DirectBinaryUpload extends UploadBase {
         const toUpload = options.getUploadFiles().map(upload => new UploadFile(this.getOptions(), options, upload));
         const headers = options.getHeaders();
         const concurrent = options.isConcurrent();
-        const uploadResult = new UploadResult();
+        const uploadResult = new UploadResult(this.getOptions(), options);
         uploadResult.startTimer();
 
         const initOptions = {
@@ -177,15 +177,7 @@ export default class DirectBinaryUpload extends UploadBase {
      * @param {Array} parts The list of InitResponseFilePart instances that will be used as each part to upload.
      */
     async uploadToCloud(options, fileUploadResult, parts) {
-        const {
-            concurrent = true,
-        } = options;
-
-        if (concurrent) {
-            await concurrentLoop(parts, part => this.uploadPartToCloud(options, fileUploadResult, part));
-        } else {
-            await serialLoop(parts, part => this.uploadPartToCloud(options, fileUploadResult, part));
-        }
+        await serialLoop(parts, part => this.uploadPartToCloud(options, fileUploadResult, part));
     }
 
     /**

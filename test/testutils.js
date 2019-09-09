@@ -18,7 +18,13 @@
 require('core-js');
 require('regenerator-runtime');
 
-const proxyquire = require('proxyquire');
+const proxyquire = require('proxyquire').noCallThru();
+
+function getImportPath(file) {
+    return `../src/${file}`;
+}
+
+module.exports.getImportPath = getImportPath;
 
 /**
  * Requires a file from the project's src directory, applying a given set of
@@ -32,7 +38,7 @@ const proxyquire = require('proxyquire');
  *  as "./upload-file").
  */
 module.exports.importFile = (file, fileMocks) => {
-    const requirePath = `../src/${file}`;
+    const requirePath = getImportPath(file);
     let required;
     if (fileMocks) {
         required = proxyquire(requirePath, fileMocks);
