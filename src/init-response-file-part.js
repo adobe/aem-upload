@@ -1,0 +1,100 @@
+/*************************************************************************
+* ADOBE CONFIDENTIAL
+* ___________________
+*
+* Copyright 2019 Adobe
+* All Rights Reserved.
+*
+* NOTICE: All information contained herein is, and remains
+* the property of Adobe and its suppliers, if any. The intellectual
+* and technical concepts contained herein are proprietary to Adobe
+* and its suppliers and are protected by all applicable intellectual
+* property laws, including trade secret and copyright laws.
+* Dissemination of this information or reproduction of this material
+* is strictly forbidden unless prior written permission is obtained
+* from Adobe.
+**************************************************************************/
+
+import UploadOptionsBase from './upload-options-base';
+
+/**
+ * Represents a part of a file to upload, based on the response from the direct binary upload initiate request.
+ */
+export default class InitResponseFilePart extends UploadOptionsBase {
+    /**
+     * Constructs a new part instance, which can be used to retrieve information about the file part.
+     *
+     * @param {object} options Options as provided when the upload instance was instantiated.
+     * @param {DirectBinaryUploadOptions} uploadOptions Options as provided when the upload was initiated.
+     * @param {object} partOptions Raw part data as received from the direct binary upload initiate request.
+     * @param {InitResponseFile} initResponseFile The file on which the part is based.
+     */
+    constructor(options, uploadOptions, partOptions, initResponseFile) {
+        super(options, uploadOptions);
+        this.partOptions = partOptions;
+        this.fileData = initResponseFile;
+    }
+
+    /**
+     * Retrieves the name of the file to which the part belongs, as specified in the upload options.
+     *
+     * @returns {string} The name of the file.
+     */
+    getFileName() {
+        return this.fileData.getFileName();
+    }
+
+    /**
+     * Retrieves the size of the file, in bytes, as specified in the upload options.
+     *
+     * @returns {number} The size of the file.
+     */
+    getSize() {
+        return this.getEndOffset() - this.getStartOffset();
+    }
+
+    /**
+     * Retrieves the byte offset, inclusive, of where in the file this part begins.
+     *
+     * @returns {number} A file byte offset.
+     */
+    getStartOffset() {
+        return this.partOptions.start;
+    }
+
+    /**
+     * Retrieves the byte offset, exclusive, of where in the file this part ends.
+     *
+     * @returns {number} A file byte offset.
+     */
+    getEndOffset() {
+        return this.partOptions.end;
+    }
+
+    /**
+     * Retrieves the URL to which this file part will be uploaded.
+     *
+     * @returns {string} A URL.
+     */
+    getUrl() {
+        return this.partOptions.url;
+    }
+
+    /**
+     * Retrieves the file's actual data for the part, based on the start and end offset.
+     *
+     * @returns {Readable|Array} A node.js stream, or an array of bytes, containing the part's data.
+     */
+    getData() {
+        return this.fileData.getFileChunk(this.getStartOffset(), this.getEndOffset());
+    }
+
+    /**
+     * Converts the instance to a simple object representation.
+     *
+     * @returns {object} The part data in simplified view.
+     */
+    toJSON() {
+        return this.partOptions;
+    }
+}
