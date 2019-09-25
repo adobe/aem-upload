@@ -61,7 +61,22 @@ export default class UploadError extends Error {
 
         if (response) {
             const { status } = response;
-            return new UploadError(`Request failed with status code ${status}`, status, stack);
+
+            let code = errorCodes.UNKNOWN;
+            if (status === 409) {
+                code = errorCodes.ALREADY_EXISTS
+            } else if (status === 403) {
+                code = errorCodes.FORBIDDEN;
+            } else if (status === 400) {
+                code = errorCodes.INVALID_OPTIONS;
+            } else if (status === 401) {
+                code = errorCodes.NOT_AUTHORIZED;
+            } else if (status === 404) {
+                code = errorCodes.NOT_FOUND;
+            } else if (status === 503) {
+                code = errorCodes.NOT_SUPPORTED;
+            }
+            return new UploadError(`Request failed with status code ${status}`, code, stack);
         }
 
         if (message && code) {
@@ -87,7 +102,7 @@ export default class UploadError extends Error {
      * Constructs a new instance containing the provided information.
      *
      * @param {string} message The message that will appear with the Error instance.
-     * @param {number} code The code indicating the specific type of error.
+     * @param {string} code The code indicating the specific type of error.
      * @param {string} [innerStack] Additional stack information if the UploadError instance originated
      *  from another Error.
      */
@@ -102,10 +117,35 @@ export default class UploadError extends Error {
      * Retrieves the error code representing the specific type of error. See ErrorCodes for more
      * information.
      *
-     * @returns {number} An error code value.
+     * @returns {string} An error code value.
      */
     getCode() {
         return this.code;
+    }
+
+    /**
+     * Retrieves the upload error's status as an HTTP status code.
+     *
+     * @returns {number} An HTTP status code.
+     */
+    getHttpStatusCode() {
+        const code = this.getCode();
+
+        if (code === errorCodes.ALREADY_EXISTS) {
+            return 409;
+        } else if (code === errorCodes.FORBIDDEN) {
+            return 403;
+        } else if (code === errorCodes.INVALID_OPTIONS) {
+            return 400;
+        } else if (code === errorCodes.NOT_AUTHORIZED) {
+            return 401;
+        } else if (code === errorCodes.NOT_FOUND) {
+            return 404;
+        } else if (code === errorCodes.NOT_SUPPORTED) {
+            return 503;
+        } else {
+            return 500;
+        }
     }
 
     /**

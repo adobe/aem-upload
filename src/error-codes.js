@@ -23,25 +23,40 @@ export default {
      * The "catch all" error code that is used in cases where the specific error type cannot
      * be determined.
      */
-    UNKNOWN: 500,
+    UNKNOWN: 'EUNKNOWN',
 
     /**
      * Used when some entity in the upload process could not be located.
      */
-    NOT_FOUND: 404,
+    NOT_FOUND: 'ENOTFOUND',
 
     /**
      * Used when the target instance does not support direct binary upload.
      */
-    NOT_SUPPORTED: 503,
+    NOT_SUPPORTED: 'ENOTSUPPORTED',
 
     /**
      * Used when the options provided by the consumer were insufficient to perform the upload.
      */
-    INVALID_OPTIONS: 400,
+    INVALID_OPTIONS: 'EINVALIDOPTIONS',
 
     /**
      * Sent when the consumer has insufficient access to perform the upload.
      */
-    NOT_AUTHORIZED: 401,
+    NOT_AUTHORIZED: 'ENOTAUTHORIZED',
+
+    /**
+     * Indicates an unexpected state in the target API.
+     */
+    UNEXPECTED_API_STATE: 'EUNEXPECTEDAPISTATE',
+
+    /**
+     * An attempt was made to create an item that already exists.
+     */
+    ALREADY_EXISTS: 'EALREADYEXISTS',
+
+    /**
+     * The user is forbidden from modifying the requested target.
+     */
+    FORBIDDEN: 'EFORBIDDEN',
 };
