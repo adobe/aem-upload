@@ -17,8 +17,6 @@
 
 import UploadOptionsBase from './upload-options-base';
 import InitResponseFilePart from './init-response-file-part';
-import UploadError from './upload-error';
-import ErrorCodes from './error-codes';
 
 /**
  * Represents information about a file as received from the direct binary upload initiate request.
@@ -149,39 +147,14 @@ export default class InitResponseFile extends UploadOptionsBase {
 
     /**
      * Calculates the part size for each part in which the file should be uploaded. This is calculated based
-     * on the file's size, the number of upload URIs, and the minimum/maximum part size values.
+     * on the total size of the file and the number of upload URIs provided by the init API.
      *
      * @returns {number} Part size in bytes.
      */
     getPartSize() {
         const fileSize = this.getFileSize();
-        const maxPartSize = this.getMaxPartSize();
-        const minPartSize = this.getMinPartSize();
-        const uploadURIs = this.getUploadUris();
-
-        if (maxPartSize > 0) {
-            const numParts = Math.ceil(fileSize / maxPartSize);
-            if (numParts > uploadURIs.length) {
-                throw new UploadError(`number of parts (${numParts}) is more than the number of available part urls (${uploadURIs.length})`, ErrorCodes.INVALID_OPTIONS);
-            }
-        }
-
-        let urlNum = uploadURIs.length;
-        let partSize;
-        // if file size is less than minimum part size, use the file's size
-        if (fileSize < minPartSize) {
-            partSize = fileSize;
-            if (urlNum !== 1) {
-                throw new UploadError(`fileSize less than min part size must only have one url`, ErrorCodes.INVALID_OPTIONS);
-            }
-        } else {
-            // calculate part size based on number of urls
-            partSize = Math.floor((fileSize + urlNum - 1) / urlNum);
-            // if average partSize is smaller than minPartSize, use minPartSize instead
-            if (partSize < minPartSize) {
-                partSize = minPartSize;
-            }
-        }
+        const numUris = this.getUploadUris().length;
+        const partSize = Math.ceil(fileSize / numUris);
 
         return partSize;
     }

@@ -39,7 +39,7 @@ function getTestUploadFiles() {
         },
     }, {
         fileName: 'targetfile2.jpg',
-        fileSize: 2000,
+        fileSize: 1999,
         blob: {
             slice: (start, end) => {
                 slices[1].push({ start, end });
@@ -75,13 +75,13 @@ describe('DirectBinaryUploadTest', () => {
 
             should(slices[1].length).be.exactly(4);
             should(slices[1][0].start).be.exactly(0);
-            should(slices[1][0].end).be.exactly(512);
-            should(slices[1][1].start).be.exactly(512);
-            should(slices[1][1].end).be.exactly(1024);
-            should(slices[1][2].start).be.exactly(1024);
-            should(slices[1][2].end).be.exactly(1536);
-            should(slices[1][3].start).be.exactly(1536);
-            should(slices[1][3].end).be.exactly(2000);
+            should(slices[1][0].end).be.exactly(500);
+            should(slices[1][1].start).be.exactly(500);
+            should(slices[1][1].end).be.exactly(1000);
+            should(slices[1][2].start).be.exactly(1000);
+            should(slices[1][2].end).be.exactly(1500);
+            should(slices[1][3].start).be.exactly(1500);
+            should(slices[1][3].end).be.exactly(1999);
 
             // verify that init/complete requests are correct
             const posts = MockRequest.history.post;
@@ -107,13 +107,13 @@ describe('DirectBinaryUploadTest', () => {
             const files = MockRequest.getDirectFiles();
             should(Object.keys(files).length).be.exactly(2);
             should(files['/content/dam/target/folder/targetfile.jpg']).be.exactly('0,512,512,1024,');
-            should(files['/content/dam/target/folder/targetfile2.jpg']).be.exactly('0,512,512,1024,1024,1536,1536,2000,');
+            should(files['/content/dam/target/folder/targetfile2.jpg']).be.exactly('0,500,500,1000,1000,1500,1500,1999,');
 
             // verify return value
             should(result.getTotalFiles()).be.exactly(2);
             should(result.getTotalCompletedFiles()).be.exactly(2);
             should(result.getElapsedTime()).be.greaterThan(0);
-            should(result.getTotalSize()).be.exactly(3024);
+            should(result.getTotalSize()).be.exactly(3023);
             should(result.getAverageFileSize()).be.exactly(1512);
             should(result.getAverageFileUploadTime()).be.greaterThan(0);
             should(result.getAveragePartUploadTime()).be.greaterThan(0);
@@ -167,7 +167,7 @@ describe('DirectBinaryUploadTest', () => {
 
             // verify second file
             should(file2.getFileName()).be.exactly('targetfile2.jpg');
-            should(file2.getFileSize()).be.exactly(2000);
+            should(file2.getFileSize()).be.exactly(1999);
             should(file2.getPartCount()).be.exactly(4);
             should(file2.getTotalUploadTime()).be.greaterThan(0);
             should(file2.getFastestPartUploadTime()).be.greaterThan(0);
@@ -187,28 +187,28 @@ describe('DirectBinaryUploadTest', () => {
             const file2Part4 = file2Parts[3];
 
             should(file2Part1.getStartOffset()).be.exactly(0);
-            should(file2Part1.getEndOffset()).be.exactly(512);
+            should(file2Part1.getEndOffset()).be.exactly(500);
             should(file2Part1.getUrl()).be.exactly(MockRequest.getUrl('/target/folder/targetfile2.jpg.0'));
             should(file2Part1.getUploadTime()).be.greaterThan(0);
             should(file2Part1.isSuccessful()).be.ok();
             should(file2Part1.getError()).not.be.ok();
 
-            should(file2Part2.getStartOffset()).be.exactly(512);
-            should(file2Part2.getEndOffset()).be.exactly(1024);
+            should(file2Part2.getStartOffset()).be.exactly(500);
+            should(file2Part2.getEndOffset()).be.exactly(1000);
             should(file2Part2.getUrl()).be.exactly(MockRequest.getUrl('/target/folder/targetfile2.jpg.1'));
             should(file2Part2.getUploadTime()).be.greaterThan(0);
             should(file2Part2.isSuccessful()).be.ok();
             should(file2Part2.getError()).not.be.ok();
 
-            should(file2Part3.getStartOffset()).be.exactly(1024);
-            should(file2Part3.getEndOffset()).be.exactly(1536);
+            should(file2Part3.getStartOffset()).be.exactly(1000);
+            should(file2Part3.getEndOffset()).be.exactly(1500);
             should(file2Part3.getUrl()).be.exactly(MockRequest.getUrl('/target/folder/targetfile2.jpg.2'));
             should(file2Part3.getUploadTime()).be.greaterThan(0);
             should(file2Part3.isSuccessful()).be.ok();
             should(file2Part3.getError()).not.be.ok();
 
-            should(file2Part4.getStartOffset()).be.exactly(1536);
-            should(file2Part4.getEndOffset()).be.exactly(2000);
+            should(file2Part4.getStartOffset()).be.exactly(1500);
+            should(file2Part4.getEndOffset()).be.exactly(1999);
             should(file2Part4.getUrl()).be.exactly(MockRequest.getUrl('/target/folder/targetfile2.jpg.3'));
             should(file2Part4.getUploadTime()).be.greaterThan(0);
             should(file2Part4.isSuccessful()).be.ok();
