@@ -18,6 +18,8 @@
 import UploadOptionsBase from './upload-options-base';
 import InitResponseFilePart from './init-response-file-part';
 
+const DEFAULT_PROGRESS_THRESHOLD = 500;
+
 /**
  * Represents information about a file as received from the direct binary upload initiate request.
  */
@@ -34,6 +36,7 @@ export default class InitResponseFile extends UploadOptionsBase {
         super(options, uploadOptions);
         this.uploadFile = uploadFile;
         this.fileData = fileData;
+        this.lastProgress = 0;
     }
 
     /**
@@ -168,6 +171,41 @@ export default class InitResponseFile extends UploadOptionsBase {
      */
     getFileChunk(startOffset, endOffset) {
         return this.uploadFile.getFileChunk(startOffset, endOffset);
+    }
+
+    /**
+     * Retrieves the file's information that should be included in events relating to the file.
+     *
+     * @returns {object} Event information for the file.
+     */
+    getEventData() {
+        return {
+            fileName: this.getFileName(),
+            fileSize: this.getFileSize(),
+            targetFolder: this.getUploadOptions().getTargetFolderPath(),
+            targetFile: this.getTargetFilePath(),
+            mimeType: this.getMimeType(),
+        };
+    }
+
+    /**
+     * Sends a progress event for the file. The event will only be sent unless the amount
+     * of time since the last progress event was sent exceeds a predefined value.
+     *
+     * @param {number} startOffset The start byte offset of the part currently transferring. Will be
+     *  added to the number of transferred bytes to come up with an overall transfer amount for the file.
+     * @param {number} transferred The number of bytes transferred in the current part.
+     */
+    sendProgress(startOffset, transferred) {
+        const currTime = new Date().getTime();
+        const { progressDelay = DEFAULT_PROGRESS_THRESHOLD } = this.getOptions();
+        if (currTime - this.lastProgress > progressDelay) {
+            this.sendEvent('progress', {
+                ...this.getEventData(),
+                transferred: startOffset + transferred,
+            });
+            this.lastProgress = currTime;
+        }
     }
 
     /**

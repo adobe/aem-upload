@@ -59,6 +59,9 @@ export async function serialLoop(loopArray, itemCallback) {
  * @returns {number} The average value, rounded to zero decimal places.
  */
 export function getAverage(values) {
-    const sum = values.reduce((x, y) => x + y);
-    return Math.round(sum / values.length);
+    if (values.length) {
+        const sum = values.reduce((x, y) => x + y);
+        return Math.round(sum / values.length);
+    }
+    return 0;
 }

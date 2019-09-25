@@ -88,6 +88,7 @@ export default class FileSystemUpload extends UploadBase {
         const directUpload = new DirectBinaryUpload(this.options);
         const uploadOptions = new DirectBinaryUploadOptions()
             .withUrl(`${host}${targetFolder}`)
+            .withAddContentLengthHeader(true)
             .withHeaders({ 'Authorization': auth })
             .withUploadFiles(fileList)
             .withConcurrent(!serial);

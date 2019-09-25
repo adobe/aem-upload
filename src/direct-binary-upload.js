@@ -122,6 +122,11 @@ export default class DirectBinaryUpload extends UploadBase {
         const mimeType = initResponseFile.getMimeType();
         const uploadToken = initResponseFile.getUploadToken();
         const parts = initResponseFile.getParts();
+        initResponseFile.on('progress', progress => {
+            const { fileName, fileSize, transferred } = progress;
+            this.logInfo(`Upload of ${fileName} ${Math.round(transferred / fileSize * 100)}% complete`);
+            this.sendEvent('fileprogress', progress);
+        });
 
         this.logInfo(`Start uploading '${fileName}' to cloud, fileSize: '${fileSize}', parts: '${parts.length}'`);
 
@@ -129,12 +134,15 @@ export default class DirectBinaryUpload extends UploadBase {
 
         fileUploadResult.startTimer();
 
-        await this.uploadToCloud(options, fileUploadResult, parts);
+        const eventData = initResponseFile.getEventData();
+        this.sendEvent('filestart', eventData);
+        await this.uploadToCloud(options, initResponseFile, fileUploadResult, parts);
 
         fileUploadResult.stopTimer();
 
         this.logInfo(`Finished uploading '${fileName}', took '${fileUploadResult.getTotalUploadTime()}' ms`);
 
+        let success = false;
         if (fileUploadResult.isSuccessful()) {
             let completeOptions = {
                 url: initResponse.getCompleteUri(),
@@ -159,10 +167,20 @@ export default class DirectBinaryUpload extends UploadBase {
                 fileUploadResult.setTotalCompleteTime(completeElapsedTime);
 
                 this.logInfo(`Finished complete uploading '${fileName}', response code: '${completeStatusCode}', time elapsed: '${completeElapsedTime}' ms`);
+                success = true;
             } catch (e) {
                 fileUploadResult.setCompleteError(e);
                 this.logError(`Complete uploading error '${fileName}'`, e);
             }
+        }
+
+        if (!success) {
+            this.sendEvent('fileerror', {
+                ...eventData,
+                errors: fileUploadResult.getErrors(),
+            });
+        } else {
+            this.sendEvent('fileend', eventData);
         }
 
         uploadResult.addFileUploadResult(fileUploadResult);
@@ -172,39 +190,53 @@ export default class DirectBinaryUpload extends UploadBase {
      * Performs the work of uploading all parts of a file to the target instance.
      *
      * @param {DirectBinaryUploadOptions} options Controls how the overall upload behaves.
+     * @param {InitResponseFile} initResponseFile The file being uploaded to the cloud.
      * @param {FileUploadResult} fileUploadResult Information about the upload process of the individual file will be added
      *  to this result.
      * @param {Array} parts The list of InitResponseFilePart instances that will be used as each part to upload.
      */
-    async uploadToCloud(options, fileUploadResult, parts) {
-        await serialLoop(parts, part => this.uploadPartToCloud(options, fileUploadResult, part));
+    async uploadToCloud(options, initResponseFile, fileUploadResult, parts) {
+        await serialLoop(parts, part => this.uploadPartToCloud(options, initResponseFile, fileUploadResult, part));
     }
 
     /**
      * Performs the work of uploading a single file part to the target instance.
      *
      * @param {DirectBinaryUploadOptions} options Controls how the overall upload behaves.
+     * @param {InitResponseFile} initResponseFile The file being uploaded to the cloud.
      * @param {FileUploadResult} fileUploadResult Information about the upload process of the individual file will be added
      *  to this result.
      * @param {InitResponseFilePart} part The file part whose information will be used to do the upload.
      */
-    async uploadPartToCloud(options, fileUploadResult, part) {
+    async uploadPartToCloud(options, initResponseFile, fileUploadResult, part) {
         if (!fileUploadResult.isSuccessful()) {
             // a part failed to upload, discontinue uploading parts
             return;
         }
 
-        const {
-            useContentLengthHeader = true,
-        } = options;
-
-         const reqOptions = {
+        const data = part.getData();
+        const reqOptions = {
             url: part.getUrl(),
             method: 'PUT',
-            data: part.getData(),
+            data,
         };
 
-        if (useContentLengthHeader) {
+        let totalTransferred = 0;
+        if (data.on) {
+            data.on('data', chunk => {
+                totalTransferred += chunk.length;
+                initResponseFile.sendProgress(part.getStartOffset(), totalTransferred);
+            });
+        } else {
+            reqOptions.onUploadProgress = progress => {
+                const { loaded } = progress;
+                if (loaded) {
+                    initResponseFile.sendProgress(part.getStartOffset(), loaded);
+                }
+            };
+        }
+
+        if (options.addContentLengthHeader()) {
             reqOptions.headers = {
                 'content-length': part.getSize(),
             };
