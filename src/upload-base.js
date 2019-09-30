@@ -15,11 +15,13 @@
 * from Adobe.
 **************************************************************************/
 
+import { EventEmitter } from 'events';
+
 /**
  * Base class providing common functionality for an upload based on options
  * provided to a direct binary access-related instance.
  */
-export default class UploadBase {
+export default class UploadBase extends EventEmitter {
     /**
      * Initializes a new upload instance with the given options.
      *
@@ -29,6 +31,7 @@ export default class UploadBase {
      *  will be passed as parameters to these methods.
      */
     constructor(options = {}) {
+        super();
         this.options = options;
         this.log = options.log;
     }
@@ -76,5 +79,15 @@ export default class UploadBase {
         if (this.log) {
             this.log.error.apply(this.log, theArguments);
         }
+    }
+
+    /**
+     * Sends an event to external consumers.
+     *
+     * @param {string} eventName The name of the event to send.
+     * @param {object} eventData Will be included as the event's data.
+     */
+    sendEvent(eventName, eventData) {
+        this.emit(eventName, eventData);
     }
 }

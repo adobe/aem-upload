@@ -175,7 +175,7 @@ mock.addDirectUpload = function (targetFolder) {
                                 mimeType: mime.getType(file),
                                 uploadToken: `token_${file}`,
                                 uploadURIs: uploadUris,
-                                minPartSize: 512,
+                                minPartSize: 256,
                                 maxPartSize: 1024,
                             }
                         }),
@@ -206,7 +206,7 @@ mock.getDirectFiles = function () {
         if (!files[filePath]) {
             files[filePath] = '';
         }
-        files[filePath] += puts[i].data;
+        files[filePath] += puts[i].data.mockData;
     }
 
     return files;
