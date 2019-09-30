@@ -27,7 +27,7 @@ const DirectBinaryUpload = importFile('direct-binary-upload');
 const DirectBinaryUploadOptions = importFile('direct-binary-upload-options');
 const ErrorCodes = importFile('error-codes');
 
-let blob1, blob2;
+let blob1, blob2, events;
 function getTestUploadFiles() {
     blob1 = new MockBlob();
     blob2 = new MockBlob();
@@ -76,15 +76,32 @@ function verifyFile2Event(eventName, eventData, folderName = 'folder') {
     }
 }
 
+function monitorEvents(upload) {
+    upload.on('filestart', data => {
+        events.push({ event: 'filestart', data });
+    });
+    upload.on('fileend', data => {
+        events.push({ event: 'fileend', data });
+    });
+    upload.on('fileprogress', data => {
+        events.push({ event: 'fileprogress', data });
+    });
+    upload.on('fileerror', data => {
+        events.push({ event: 'fileerror', data });
+    });
+    upload.on('filecancelled', data => {
+        events.push({ event: 'filecancelled', data });
+    });
+}
+
 describe('DirectBinaryUploadTest', () => {
     beforeEach(() => {
         MockRequest.reset();
+        events = [];
     });
 
     describe('uploadFiles', () => {
         it('smoke test', async () => {
-            const events = [];
-
             MockRequest.addDirectUpload('/target/folder');
             const options = new DirectBinaryUploadOptions()
                 .withUrl(MockRequest.getUrl('/target/folder'))
@@ -92,18 +109,8 @@ describe('DirectBinaryUploadTest', () => {
                 .withConcurrent(false);
 
             const upload = new DirectBinaryUpload();
-            upload.on('filestart', data => {
-                events.push({ event: 'filestart', data });
-            });
-            upload.on('fileend', data => {
-                events.push({ event: 'fileend', data });
-            });
-            upload.on('fileprogress', data => {
-                events.push({ event: 'fileprogress', data });
-            });
-            upload.on('fileerror', data => {
-                events.push({ event: 'fileerror', data });
-            });
+            monitorEvents(upload);
+
             const result = await upload.uploadFiles(options);
             should(result).be.ok();
 
@@ -187,6 +194,7 @@ describe('DirectBinaryUploadTest', () => {
             should(file1.getTotalCompleteTime()).be.greaterThan(0);
             should(file1.isSuccessful()).be.ok();
             should(file1.getErrors().length).not.be.ok();
+            should(file1.isCancelled()).not.be.ok();
 
             const file1Parts = file1.getPartUploadResults();
             should(file1Parts.length).be.exactly(2);
@@ -220,6 +228,7 @@ describe('DirectBinaryUploadTest', () => {
             should(file2.getTotalCompleteTime()).be.greaterThan(0);
             should(file2.isSuccessful()).be.ok();
             should(file2.getErrors().length).not.be.ok();
+            should(file2.isCancelled()).not.be.ok();
 
             const file2Parts = file2.getPartUploadResults();
             should(file2Parts.length).be.exactly(4);
@@ -290,7 +299,7 @@ describe('DirectBinaryUploadTest', () => {
             should(posts[0].url).be.exactly(MockRequest.getUrl('/target/folder_init_fail.initiateUpload.json'));
         });
 
-        function verifyPartialSuccess(result, events, folderName, partSucceeded = false) {
+        function verifyPartialSuccess(result, events, folderName, partSucceeded = false, errorEvent = 'fileerror') {
             should(result).be.ok();
             should(result.getTotalFiles()).be.exactly(2);
             should(result.getTotalCompletedFiles()).be.exactly(1);
@@ -337,14 +346,13 @@ describe('DirectBinaryUploadTest', () => {
             should(events.length).be.exactly(6);
             verifyFile1Event('filestart', events[0], folderName);
             verifyFile1Event('fileprogress', events[1], folderName);
-            verifyFile1Event('fileerror', events[2], folderName);
+            verifyFile1Event(errorEvent, events[2], folderName);
             verifyFile2Event('filestart', events[3], folderName);
             verifyFile2Event('fileprogress', events[4], folderName);
             verifyFile2Event('fileend', events[5], folderName);
         }
 
         it('part failure test', async() => {
-            const events = [];
             const targetFolder = '/target/folder_part_fail';
             MockRequest.addDirectUpload(targetFolder);
             const options = new DirectBinaryUploadOptions()
@@ -361,18 +369,7 @@ describe('DirectBinaryUploadTest', () => {
             });
 
             const upload = new DirectBinaryUpload();
-            upload.on('filestart', data => {
-                events.push({ event: 'filestart', data });
-            });
-            upload.on('fileprogress', data => {
-                events.push({ event: 'fileprogress', data });
-            });
-            upload.on('fileend', data => {
-                events.push({ event: 'fileend', data });
-            });
-            upload.on('fileerror', data => {
-                events.push({ event: 'fileerror', data });
-            });
+            monitorEvents(upload);
 
             const result = await upload.uploadFiles(options);
             verifyPartialSuccess(result, events, 'folder_part_fail');
@@ -385,7 +382,6 @@ describe('DirectBinaryUploadTest', () => {
         });
 
         it('complete failure test', async() => {
-            const events = [];
             const targetFolder = '/target/folder_complete_fail';
             MockRequest.addDirectUpload(targetFolder);
             const options = new DirectBinaryUploadOptions()
@@ -398,18 +394,7 @@ describe('DirectBinaryUploadTest', () => {
             });
 
             const upload = new DirectBinaryUpload();
-            upload.on('filestart', data => {
-                events.push({ event: 'filestart', data });
-            });
-            upload.on('fileprogress', data => {
-                events.push({ event: 'fileprogress', data });
-            });
-            upload.on('fileend', data => {
-                events.push({ event: 'fileend', data });
-            });
-            upload.on('fileerror', data => {
-                events.push({ event: 'fileerror', data });
-            });
+            monitorEvents(upload);
 
             const result = await upload.uploadFiles(options);
             verifyPartialSuccess(result, events, 'folder_complete_fail', true);
@@ -420,6 +405,85 @@ describe('DirectBinaryUploadTest', () => {
             should(posts[0].url).be.exactly(MockRequest.getUrl(`${targetFolder}.initiateUpload.json`));
             should(posts[1].url).be.exactly(MockRequest.getUrl(`${targetFolder}.completeUpload.json`));
             should(posts[2].url).be.exactly(MockRequest.getUrl(`${targetFolder}.completeUpload.json`));
+        });
+
+        it('cancel file upload', async() => {
+            const targetFolder = '/target/folder_cancel_file';
+            MockRequest.addDirectUpload(targetFolder);
+
+            const options = new DirectBinaryUploadOptions()
+                .withUrl(MockRequest.getUrl(targetFolder))
+                .withUploadFiles(getTestUploadFiles())
+                .withConcurrent(false);
+
+            const controller = options.getController();
+
+            MockRequest.onPart(targetFolder, 'targetfile.jpg', '0', () => {
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        controller.cancelFile('targetfile.jpg');
+                        resolve([201]);
+                    }, 300);
+                });
+            });
+
+            const upload = new DirectBinaryUpload();
+            monitorEvents(upload);
+
+            const result = await upload.uploadFiles(options);
+            verifyPartialSuccess(result, events, 'folder_cancel_file', false, 'filecancelled');
+
+            // verify that init/complete requests are correct
+            const posts = MockRequest.history.post;
+            should(posts.length).be.exactly(2);
+            should(posts[0].url).be.exactly(MockRequest.getUrl(`${targetFolder}.initiateUpload.json`));
+            should(posts[1].url).be.exactly(MockRequest.getUrl(`${targetFolder}.completeUpload.json`));
+        });
+
+        it('cancel all uploads', async() => {
+            const targetFolder = '/target/folder_cancel_all';
+            MockRequest.addDirectUpload(targetFolder);
+
+            const options = new DirectBinaryUploadOptions()
+                .withUrl(MockRequest.getUrl(targetFolder))
+                .withUploadFiles(getTestUploadFiles())
+                .withConcurrent(false);
+
+            const controller = options.getController();
+
+            MockRequest.onPart(targetFolder, 'targetfile.jpg', '0', () => {
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        controller.cancel();
+                        resolve([201]);
+                    }, 300);
+                });
+            });
+
+            const upload = new DirectBinaryUpload();
+            monitorEvents(upload);
+
+            const result = await upload.uploadFiles(options);
+
+            should(result.getTotalCompletedFiles()).be.exactly(0);
+            should(result.getFileUploadResults().length).be.exactly(2);
+            should(result.getFileUploadResults()[0].isCancelled()).be.ok();
+            should(result.getFileUploadResults()[1].isCancelled()).be.ok();
+
+            should(events.length).be.exactly(4);
+            should(events[0].event).be.exactly('filestart');
+            should(events[0].data.fileName).be.exactly('targetfile.jpg');
+            should(events[1].event).be.exactly('fileprogress');
+            should(events[1].data.fileName).be.exactly('targetfile.jpg');
+            should(events[2].event).be.exactly('filecancelled');
+            should(events[2].data.fileName).be.exactly('targetfile.jpg');
+            should(events[3].event).be.exactly('filecancelled');
+            should(events[3].data.fileName).be.exactly('targetfile2.jpg');
+
+            // verify that init/complete requests are correct
+            const posts = MockRequest.history.post;
+            should(posts.length).be.exactly(1);
+            should(posts[0].url).be.exactly(MockRequest.getUrl(`${targetFolder}.initiateUpload.json`));
         });
     });
 });

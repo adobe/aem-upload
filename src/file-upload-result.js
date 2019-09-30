@@ -34,6 +34,7 @@ export default class FileUploadResult {
     constructor(initResponseFile) {
         this.initResponseFile = initResponseFile;
         this.parts = [];
+        this.cancelled = false;
     }
 
     /**
@@ -150,7 +151,7 @@ export default class FileUploadResult {
      * @returns {boolean} TRUE if the transfer succeeded, false otherwise.
      */
     isSuccessful() {
-        return !this.getErrors().length;
+        return !this.getErrors().length && !this.isCancelled();
     }
 
     /**
@@ -193,6 +194,24 @@ export default class FileUploadResult {
     }
 
     /**
+     * Retrieves a value indicating whether or not the file upload was cancelled.
+     *
+     * @returns {boolean} True if the file upload was cancelled, false otherwise.
+     */
+    isCancelled() {
+        return this.cancelled;
+    }
+
+    /**
+     * Sets whether or not the file upload was cancelled.
+     *
+     * @param {boolean} cancelled Value indicating whether transfer was cancelled.
+     */
+    setIsCancelled(cancelled) {
+        this.cancelled = cancelled;
+    }
+
+    /**
      * Converts the result instance into a simple object containing all result data.
      *
      * @returns {object} Result data in a simple format.
@@ -209,7 +228,7 @@ export default class FileUploadResult {
             message += error.getMessage();
         });
 
-        return {
+        const data = {
             fileName: this.initResponseFile.getFileName(),
             targetPath: this.initResponseFile.getTargetFilePath(),
             fileSize: this.initResponseFile.getFileSize(),
@@ -226,5 +245,11 @@ export default class FileUploadResult {
             message,
             partDetails: this.parts.map(part => part.toJSON()),
         };
+
+        if (this.isCancelled()) {
+            data.cancelled = true;
+        }
+
+        return data;
     }
 }
