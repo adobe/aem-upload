@@ -16,7 +16,8 @@
 **************************************************************************/
 
 import URL from 'url';
-import UploadFile from './upload-file';
+
+import DirectBinaryUploadController from './direct-binary-upload-controller';
 
 /**
  * Options that generally control how a direct binary upload will behave. The class contains
@@ -33,6 +34,7 @@ import UploadFile from './upload-file';
 export default class DirectBinaryUploadOptions {
     constructor() {
         this.options = {};
+        this.controller = new DirectBinaryUploadController();
     }
 
     /**
@@ -175,6 +177,16 @@ export default class DirectBinaryUploadOptions {
      */
     addContentLengthHeader() {
         return !!this.options.addContentLengthHeader;
+    }
+
+    /**
+     * Retrieves an object that can be used to control various aspects of the upload process,
+     * including cancelling uploads.
+     *
+     * @returns {DirectBinaryUploadController} Controller for the upload process.
+     */
+    getController() {
+        return this.controller;
     }
 
     /**
