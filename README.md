@@ -1,8 +1,8 @@
 - [Background](#background)
 - [Command Line](#command-line)
   - [Install](#install)
-    - [If using this Adobe internal](#if-using-this-adobe-internal)
-    - [If could not reach out Adobe internal artifactory](#if-could-not-reach-out-adobe-internal-artifactory)
+    - [Using NPM](#using-npm)
+    - [Using Source](#using-source)
   - [Usage](#usage)
 - [Node.js Module](#nodejs-module)
   - [Requiring the Module](#requiring-the-module)
@@ -10,6 +10,7 @@
     - [Supported Options](#supported-options)
     - [Error Handling](#error-handling)
     - [Upload Events](#upload-events)
+    - [Controlling In-Progress Uploads](#controlling-in-progress-uploads)
 - [Features](#features)
 - [Releasing](#releasing)
 - [Todo](#todo)
@@ -18,7 +19,7 @@
 # Background
 
 In legacy AEM Assets, a single post request to createAsset servlet is enough for uploading files. Skyline uses direct binary access, which requires
-a more involved algorithm (see [Skyline documentation](https://git.corp.adobe.com/assets-skyline/assets-skyline) for more information).
+a more involved algorithm.
 
 This tool is provided for making uploading easier, and can be used as a command line executable
 or required as a Node.js module.
@@ -32,25 +33,17 @@ This section describes how to use the tool from the command line to upload asset
 ## Install
 This project uses [node](http://nodejs.org) and [npm](https://npmjs.com). Go check them out if you don't have them locally installed.
 
-### If using this Adobe internal
+### Using NPM
 ```sh
-# 1. Login internal assets-skyline registry first, use LDAP as credential
-$ npm login --scope=@assets-skyline --registry=https://artifactory.corp.adobe.com/artifactory/api/npm/npm-assets-skyline-release/
-
-# 1. alternative authentication by following way, username:password is LDAP credential:
-$ curl -u username:password https://artifactory.corp.adobe.com/artifactory/api/npm/auth >> ~/.npmrc
-$ npm config set @assets-skyline:registry https://artifactory.corp.adobe.com/artifactory/api/npm/npm-assets-skyline-release/
-
-# 2. install, make sure the .npmrc is proper setup as above to root user as well
+# this option will use the version of the library that is published to NPM
 $ sudo npm install -g @assets-skyline/skyline-upload
 ```
 
-### If could not reach out Adobe internal artifactory
+### Using Source
 ```sh
-# 1. Download this code repo as zip by: "Clone or download" > "Download ZIP", then copy the zip file to target server and unzip it
+# 1. Download the source code either by cloning the repository or downloading it as a zip file
 
-# 2. Enter into unziped folder and do these commands
-$ cd skyline-upload-master
+# 2. Enter the root folder and do these commands
 $ npm install
 $ npm run build
 $ sudo npm install -g .
@@ -81,8 +74,7 @@ of file transfers.
 
 To add the module to your Node.js project:
 
-1. Follow the steps to `npm login` per [If using this Adobe internal](#if-using-this-adobe-internal).
-1. Install the module in your project using `npm install --save @assets-skyline/skyline-upload`.
+1. Install the module in your project using one of the [installation options](#install).
 1. Require the module in the javascript file where it will be consumed:
 
 ```javascript
@@ -446,7 +438,7 @@ through the stages of uploading a file. These events are listed below.
             <td>fileend</td>
             <td>
                 Indicates that a file has uploaded successfully. This event will <i>not</i> be sent if
-                the file failed to upload.
+                the file failed to upload, or if the file upload was cancelled.
             </td>
             <td>
                 A simple javascript <code>object</code> containing the same properties as "filestart."
@@ -456,7 +448,7 @@ through the stages of uploading a file. These events are listed below.
             <td>fileerror</td>
             <td>
                 Sent if a file fails to upload. This event will <i>not</i> be sent if the file uploads
-                successfully.
+                successfully, or if the file upload was cancelled.
             </td>
             <td>
                 A simple javascript <code>object</code> containing the same properties as "filestart,"
@@ -481,6 +473,15 @@ through the stages of uploading a file. These events are listed below.
                         </tr>
                     </tbody>
                 </table>
+            </td>
+        </tr>
+        <tr>
+            <td>filecancelled</td>
+            <td>
+                Indicates that a file upload was cancelled.
+            </td>
+            <td>
+                A simple javascript <code>object</code> containing the same properties as "filestart."
             </td>
         </tr>
     </tbody>
@@ -511,7 +512,36 @@ upload.on('fileerror', data => {
     // specific handling that should occur when a file files to upload
 });
 
-upload.uploadFiles(options); // assume options has been declared previously
+// assume options has been declared previously
+upload.uploadFiles(options);
+```
+
+### Controlling In-Progress Uploads
+
+After the process of uploading one or more files begins, it's possible to interact
+with the process using a controller. The controller allows operations like cancelling
+individual file uploads or _all_ uploads.
+
+The following is an example for how to control the process.
+
+```javascript
+const options = new DirectBinaryUploadOptions()
+    .withUrl(url)
+    .withUploadFiles(files);
+
+// retrieve a controller instance from the options
+const controller = options.getController();
+const upload = new DirectBinaryUpload();
+upload.uploadFiles(options);
+
+// at this point its possible to send command to the upload process using
+// the controller
+
+// cancel the upload of an individual file
+controller.cancelFile(fileName);
+
+// cancel ALL files in the upload
+controller.cancel();
 ```
 
 # Features
@@ -523,15 +553,16 @@ upload.uploadFiles(options); // assume options has been declared previously
 
 To publish a new version of the tool, use the following steps:
 
-1. Ensure you have publish permissions and have run `npm login` using the steps described when
-using [internal to Adobe](#if-using-this-adobe-internal).
-1. From the root directory, run `npm publish`.
+1. Ensure you have publish permissions and have run `npm login` using your NPM credentials. From the root directory, run `npm publish`.
 1. Edit `package.json` and increment the version number.
 1. Commit changes to `package.json`.
 
 # Todo
 * Recursive asset uploading for sub folders
+* Pause/resume uploads
+* Use a "thread pool" to limit the number of concurrent operations
+* Automatically retry failed requests
 
 # Maintainers
-* [@Jun Zhang](https://git.corp.adobe.com/zjun)
-* [@Mark Frisbey](https://git.corp.adobe.com/frisbey)
+* @Jun Zhang
+* [@Mark Frisbey](https://github.com/mfrisbey)
