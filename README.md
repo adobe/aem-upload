@@ -1,10 +1,7 @@
 - [Background](#background)
 - [Command Line](#command-line)
+- [Usage](#usage)
   - [Install](#install)
-    - [Using NPM](#using-npm)
-    - [Using Source](#using-source)
-  - [Usage](#usage)
-- [Node.js Module](#nodejs-module)
   - [Requiring the Module](#requiring-the-module)
   - [Uploading Files](#uploading-files)
     - [Supported Options](#supported-options)
@@ -14,6 +11,8 @@
 - [Features](#features)
 - [Releasing](#releasing)
 - [Todo](#todo)
+- [Contributing](#contributing)
+- [Licensing](#licensing)
 - [Maintainers](#maintainers)
 
 # Background
@@ -28,57 +27,33 @@ or required as a Node.js module.
 
 # Command Line
 
-This section describes how to use the tool from the command line to upload assets from a specific local directory to a target folder in an AEM instance..
+A command line tool for for uploading assets to an AEM instance is available as a plugin for the Adobe I/O CLI. Please
+see the [plugin repository](https://github.com/adobe/aio-cli-plugin-aem) for more information.
+
+# Usage
+
+This library supports uploading files to a target instance, while providing support for monitoring
+transfer progress, cancelling transfers, and other features.
 
 ## Install
+
 This project uses [node](http://nodejs.org) and [npm](https://npmjs.com). Go check them out if you don't have them locally installed.
 
-### Using NPM
+It can be installed like any other Node.js module.
+
 ```sh
-# this option will use the version of the library that is published to NPM
-$ sudo npm install -g @assets-skyline/skyline-upload
+$ npm install @adobe/aem-upload
 ```
-
-### Using Source
-```sh
-# 1. Download the source code either by cloning the repository or downloading it as a zip file
-
-# 2. Enter the root folder and do these commands
-$ npm install
-$ npm run build
-$ sudo npm install -g .
-```
-
-## Usage
-```sh
-$ skyline-upload --help
-Usage: skyline-upload [options] files&folder...
-
-Options:
-  --help            Show help                                          [boolean]
-  --version         Show version number                                [boolean]
-  -h, --host        Skyline host                [string] [default: "http://localhost:4502"]
-  -c, --credential  Skyline credential          [string] [default: "admin:admin"]
-  -t, --target      Skyline target folder       [string] [default: "/content/dam/skyline-upload-1566281417039"]
-  -l, --log         Log file path               [string] [default: "upload-1566281417039.log"]
-  -o, --output      Result html file path       [string] [default: "result-1566281417039.html"]
-```
-
-# Node.js Module
-
-Follow these directions to consume the tool as a Node.js library. When used as a library the tool
-supports uploading files to a target instance, while providing support for monitoring the progress
-of file transfers.
 
 ## Requiring the Module
 
 To add the module to your Node.js project:
 
-1. Install the module in your project using one of the [installation options](#install).
+1. [Install](#install) the module in your project.
 1. Require the module in the javascript file where it will be consumed:
 
 ```javascript
-const DirectBinary = require('@assets-skyline/skyline-upload');
+const DirectBinary = require('@adobe/aem-upload');
 ```
 
 ## Uploading Files
@@ -86,7 +61,7 @@ const DirectBinary = require('@assets-skyline/skyline-upload');
 Following is the mimimum amount of code required to upload files to a target AEM instance.
 
 ```javascript
-const DirectBinary = require('@assets-skyline/skyline-upload');
+const DirectBinary = require('@adobe/aem-upload');
 
 // URL to the directory in AEM where assets will be uploaded. Directory
 // must already exist.
@@ -546,8 +521,9 @@ controller.cancel();
 
 # Features
 * Well tunning for take advantage of nodejs for best uploading performance
-* Well formated json and html format performance result as below:
-![](doc/test-result-html.png)
+* Track transfer progress of files
+* Cancel in-progress transfers
+* Transfer multiple files "in batch"
 
 # Releasing
 
@@ -562,6 +538,14 @@ To publish a new version of the tool, use the following steps:
 * Pause/resume uploads
 * Use a "thread pool" to limit the number of concurrent operations
 * Automatically retry failed requests
+
+# Contributing
+
+Contributions are welcomed! Read the [Contributing Guide](CONTRIBUTING.md) for more information.
+
+# Licensing
+
+This project is licensed under the Apache V2 License. See [LICENSE](LICENSE) for more information.
 
 # Maintainers
 * @Jun Zhang

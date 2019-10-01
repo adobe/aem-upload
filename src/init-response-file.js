@@ -124,7 +124,7 @@ export default class InitResponseFile extends UploadOptionsBase {
             const uploadUrl = uploadURIs[index];
 
             const start = index * partSize;
-            const end = start + partSize;
+            let end = start + partSize;
             if (end > fileSize) {
                 end = fileSize;
             }
