@@ -110,7 +110,10 @@ export default class DirectBinaryUploadProcess extends UploadOptionsBase {
         });
 
         if (concurrent) {
-            await concurrentLoop(fileListInit, (file) => uploadProcess.processFile(options, uploadResult, initResponse, file));
+            await concurrentLoop(
+                fileListInit,
+                options.getMaxConcurrent(),
+                (file) => uploadProcess.processFile(options, uploadResult, initResponse, file));
         } else {
             await serialLoop(fileListInit, (file) => uploadProcess.processFile(options, uploadResult, initResponse, file));
         }

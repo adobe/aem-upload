@@ -10,7 +10,12 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-require('core-js');
-require('regenerator-runtime');
-
-module.exports = require('./dist/exports');
+/**
+ * Constant values that are used as defaults.
+ */
+export const DefaultValues = {
+    /**
+     * The default number of maximum concurrent HTTP requests allowed by the library.
+     */
+    MAX_CONCURRENT: 5,
+}

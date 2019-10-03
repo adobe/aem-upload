@@ -13,6 +13,7 @@ governing permissions and limitations under the License.
 import URL from 'url';
 
 import DirectBinaryUploadController from './direct-binary-upload-controller';
+import { DefaultValues } from './constants';
 
 /**
  * Options that generally control how a direct binary upload will behave. The class contains
@@ -28,7 +29,7 @@ import DirectBinaryUploadController from './direct-binary-upload-controller';
  */
 export default class DirectBinaryUploadOptions {
     constructor() {
-        this.options = {};
+        this.options = { maxConcurrent: DefaultValues.MAX_CONCURRENT };
         this.controller = new DirectBinaryUploadController();
     }
 
@@ -77,12 +78,31 @@ export default class DirectBinaryUploadOptions {
      * process will upload one file at a time. If true, the process will upload all files in
      * a concurrent "thread"-like manner. Default value is true.
      *
+     * This is a convenience function that is wrapped around setting withMaxConcurrent() to
+     * either 1 (if isConcurrent is false) or its default value (if isConcurrent is true).
+     *
      * @param {boolean} isConcurrent True if the process should upload files concurrently, false if
      *  they should be uploaded serially.
      * @returns {DirectBinaryUploadOptions} The current options instance. Allows for chaining.
      */
     withConcurrent(isConcurrent) {
-        this.options.concurrent = isConcurrent;
+        if (isConcurrent) {
+            return this.withMaxConcurrent(5);
+        } else {
+            return this.withMaxConcurrent(1);
+        }
+    }
+
+    /**
+     * Specifies the maximum number of HTTP requests to invoke at one time. Once this number of pending
+     * requests is reached, no more requests will be submitted until at least one of the pending
+     * requests finishes. A value less than 2 indicates that only one request at a time is allowed,
+     * meaning that files will be uploaded serially instead of concurrently. Default value is 5.
+     *
+     * @param {number} maxConcurrent Maximum number of pending HTTP requests to allow.
+     */
+    withMaxConcurrent(maxConcurrent) {
+        this.options.maxConcurrent = maxConcurrent;
         return this;
     }
 
@@ -161,7 +181,16 @@ export default class DirectBinaryUploadOptions {
      * @returns {boolean} The value as provided to the options instance.
      */
     isConcurrent() {
-        return !!this.options.concurrent;
+        return this.getMaxConcurrent() > 1;
+    }
+
+    /**
+     * Retrieves the maximum number of concurrent HTTP requests that should be allowed.
+     *
+     * @returns {number} Maximum number.
+     */
+    getMaxConcurrent() {
+        return this.options.maxConcurrent;
     }
 
     /**

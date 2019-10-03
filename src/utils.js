@@ -10,22 +10,50 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
+import Async from 'async';
+
+import { DefaultValues } from './constants';
+
 /**
- * Loops through a given array, concurrently invoking the given callback.
+ * Loops through a given array, concurrently invoking the given callback. The loop will have a maximum
+ * number of pending itemCallbacks at any one time. For example, if there are 100 items in the array
+ * and 5 itemCallbacks are currently processing, then no more itemCallbacks will be invoked until
+ * at least one of the pending itemCallbacks completes.
  *
  * @param {Array} loopArray Array to loop through.
+ * @param {number} [maxConcurrent] Optionally specify how many concurrent itemCallbacks are allowed.
+ *  Default is 5.
  * @param {function} itemCallback Invoked each time an item from the given array is available. Will
  *  be invoked with two parameters: the item itself and the index of the item in the array. The
  *  return value of this callback is expected to be a Promise.
  * @returns {Promise} Will be resolved when all Promises returned by the callback have been resolved.
  *  Will be resolved with an Array of all resolve values from the callback's Promises.
  */
-export function concurrentLoop(loopArray, itemCallback) {
-    const promiseArr = [];
-    for (let i = 0; i < loopArray.length; i++) {
-        promiseArr.push(itemCallback(loopArray[i], i));
+export function concurrentLoop(loopArray, maxConcurrent, itemCallback) {
+    let theMaxConcurrent = maxConcurrent;
+    let theItemCallback = itemCallback;
+    if (typeof maxConcurrent === 'function') {
+        theItemCallback = maxConcurrent;
+        theMaxConcurrent = DefaultValues.MAX_CONCURRENT;
     }
-    return Promise.all(promiseArr);
+
+    return new Promise((resolve, reject) => {
+        Async.eachOfLimit(loopArray, theMaxConcurrent, async (loopItem, index, itemDone) => {
+            try {
+                await theItemCallback(loopItem, index);
+            } catch (e) {
+                itemDone(e);
+                return;
+            }
+            itemDone();
+        }, err => {
+            if (err) {
+                reject(err);
+                return;
+            }
+            resolve();
+        });
+    });
 }
 
 /**
