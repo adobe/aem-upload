@@ -243,6 +243,26 @@ options.withUploadFiles([
             </td>
         </tr>
         <tr>
+            <td>max concurrent requests</td>
+            <td>number</td>
+            <td>
+                The maximum number of concurrent HTTP requests that are allowed at any one time. As explained in the
+                <i>concurrent</i> option, the library will concurrently upload multiple files at once. This value
+                essentially indicates the maximum number of files that the process will upload at once.
+                <br/>
+                <br/>
+                A value less than 2 will instruct the library <i>not</i> to upload more than one file concurrently.
+                <br/>
+                <br/>
+                Default: <code>5</code>.
+                <br/>
+                <br/>
+                <b>Example</b>
+                <br/>
+                <code>options.withMaxConcurrent(2);</code>
+            </td>
+        </tr>
+        <tr>
             <td>Add content length header</td>
             <td>boolean</td>
             <td>
