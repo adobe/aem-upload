@@ -8,6 +8,7 @@
     - [Error Handling](#error-handling)
     - [Upload Events](#upload-events)
     - [Controlling In-Progress Uploads](#controlling-in-progress-uploads)
+  - [Uploading Local Files](#uploading-local-files)
 - [Features](#features)
 - [Releasing](#releasing)
 - [Todo](#todo)
@@ -263,7 +264,7 @@ options.withUploadFiles([
             </td>
         </tr>
         <tr>
-            <td>Add content length header</td>
+            <td>add content length header</td>
             <td>boolean</td>
             <td>
                 If <code>true</code>, the upload process will automatically add a
@@ -288,7 +289,7 @@ options.withUploadFiles([
             </td>
         </tr>
         <tr>
-            <td>Create version</td>
+            <td>create version</td>
             <td>boolean</td>
             <td>
                 If <code>true</code> and an asset with one of the given names already exists,
@@ -305,7 +306,7 @@ options.withUploadFiles([
             </td>
         </tr>
         <tr>
-            <td>Version label</td>
+            <td>version label</td>
             <td>string</td>
             <td>
                 If the process creates a new version of an existing asset, the label to
@@ -321,7 +322,7 @@ options.withUploadFiles([
             </td>
         </tr>
         <tr>
-            <td>Version comment</td>
+            <td>version comment</td>
             <td>string</td>
             <td>
                 If the process creates a new version of an existing asset, the comment to
@@ -337,7 +338,7 @@ options.withUploadFiles([
             </td>
         </tr>
         <tr>
-            <td>Replace</td>
+            <td>replace</td>
             <td>boolean</td>
             <td>
                 If <code>true</code> and an asset with one of the given names already exists,
@@ -607,6 +608,33 @@ controller.cancelFile(fileName);
 
 // cancel ALL files in the upload
 controller.cancel();
+```
+
+## Uploading Local Files
+
+The library supports uploading local files and directories. For directories, the tool
+will include all immediate child files in the directory. It will not process sub-directories.
+
+The following example illustrates how to upload local files.
+
+```javascript
+const {
+    DirectBinaryUploadOptions,
+    FileSystemUpload
+} = require('@adobe/aem-upload');
+
+// configure options to use basic authentication
+const options = new DirectBinaryUploadOptions()
+    .withUrl('http://localhost:4502/content/dam/target-folder')
+    .withBasicAuth('admin:admin')
+    .withAddContentLengthHeader(true);
+
+// upload a single asset and all assets in a given directory
+const fileUpload = new FileSystemUpload();
+await fileUpload.upload(options, [
+    '/Users/me/myasset.jpg',
+    '/Users/me/mydirectory'
+]);
 ```
 
 # Features

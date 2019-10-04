@@ -29,7 +29,10 @@ import { DefaultValues } from './constants';
  */
 export default class DirectBinaryUploadOptions {
     constructor() {
-        this.options = { maxConcurrent: DefaultValues.MAX_CONCURRENT };
+        this.options = {
+            maxConcurrent: DefaultValues.MAX_CONCURRENT,
+            headers: {},
+        };
         this.controller = new DirectBinaryUploadController();
     }
 
@@ -65,12 +68,31 @@ export default class DirectBinaryUploadOptions {
      * If specified, an object containing headers that will be sent along with each
      * request submitted to the target.
      *
+     * The given headers will be merged with any headers specified previously using
+     * the method.
+     *
      * @param {object} headers Keys should be header names, values should be the header's value.
      * @returns {DirectBinaryUploadOptions} The current options instance. Allows for chaining.
      */
     withHeaders(headers) {
-        this.options.headers = headers;
+        this.options.headers = {
+            ...this.options.headers,
+            ...headers,
+        };
         return this;
+    }
+
+    /**
+     * Convenience method that adds a basic Authorization header that will be submitted
+     * to the target.
+     *
+     * @param {string} basicAuth Basic authorization value in the form of username:password.
+     * @returns {DirectBinaryUploadOptions} The current options instance. Allows for chaining.
+     */
+    withBasicAuth(basicAuth) {
+        return this.withHeaders({
+            'Authorization': `Basic ${Buffer.from(basicAuth).toString('base64')}`
+        });
     }
 
     /**

@@ -25,6 +25,8 @@ MockDirectBinaryUpload.prototype.uploadFiles = function (uploadOptions) {
     });
 }
 
+const DirectBinaryUploadOptions = importFile('direct-binary-upload-options');
+
 let paths = {};
 const FileSystemUpload = importFile('filesystem-upload', {
     './direct-binary-upload': MockDirectBinaryUpload,
@@ -90,17 +92,16 @@ describe('FileSystemUpload Tests', () => {
 
             MockRequest.onPost(MockRequest.getUrl('/target')).reply([201]);
 
+            const uploadOptions = new DirectBinaryUploadOptions()
+                .withUrl(MockRequest.getUrl('/target'))
+                .withBasicAuth('testauth');
+
             const fileSystemUpload = new FileSystemUpload();
-            const result = await fileSystemUpload.upload({
-                host: MockRequest.getHost(),
-                auth: 'testauth',
-                targetFolder: '/content/dam/target',
-                fromArr: [
-                    '/test/file/1',
-                    '/test/file/2',
-                    '/test/dir',
-                ],
-            });
+            const result = await fileSystemUpload.upload(uploadOptions, [
+                '/test/file/1',
+                '/test/file/2',
+                '/test/dir',
+            ]);
 
             should(result).be.ok();
             should(result.getUrl()).be.exactly(MockRequest.getUrl('/target'));

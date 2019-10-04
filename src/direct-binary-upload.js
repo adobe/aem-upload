@@ -26,7 +26,7 @@ export default class DirectBinaryUpload extends UploadBase {
      * @param {DirectBinaryUploadOptions} options Controls how the upload will behave. See class
      *  documentation for more details.
      * @returns {Promise} Will be resolved when all the files have been uploaded. The data
-     *  passed in successful resolution will be various statistics about the upload process.
+     *  passed in successful resolution will be an instance of UploadResult.
      */
     async uploadFiles(options) {
         const uploadProcess = new DirectBinaryUploadProcess(this.getOptions(), options);
