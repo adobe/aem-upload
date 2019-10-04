@@ -137,12 +137,17 @@ mock.addDirectUpload = function (targetFolder) {
         return new Promise(resolve => {
             setTimeout(() => {
                 const query = querystring.parse(config.data);
+                let fileNames = query.fileName;
+
+                if (typeof fileNames === 'string') {
+                    fileNames = [fileNames];
+                }
                 resolve([
                     201,
                     {
                         completeURI: `/content/dam${targetFolder}.completeUpload.json`,
                         folderPath: URL.parse(config.url).pathname,
-                        files: query.fileName.map((file, index) => {
+                        files: fileNames.map((file, index) => {
                             const fileSize = query.fileSize[index];
                             const numUris = Math.ceil(fileSize / 512);
                             const uploadUris = [];

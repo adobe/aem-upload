@@ -100,6 +100,7 @@ export default class DirectBinaryUploadOptions {
      * meaning that files will be uploaded serially instead of concurrently. Default value is 5.
      *
      * @param {number} maxConcurrent Maximum number of pending HTTP requests to allow.
+     * @returns {DirectBinaryUploadOptions} The current options instance. Allows for chaining.
      */
     withMaxConcurrent(maxConcurrent) {
         this.options.maxConcurrent = maxConcurrent;
@@ -118,6 +119,52 @@ export default class DirectBinaryUploadOptions {
      */
     withAddContentLengthHeader(doAddContentLengthHeader) {
         this.options.addContentLengthHeader = doAddContentLengthHeader;
+        return this;
+    }
+
+    /**
+     * If true and an asset with a specified name already exists, a new version of the asset
+     * will be created.
+     *
+     * @param {boolean} createVersion True if a new version of existing assets should be created.
+     * @returns {DirectBinaryUploadOptions} The current options instance. Allows for chaining.
+     */
+    withCreateVersion(createVersion) {
+        this.options.createVersion = createVersion;
+        return this;
+    }
+
+    /**
+     * If a new version is created, the label that will be associated with the version.
+     *
+     * @param {string} label Version label.
+     * @returns {DirectBinaryUploadOptions} The current options instance. Allows for chaining.
+     */
+    withVersionLabel(label) {
+        this.options.versionLabel = label;
+        return this;
+    }
+
+    /**
+     * If a new version is created, the comments that will be associated with the version.
+     *
+     * @param {string} comment Version comments.
+     * @returns {DirectBinaryUploadOptions} The current options instance. Allows for chaining.
+     */
+    withVersionComment(comment) {
+        this.options.versionComment = comment;
+        return this;
+    }
+
+    /**
+     * If true and an asset with the specified name already exists, the existing asset
+     * will be deleted then recreated.
+     *
+     * @param {boolean} replace True if existing assets should be replaced.
+     * @returns {DirectBinaryUploadOptions} The current options instance. Allows for chaining.
+     */
+    withReplace(replace) {
+        this.options.replace = replace;
         return this;
     }
 
@@ -211,6 +258,44 @@ export default class DirectBinaryUploadOptions {
      */
     getController() {
         return this.controller;
+    }
+
+    /**
+     * Retrieves a value indicating whether new versions of existing assets should be created.
+     *
+     * @returns {boolean} Whether or not to create new versions.
+     */
+    getCreateVersion() {
+        return !!this.options.createVersion;
+    }
+
+    /**
+     * Retrieves the version label to use for any newly created versions. Will be falsy if
+     * no label was provided.
+     *
+     * @returns {string} Label for new versions.
+     */
+    getVersionLabel() {
+        return this.options.versionLabel;
+    }
+
+    /**
+     * Retrieves the version comment to use for any newly created versions. Will be falsy if
+     * no comment was provided.
+     *
+     * @returns {string} Comment for new versions.
+     */
+    getVersionComment() {
+        return this.options.versionComment;
+    }
+
+    /**
+     * Retrieves a value indicating whether existing assets should be replaced.
+     *
+     * @returns {boolean} Whether or not to replace existing assets.
+     */
+    getReplace() {
+        return !!this.options.replace;
     }
 
     /**

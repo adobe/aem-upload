@@ -287,6 +287,76 @@ options.withUploadFiles([
                 <code>options.withAddContentLengthHeader(true);</code>
             </td>
         </tr>
+        <tr>
+            <td>Create version</td>
+            <td>boolean</td>
+            <td>
+                If <code>true</code> and an asset with one of the given names already exists,
+                the process will create a new version of the asset instead of updating the
+                current version with the new binary.
+                <br/>
+                <br/>
+                Default: <code>false</code>
+                <br/>
+                <br/>
+                <b>Example</b>
+                <br/>
+                <code>options.withCreateVersion(true);</code>
+            </td>
+        </tr>
+        <tr>
+            <td>Version label</td>
+            <td>string</td>
+            <td>
+                If the process creates a new version of an existing asset, the label to
+                associated with the newly created version.
+                <br/>
+                <br/>
+                Default: <code>null</code>
+                <br/>
+                <br/>
+                <b>Example</b>
+                <br/>
+                <code>options.withVersionLabel('label');</code>
+            </td>
+        </tr>
+        <tr>
+            <td>Version comment</td>
+            <td>string</td>
+            <td>
+                If the process creates a new version of an existing asset, the comment to
+                associated with the newly created version.
+                <br/>
+                <br/>
+                Default: <code>null</code>
+                <br/>
+                <br/>
+                <b>Example</b>
+                <br/>
+                <code>options.withVersionComment(true);</code>
+            </td>
+        </tr>
+        <tr>
+            <td>Replace</td>
+            <td>boolean</td>
+            <td>
+                If <code>true</code> and an asset with one of the given names already exists,
+                the process will delete the existing asset and create a new one with the same
+                name and the new binary.
+                <br/>
+                <br/>
+                Note that if both this option and "create version" are specified, "create version"
+                will take priority.
+                <br/>
+                <br/>
+                Default: <code>false</code>
+                <br/>
+                <br/>
+                <b>Example</b>
+                <br/>
+                <code>options.withReplace(true);</code>
+            </td>
+        </tr>
     </tbody>
 </table>
 

@@ -144,6 +144,10 @@ describe('DirectBinaryUploadTest', () => {
                 should(data1.fileName).be.exactly('targetfile2.jpg');
                 should(data2.fileName).be.exactly('targetfile.jpg');
             }
+            should(data1.createVersion).not.be.ok();
+            should(data1.replace).not.be.ok();
+            should(data2.createVersion).not.be.ok();
+            should(data2.replace).not.be.ok();
 
             // verify that part requests are correct
             const puts = MockRequest.history.put;

@@ -165,18 +165,35 @@ export default class DirectBinaryUploadProcess extends UploadOptionsBase {
             this.logInfo(`Finished uploading '${fileName}', took '${fileUploadResult.getTotalUploadTime()}' ms`);
 
             if (fileUploadResult.isSuccessful() && !this.isCancelled(initResponseFile.getFileName())) {
-                let completeOptions = {
+                const completeData = {
+                    fileName,
+                    mimeType,
+                    uploadToken,
+                };
+
+                if (this.getUploadOptions().getCreateVersion()) {
+                    completeData.createVersion = true;
+
+                    const versionLabel = this.getUploadOptions().getVersionLabel();
+                    const versionComment = this.getUploadOptions().getVersionComment();
+                    if (versionLabel) {
+                        completeData.versionLabel = versionLabel;
+                    }
+                    if (versionComment) {
+                        completeData.versionComment = versionComment;
+                    }
+                } else if (this.getUploadOptions().getReplace()) {
+                    completeData.replace = true;
+                }
+
+                const completeOptions = {
                     url: initResponse.getCompleteUri(),
                     method: 'POST',
                     headers: {
                         ...headers,
                         'content-type': 'application/x-www-form-urlencoded',
                     },
-                    data: querystring.stringify({
-                        fileName,
-                        mimeType,
-                        uploadToken,
-                    }),
+                    data: querystring.stringify(completeData),
                 };
 
                 try {
