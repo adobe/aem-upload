@@ -146,8 +146,10 @@ describe('DirectBinaryUploadTest', () => {
             }
             should(data1.createVersion).not.be.ok();
             should(data1.replace).not.be.ok();
+            should(data1.uploadDuration).be.greaterThan(0);
             should(data2.createVersion).not.be.ok();
             should(data2.replace).not.be.ok();
+            should(data2.uploadDuration).be.greaterThan(0);
 
             // verify that part requests are correct
             const puts = MockRequest.history.put;
