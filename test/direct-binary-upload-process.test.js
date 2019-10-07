@@ -30,17 +30,29 @@ describe('DirectBinaryUploadProcessTest', () => {
         async function runCompleteTest(createVersion, versionLabel, versionComment, replace) {
             const targetFolder = `/target/folder-create-version-${new Date().getTime()}`;
             MockRequest.addDirectUpload(targetFolder);
+            const fileData = {
+                fileName: 'myasset.jpg',
+                fileSize: 512,
+                blob: new MockBlob(),
+            };
+
+            if (createVersion) {
+                fileData.createVersion = true;
+                if (versionLabel) {
+                    fileData.versionLabel = versionLabel;
+                }
+                if (versionComment) {
+                    fileData.versionComment = versionComment;
+                }
+            }
+
+            if (replace) {
+                fileData.replace = true;
+            }
+
             const options = new DirectBinaryUploadOptions()
                 .withUrl(MockRequest.getUrl(targetFolder))
-                .withUploadFiles([{
-                    fileName: 'myasset.jpg',
-                    fileSize: 512,
-                    blob: new MockBlob(),
-                }])
-                .withCreateVersion(createVersion)
-                .withVersionLabel(versionLabel)
-                .withVersionComment(versionComment)
-                .withReplace(replace);
+                .withUploadFiles([fileData]);
 
             const process = new DirectBinaryUploadProcess({}, options);
 

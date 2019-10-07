@@ -9,7 +9,7 @@
   "scripts": {
     "test": "mocha --recursive --require @babel/register ./test && npm run lint",
     "build": "./node_modules/.bin/rimraf dist && babel ./src --out-dir dist",
-    "prepublishOnly": "npm test && npm run build",
+    "prepublishOnly": "npm run coverage && npm run build",
     "coverage": "nyc npm run test",
     "lint": "eslint ./src"
   },

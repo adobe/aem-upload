@@ -183,6 +183,56 @@ The `DirectBinaryUploadOptions` class supports the following options. Items with
                                 browser.
                             </td>
                         </tr>
+                        <tr>
+                            <td>createVersion</td>
+                            <td>boolean</td>
+                            <td>
+                                If <code>true</code> and an asset with the given name already exists,
+                                the process will create a new version of the asset instead of updating the
+                                current version with the new binary.
+                                <br/>
+                                <br/>
+                                Default: <code>false</code>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>versionLabel</td>
+                            <td>string</td>
+                            <td>
+                                If the process creates a new version of the asset, the label to
+                                associated with the newly created version.
+                                <br/>
+                                <br/>
+                                Default: <code>null</code>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>versionComment</td>
+                            <td>string</td>
+                            <td>
+                                If the process creates a new version of the asset, the comment to
+                                associated with the newly created version.
+                                <br/>
+                                <br/>
+                                Default: <code>null</code>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>replace</td>
+                            <td>boolean</td>
+                            <td>
+                                If <code>true</code> and an asset with the given name already exists,
+                                the process will delete the existing asset and create a new one with the same
+                                name and the new binary.
+                                <br/>
+                                <br/>
+                                Note that if both this option and "create version" are specified, "create version"
+                                will take priority.
+                                <br/>
+                                <br/>
+                                Default: <code>false</code>
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
                 <br/>
@@ -286,76 +336,6 @@ options.withUploadFiles([
                 <b>Example</b>
                 <br/>
                 <code>options.withAddContentLengthHeader(true);</code>
-            </td>
-        </tr>
-        <tr>
-            <td>create version</td>
-            <td>boolean</td>
-            <td>
-                If <code>true</code> and an asset with one of the given names already exists,
-                the process will create a new version of the asset instead of updating the
-                current version with the new binary.
-                <br/>
-                <br/>
-                Default: <code>false</code>
-                <br/>
-                <br/>
-                <b>Example</b>
-                <br/>
-                <code>options.withCreateVersion(true);</code>
-            </td>
-        </tr>
-        <tr>
-            <td>version label</td>
-            <td>string</td>
-            <td>
-                If the process creates a new version of an existing asset, the label to
-                associated with the newly created version.
-                <br/>
-                <br/>
-                Default: <code>null</code>
-                <br/>
-                <br/>
-                <b>Example</b>
-                <br/>
-                <code>options.withVersionLabel('label');</code>
-            </td>
-        </tr>
-        <tr>
-            <td>version comment</td>
-            <td>string</td>
-            <td>
-                If the process creates a new version of an existing asset, the comment to
-                associated with the newly created version.
-                <br/>
-                <br/>
-                Default: <code>null</code>
-                <br/>
-                <br/>
-                <b>Example</b>
-                <br/>
-                <code>options.withVersionComment(true);</code>
-            </td>
-        </tr>
-        <tr>
-            <td>replace</td>
-            <td>boolean</td>
-            <td>
-                If <code>true</code> and an asset with one of the given names already exists,
-                the process will delete the existing asset and create a new one with the same
-                name and the new binary.
-                <br/>
-                <br/>
-                Note that if both this option and "create version" are specified, "create version"
-                will take priority.
-                <br/>
-                <br/>
-                Default: <code>false</code>
-                <br/>
-                <br/>
-                <b>Example</b>
-                <br/>
-                <code>options.withReplace(true);</code>
             </td>
         </tr>
     </tbody>
@@ -666,5 +646,5 @@ Contributions are welcomed! Read the [Contributing Guide](CONTRIBUTING.md) for m
 This project is licensed under the Apache V2 License. See [LICENSE](LICENSE) for more information.
 
 # Maintainers
-* @Jun Zhang
+* [@Jun Zhang](https://github.com/FrancoisZhang)
 * [@Mark Frisbey](https://github.com/mfrisbey)

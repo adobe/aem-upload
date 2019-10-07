@@ -75,6 +75,48 @@ export default class UploadFile extends UploadOptionsBase {
     }
 
     /**
+     * Retrieves a value indicating whether or not a new version of the file should be
+     * created if it already exists.
+     *
+     * @returns {boolean} True if a new version should be created, false otherwise.
+     */
+    shouldCreateNewVersion() {
+        ensureRequiredOptions(this.fileOptions);
+        return !!this.fileOptions.createVersion;
+    }
+
+    /**
+     * Retrieves the label of the new version should one need to be created.
+     *
+     * @returns {string} A version label.
+     */
+    getVersionLabel() {
+        ensureRequiredOptions(this.fileOptions);
+        return this.fileOptions.versionLabel;
+    }
+
+    /**
+     * Retrieves the comment of the new version should one need to be created.
+     *
+     * @returns {string} A version comment.
+     */
+    getVersionComment() {
+        ensureRequiredOptions(this.fileOptions);
+        return this.fileOptions.versionComment;
+    }
+
+    /**
+     * Retrieves a value indicating whether or not the asset should be replaced if
+     * it already exists.
+     *
+     * @returns {boolean} True if the asset should be replaced, false otherwise.
+     */
+    shouldReplace() {
+        ensureRequiredOptions(this.fileOptions);
+        return !!this.fileOptions.replace;
+    }
+
+    /**
      * Retrieves a chunk of the file for processing, based on the start and end
      * offset. The type of value returned by this method will vary depending on
      * the file options that were provided to the constructor.

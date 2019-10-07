@@ -83,6 +83,44 @@ export default class InitResponseFile extends UploadOptionsBase {
     }
 
     /**
+     * Retrieves a value indicating whether or not a new version of the file should be
+     * created if it already exists.
+     *
+     * @returns {boolean} True if a new version should be created, false otherwise.
+     */
+    shouldCreateNewVersion() {
+        return this.uploadFile.shouldCreateNewVersion();
+    }
+
+    /**
+     * Retrieves the label of the new version should one need to be created.
+     *
+     * @returns {string} A version label.
+     */
+    getVersionLabel() {
+        return this.uploadFile.getVersionLabel();
+    }
+
+    /**
+     * Retrieves the comment of the new version should one need to be created.
+     *
+     * @returns {string} A version comment.
+     */
+    getVersionComment() {
+        return this.uploadFile.getVersionComment();
+    }
+
+    /**
+     * Retrieves a value indicating whether or not the asset should be replaced if
+     * it already exists.
+     *
+     * @returns {boolean} True if the asset should be replaced, false otherwise.
+     */
+    shouldReplace() {
+        return this.uploadFile.shouldReplace();
+    }
+
+    /**
      * Retrieves the mime type of the file, which will be an HTTP content type.
      *
      * @returns {string} An HTTP content type value.

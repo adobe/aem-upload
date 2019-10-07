@@ -172,18 +172,18 @@ export default class DirectBinaryUploadProcess extends UploadOptionsBase {
                     uploadDuration: fileUploadResult.getTotalUploadTime(),
                 };
 
-                if (this.getUploadOptions().getCreateVersion()) {
+                if (initResponseFile.shouldCreateNewVersion()) {
                     completeData.createVersion = true;
 
-                    const versionLabel = this.getUploadOptions().getVersionLabel();
-                    const versionComment = this.getUploadOptions().getVersionComment();
+                    const versionLabel = initResponseFile.getVersionLabel();
+                    const versionComment = initResponseFile.getVersionComment();
                     if (versionLabel) {
                         completeData.versionLabel = versionLabel;
                     }
                     if (versionComment) {
                         completeData.versionComment = versionComment;
                     }
-                } else if (this.getUploadOptions().getReplace()) {
+                } else if (initResponseFile.shouldReplace()) {
                     completeData.replace = true;
                 }
 
