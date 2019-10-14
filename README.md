@@ -338,6 +338,42 @@ options.withUploadFiles([
                 <code>options.withAddContentLengthHeader(true);</code>
             </td>
         </tr>
+        <tr>
+            <td>http retry count</td>
+            <td>number</td>
+            <td>
+                The number of times that the process will retry a failed HTTP request before
+                giving up. For example, if the retry count is 3 then the process will submit
+                the same HTTP request up to 3 times if the response indicates a failure.
+                <br/>
+                <br/>
+                Default: <code>3</code>
+                <br/>
+                <br/>
+                <b>Example</b>
+                <br/>
+                <code>options.withHttpRetryCount(5);</code>
+            </td>
+        </tr>
+        <tr>
+            <td>http retry delay</td>
+            <td>number</td>
+            <td>
+                The amount of time that the process will wait before retrying a failed HTTP
+                request. The value is specified in milliseconds. With each increasing retry,
+                the delay will increase by its value. For example, if the delay is 5000 then
+                the first retry will wait 5 seconds, the second 10 seconds, the third 15
+                seconds, etc.
+                <br/>
+                <br/>
+                Default: <code>5000</code>
+                <br/>
+                <br/>
+                <b>Example</b>
+                <br/>
+                <code>options.withHttpRetryDelay(3000);</code>
+            </td>
+        </tr>
     </tbody>
 </table>
 
@@ -388,6 +424,13 @@ upload.uploadFiles(options) // assume that options is defined previously
 
 Another way of handling individual file errors is to listen for the upload process's
 [Events](#upload-events).
+
+The process implements automatic HTTP retry handling, meaning that if an HTTP request fails
+then the process will wait for a specified interval and retry the same HTTP request a given
+number of times. If the request still fails after the given number of retries, it will
+report the error as normal using the last error. Any errors that caused a retry, in
+either a success scenario or failure scenario, will be reported in the result in a dedicated
+structure.
 
 ### Upload Events
 
