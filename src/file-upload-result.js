@@ -14,19 +14,24 @@ import filesize from 'filesize';
 
 import { getAverage } from './utils';
 import UploadError from './upload-error';
+import HttpResult from './http-result';
 
 /**
  * Represents the results of an individual file upload. These results include information like
  * the amount of time the file took to upload, the number of parts in which the file was uploaded,
  * and any error information that may have occurred during the upload.
  */
-export default class FileUploadResult {
+export default class FileUploadResult extends HttpResult {
     /**
      * Constructs a new instance of the result, which can be used to provide result values.
      *
+     * @param {object} options Options as provided when the upload instance was instantiated.
+     * @param {DirectBinaryUploadOptions} uploadOptions Options as provided when the upload was initiated.
      * @param {InitResponseFile} initResponseFile File information on which the results are based.
      */
-    constructor(initResponseFile) {
+    constructor(options, uploadOptions, initResponseFile) {
+        super(options, uploadOptions);
+
         this.initResponseFile = initResponseFile;
         this.parts = [];
         this.cancelled = false;
@@ -239,6 +244,7 @@ export default class FileUploadResult {
             success: this.isSuccessful(),
             message,
             partDetails: this.parts.map(part => part.toJSON()),
+            ...super.toJSON(),
         };
 
         if (this.isCancelled()) {

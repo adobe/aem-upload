@@ -32,6 +32,8 @@ export default class DirectBinaryUploadOptions {
         this.options = {
             maxConcurrent: DefaultValues.MAX_CONCURRENT,
             headers: {},
+            retryCount: DefaultValues.RETRY_COUNT,
+            retryDelay: DefaultValues.RETRY_DELAY,
         };
         this.controller = new DirectBinaryUploadController();
     }
@@ -145,6 +147,30 @@ export default class DirectBinaryUploadOptions {
     }
 
     /**
+     * Specifies the number of times the process will attempt retrying a failed HTTP request before
+     * giving up and reporting an error. Default: 3.
+     *
+     * @param {number} retryCount Number of times to resubmit a request.
+     */
+    withHttpRetryCount(retryCount) {
+        this.options.retryCount = retryCount;
+        return this;
+    }
+
+    /**
+     * Sets the amount of time, in milliseconds, that the process will wait before retrying a
+     * failed HTTP request. The delay will increase itself by this value each time the failed
+     * request is resubmitted. For example, if the delay is 5,000 then the process will wait
+     * 5,000 milliseconds for the first retry, then 10,000, then 15,000, etc. Default: 5,000.
+     *
+     * @param {number} retryDelay A timespan in milliseconds.
+     */
+    withHttpRetryDelay(retryDelay) {
+        this.options.retryDelay = retryDelay;
+        return this;
+    }
+
+    /**
      * Retrieves the target URL to which files will be uploaded.
      *
      * @returns {string} Target URL as provided to the options instance.
@@ -234,6 +260,25 @@ export default class DirectBinaryUploadOptions {
      */
     getController() {
         return this.controller;
+    }
+
+    /**
+     * Retrieves the number of times the process will attempt to resubmit a failed HTTP request.
+     *
+     * @returns {number} Retry count.
+     */
+    getHttpRetryCount() {
+        return this.options.retryCount;
+    }
+
+    /**
+     * Retrieves the amount of time, in milliseconds, the process wil wait between resubmitting
+     * the same failed HTTP request.
+     *
+     * @returns {number} Timespan in milliseconds.
+     */
+    getHttpRetryDelay() {
+        return this.options.retryDelay;
     }
 
     /**

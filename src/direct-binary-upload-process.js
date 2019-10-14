@@ -17,6 +17,7 @@ import InitResponse from './init-response';
 import UploadFile from './upload-file';
 import UploadResult from './upload-result';
 import UploadError from './upload-error';
+import ErrorCodes from './error-codes';
 import FileUploadResult from './file-upload-result';
 import PartUploadResult from './part-upload-result';
 import { timedRequest, createCancelToken } from './http-utils';
@@ -74,7 +75,7 @@ export default class DirectBinaryUploadProcess extends UploadOptionsBase {
 
         try {
             this.initCancelToken = createCancelToken();
-            const response = await timedRequest(initOptions, this.initCancelToken);
+            const response = await timedRequest(initOptions, this.getRetryOptions(options, uploadResult), this.initCancelToken);
             this.initCancelToken = null;
             const {
                 data: resObj,
@@ -144,7 +145,7 @@ export default class DirectBinaryUploadProcess extends UploadOptionsBase {
 
         let success = false;
         const eventData = initResponseFile.getEventData();
-        const fileUploadResult = new FileUploadResult(initResponseFile);
+        const fileUploadResult = new FileUploadResult(this.getOptions(), options, initResponseFile);
 
         if (!this.isCancelled(initResponseFile.getFileName())) {
             initResponseFile.on('progress', progress => {
@@ -199,7 +200,7 @@ export default class DirectBinaryUploadProcess extends UploadOptionsBase {
 
                 try {
                     const cancelToken = this.addCancelToken(fileName, 'complete');
-                    const response = await timedRequest(completeOptions, cancelToken);
+                    const response = await timedRequest(completeOptions, this.getRetryOptions(options, fileUploadResult), cancelToken);
                     this.removeCancelToken(fileName, 'complete');
                     const {
                         elapsedTime: completeElapsedTime = 0,
@@ -287,10 +288,11 @@ export default class DirectBinaryUploadProcess extends UploadOptionsBase {
             };
         }
 
+        const partResult = new PartUploadResult(this.getOptions(), options, part);
         try {
             const tokenName = `part_${part.getStartOffset()}`;
             const cancelToken = this.addCancelToken(initResponseFile.getFileName(), tokenName);
-            const response = await timedRequest(reqOptions, cancelToken);
+            const response = await timedRequest(reqOptions, this.getRetryOptions(options, partResult), cancelToken);
             this.removeCancelToken(initResponseFile.getFileName(), tokenName);
 
             const {
@@ -299,9 +301,9 @@ export default class DirectBinaryUploadProcess extends UploadOptionsBase {
             } = response;
 
             this.logInfo(`Put upload part done for file: '${part.getFileName()}', offset: '${part.getStartOffset()}-${part.getEndOffset()}', partSize: '${part.getSize()}', spent: '${elapsedTime}' ms, status: ${statusCode}`);
-            fileUploadResult.addPartResult(new PartUploadResult(part, elapsedTime));
+            partResult.setUploadTime(elapsedTime);
+            fileUploadResult.addPartResult(partResult);
         } catch (e) {
-            const partResult = new PartUploadResult(part, 0);
             partResult.setError(e);
             fileUploadResult.addPartResult(partResult);
             this.logError(`Put upload part done for file: '${part.getFileName()}', offset: '${part.getStartOffset()}-${part.getEndOffset()}', partSize: '${part.getSize()}'`, e);
@@ -375,7 +377,7 @@ export default class DirectBinaryUploadProcess extends UploadOptionsBase {
     cancelAllFileTokens(fileName) {
         if (this.cancelTokens[fileName]) {
             Object.keys(this.cancelTokens[fileName]).forEach(tokenName => {
-                this.cancelTokens[fileName][tokenName].cancel('operation was cancelled by consumer');
+                this.cancelTokens[fileName][tokenName].cancel(ErrorCodes.USER_CANCELLED);
             });
             this.cancelTokens[fileName] = {};
         }
@@ -386,9 +388,40 @@ export default class DirectBinaryUploadProcess extends UploadOptionsBase {
      */
     cancelAllTokens() {
         if (this.initCancelToken) {
-            this.initCancelToken.cancel('operation was cancelled by consumer');
+            this.initCancelToken.cancel(ErrorCodes.USER_CANCELLED);
             this.initCancelToken = null;
         }
         Object.keys(this.cancelTokens).forEach(fileName => this.cancelAllFileTokens(fileName));
+    }
+
+    /**
+     * Builds an object containing retry options that will be provided to the utility method
+     * that submits HTTP requests. The options will include the number of times to retry,
+     * the amount of time between retries, and a method to invoke whenever there is an
+     * intermediate error.
+     *
+     * @param {DirectBinaryUploadOptions} uploadOptions Options controlling the upload process.
+     * @param {HttpResult} httpResult Result being provided for the current operation. Any
+     *   intermediate retry errors will be added to the result.
+     */
+    getRetryOptions(uploadOptions, httpResult) {
+        return {
+            retryCount: uploadOptions.getHttpRetryCount(),
+            retryDelay: uploadOptions.getHttpRetryDelay(),
+            onRetryError: e => this.handleRetryError(e, httpResult),
+        }
+    }
+
+    /**
+     * Invoked when there is an immediate retry error. Handles special cases and adds the
+     * error to the given result.
+     * @param {Error|string} e The error that occurred.
+     * @param {HttpResult} httpResult Result being provided for the current operation.
+     */
+    handleRetryError(e, httpResult) {
+        if (e && e.message && e.message === ErrorCodes.USER_CANCELLED) {
+            throw new UploadError('user cancelled the operation', ErrorCodes.USER_CANCELLED);
+        }
+        httpResult.addRetryError(e);
     }
 }
