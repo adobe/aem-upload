@@ -18,7 +18,6 @@ const MockRequest = require('./mock-request');
 const MockBlob = require('./mock-blob');
 
 const DirectBinaryUpload = importFile('direct-binary-upload');
-
 const DirectBinaryUploadOptions = importFile('direct-binary-upload-options');
 const ErrorCodes = importFile('error-codes');
 
@@ -280,7 +279,8 @@ describe('DirectBinaryUploadTest', () => {
         it('init failure test', async () => {
             const options = new DirectBinaryUploadOptions()
                 .withUrl(MockRequest.getUrl('/target/folder_init_fail'))
-                .withUploadFiles(getTestUploadFiles());
+                .withUploadFiles(getTestUploadFiles())
+                .withHttpRetryCount(1);
 
             const upload = new DirectBinaryUpload();
 
@@ -300,7 +300,7 @@ describe('DirectBinaryUploadTest', () => {
             should(posts[0].url).be.exactly(MockRequest.getUrl('/target/folder_init_fail.initiateUpload.json'));
         });
 
-        function verifyPartialSuccess(result, events, folderName, partSucceeded = false, errorEvent = 'fileerror') {
+        function verifyPartialSuccess(result, events, folderName, partSucceeded = false, errorEvent = 'fileerror', errorCode = ErrorCodes.INVALID_OPTIONS) {
             should(result).be.ok();
             should(result.getTotalFiles()).be.exactly(2);
             should(result.getTotalCompletedFiles()).be.exactly(1);
@@ -320,6 +320,7 @@ describe('DirectBinaryUploadTest', () => {
 
             should(file1.isSuccessful()).not.be.ok();
             should(file1.getErrors().length).be.exactly(1);
+            should(file1.getErrors()[0].getCode()).be.exactly(errorCode);
 
             const file1Parts = file1.getPartUploadResults();
             const part1 = file1Parts[0];
@@ -359,12 +360,13 @@ describe('DirectBinaryUploadTest', () => {
             const options = new DirectBinaryUploadOptions()
                 .withUrl(MockRequest.getUrl(targetFolder))
                 .withUploadFiles(getTestUploadFiles())
-                .withConcurrent(false);
+                .withConcurrent(false)
+                .withHttpRetryCount(1);
 
             MockRequest.onPart(targetFolder, 'targetfile.jpg', '0', () => {
                 return new Promise(resolve => {
                     setTimeout(() => {
-                        resolve([500]);
+                        resolve([400]);
                     }, 300);
                 });
             });
@@ -388,10 +390,11 @@ describe('DirectBinaryUploadTest', () => {
             const options = new DirectBinaryUploadOptions()
                 .withUrl(MockRequest.getUrl(targetFolder))
                 .withUploadFiles(getTestUploadFiles())
-                .withConcurrent(false);
+                .withConcurrent(false)
+                .withHttpRetryCount(1);
 
             MockRequest.onComplete(targetFolder, 'targetfile.jpg', async () => {
-                return [500];
+                return [400];
             });
 
             const upload = new DirectBinaryUpload();
@@ -432,7 +435,7 @@ describe('DirectBinaryUploadTest', () => {
             monitorEvents(upload);
 
             const result = await upload.uploadFiles(options);
-            verifyPartialSuccess(result, events, 'folder_cancel_file', false, 'filecancelled');
+            verifyPartialSuccess(result, events, 'folder_cancel_file', false, 'filecancelled', ErrorCodes.USER_CANCELLED);
 
             // verify that init/complete requests are correct
             const posts = MockRequest.history.post;

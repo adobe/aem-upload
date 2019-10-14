@@ -11,7 +11,7 @@ governing permissions and limitations under the License.
 */
 
 import { getAverage } from './utils';
-import UploadOptionsBase from './upload-options-base';
+import HttpResult from './http-result';
 
 /**
  * Retrieves a list of all file results that were successful.
@@ -33,7 +33,7 @@ function getSuccessfulFileResults(fileResults) {
  * Represents results for the upload process as a whole, which might include multiple files. Results
  * include information such as total upload time, total file size, total number of files, etc.
  */
-export default class UploadResult extends UploadOptionsBase {
+export default class UploadResult extends HttpResult {
     /**
      * Constructs a new instance of the results, which can be used to add more information.
      *
@@ -246,6 +246,7 @@ export default class UploadResult extends UploadOptionsBase {
             avgCompleteSpent: this.getAverageCompleteTime(),
             nintyPercentileTotal: this.getNinetyPercentileTotal(),
             detailedResult: this.fileUploadResults.map(result => result.toJSON()),
+            ...super.toJSON(),
         };
     }
 }

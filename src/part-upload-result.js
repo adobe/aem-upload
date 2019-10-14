@@ -12,21 +12,26 @@ governing permissions and limitations under the License.
 
 import UploadError from './upload-error';
 
+import HttpResult from './upload-result';
+
 /**
  * Represents the results of an individual file part upload. These results contain information such as
  * the amount of time it took to transfer, and any error that may have occurred.
  */
-export default class PartUploadResult {
+export default class PartUploadResult extends HttpResult {
     /**
      * Constructs a new instance using the provided information. Can then be used to provide additional details
      * as needed.
      *
+     * @param {object} options Options as provided when the upload instance was instantiated.
+     * @param {DirectBinaryUploadOptions} uploadOptions Options as provided when the upload was initiated.
      * @param {InitResponseFilePart} filePart The part on which the results are based.
-     * @param {number} elapsedTime The amount of time, in milliseconds, it took the part to upload.
      */
-    constructor(filePart, elapsedTime) {
+    constructor(options, uploadOptions, filePart) {
+        super(options, uploadOptions);
+
         this.filePart = filePart;
-        this.elapsedTime = elapsedTime;
+        this.elapsedTime = 0;
     }
 
     /**
@@ -63,6 +68,15 @@ export default class PartUploadResult {
      */
     getUploadTime() {
         return this.elapsedTime;
+    }
+
+    /**
+     * Sets the amount of time, in milliseconds, it took for the part to upload.
+     *
+     * @param {number} elapsedTime Time span in milliseconds.
+     */
+    setUploadTime(elapsedTime) {
+        this.elapsedTime = elapsedTime;
     }
 
     /**
@@ -104,6 +118,7 @@ export default class PartUploadResult {
             url: this.getUrl(),
             message: this.getError() ? this.getError().getMessage() : '',
             elapsedTime: this.getUploadTime(),
+            ...super.toJSON(),
         };
     }
 }

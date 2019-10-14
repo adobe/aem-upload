@@ -88,3 +88,64 @@ export function getAverage(values) {
     }
     return 0;
 }
+
+/**
+ * Utility method that provides a Promise interface for setTimeout().
+ *
+ * @param {number} delay The amount of time, in milliseconds, to wait before the method resolves.
+ * @returns {Promise} Will be resolved when the specified delay has elapsed.
+ */
+export function setTimeoutPromise(delay) {
+    return new Promise(res => {
+        setTimeout(res, delay);
+    });
+}
+
+/**
+ * Retries an operation a given number of times, exponentially increasing the amount of time between each retry by a
+ * specified interval.
+ *
+ * @param {object} retryOptions Determines the behavior of the retry functionality.
+ * @param {number} [retryOptions.retryCount] Specifies how many times, in total, the operation will be retried before giving up.
+ * @param {number} [retryOptions.retryDelay] Specifies the amount of time to wait before retrying. The actual wait time will
+ *   exponentially increase by this value with each retry.
+ * @param {function} [retryOptions.onRetryError] Will be invoked with a single error before each retry. If all retries fail, the
+ *   method will resolved with the last error instead. If this function throws an exception then the retry functionality
+ *   will immediately be resolved with the thrown exception.
+ * @param {function} toRetry The operation to retry. The function is expected to return a Promise, which is resolved if
+ *   the operation is successful and rejected with an error if the operation fails.
+ * @returns {Promise} Will be resolved successfully if no exception is thrown by the operation withing the specified
+ *   number of tries. Will be rejected with the last error if all retries fail.
+ */
+export async function exponentialRetry(options, toRetry) {
+    if (typeof options === 'function') {
+        toRetry = options;
+        options = {};
+    }
+
+    const {
+        retryCount = DefaultValues.RETRY_COUNT,
+        retryDelay = DefaultValues.RETRY_DELAY,
+        onRetryError = () => {},
+    } = options;
+
+    let lastErr = null;
+
+    for (let i = 1; i <= retryCount; i += 1) {
+        try {
+            await toRetry();
+            lastErr = null;
+            break;
+        } catch (e) {
+            lastErr = e;
+            if (i < retryCount) {
+                onRetryError(e);
+                await setTimeoutPromise(retryDelay * i);
+            }
+        }
+    }
+
+    if (lastErr) {
+        throw lastErr;
+    }
+}

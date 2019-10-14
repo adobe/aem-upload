@@ -54,4 +54,9 @@ export default {
      * The user is forbidden from modifying the requested target.
      */
     FORBIDDEN: 'EFORBIDDEN',
+
+    /**
+     * The user cancelled an operation.
+     */
+    USER_CANCELLED: 'EUSERCANCELLED',
 };

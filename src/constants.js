@@ -18,4 +18,17 @@ export const DefaultValues = {
      * The default number of maximum concurrent HTTP requests allowed by the library.
      */
     MAX_CONCURRENT: 5,
+
+    /**
+     * The default number of times the process will attempt submitting an HTTP request
+     * before giving up and reporting a failure.
+     */
+    RETRY_COUNT: 3,
+
+    /**
+     * The amount of time, in milliseconds, that the process will wait between retries
+     * of the same HTTP request. The delay will increase itself by this value for
+     * each retry.
+     */
+    RETRY_DELAY: 5000,
 }

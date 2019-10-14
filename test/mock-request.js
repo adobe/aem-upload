@@ -42,6 +42,7 @@ mock.getUrl = (targetPath) => {
 };
 
 const origReset = mock.reset;
+let onInits = {};
 let onParts = {};
 let onCompletes = {};
 
@@ -51,6 +52,7 @@ let onCompletes = {};
  */
 mock.reset = function() {
     origReset.call(mock);
+    onInits = {};
     onParts = {};
     onCompletes = {};
 };
@@ -79,6 +81,79 @@ function getFullUrl(targetFolder, file) {
 }
 
 /**
+ * Does the work of handling a part URI request.
+ *
+ * @param {string} partUrl The URL for the part.
+ */
+function processPart(partUrl) {
+    const partReply = onParts[partUrl];
+
+    if (partReply) {
+        return partReply();
+    }
+
+    return new Promise(resolve => {
+        setTimeout(() => {
+            resolve([201]);
+        }, 100);
+    });
+}
+
+/**
+ * Does the work of handling the initiate URI request for a folder.
+ *
+ * @param {string} targetFolder The folder where the asset is being uploaded.
+ * @param {object} config Values that were passed to the request.
+ * @param {object} config.data Body passed to the request.
+ */
+function processInit(targetFolder, config) {
+    const result = onInits[targetFolder];
+
+    if (result) {
+        return result();
+    }
+
+    return new Promise(resolve => {
+        setTimeout(() => {
+            const query = querystring.parse(config.data);
+            let fileNames = query.fileName;
+
+            if (typeof fileNames === 'string') {
+                fileNames = [fileNames];
+            }
+            resolve([
+                201,
+                {
+                    completeURI: `/content/dam${targetFolder}.completeUpload.json`,
+                    folderPath: URL.parse(config.url).pathname,
+                    files: fileNames.map((file, index) => {
+                        const fileSize = query.fileSize[index];
+                        const numUris = Math.ceil(fileSize / 512);
+                        const uploadUris = [];
+
+                        for (let i = 0; i < numUris; i += 1) {
+                            const partUrl = getPartUrl(targetFolder, file, i);
+                            uploadUris.push(partUrl);
+
+                            mock.onPut(partUrl).reply(() => processPart(partUrl));
+                        }
+
+                        return {
+                            fileName: file,
+                            mimeType: mime.getType(file),
+                            uploadToken: `token_${file}`,
+                            uploadURIs: uploadUris,
+                            minPartSize: 256,
+                            maxPartSize: 1024,
+                        }
+                    }),
+                },
+            ]);
+        }, 100);
+    });
+}
+
+/**
  * Does the work of handling the complete URI request for a file.
  *
  * @param {string} targetFolder The folder where the asset is being uploaded.
@@ -103,6 +178,27 @@ function processComplete(targetFolder, options) {
 }
 
 /**
+ * Registers a reply that will be invoked when the initiate URI for a given folder is invoked.
+ *
+ * @param {string} targetFolder Folder whose initiate call is being invoked.
+ * @param {function} reply Function to call when the init call is made. Should return a Promise.
+ */
+mock.onInit = function (targetFolder, reply) {
+    onInits[targetFolder] = reply;
+}
+
+/**
+ * Unregisters a targetFolder whose initiate URI was registered using onInit().
+ *
+ * @param {string} targetFolder Folder to unregister.
+ */
+mock.removeOnInit = function (targetFolder) {
+    if (onInits[targetFolder]) {
+        delete onInits[targetFolder];
+    }
+}
+
+/**
  * Registers a reply that will be invoked when a given part of a given file is uploaded.
  *
  * @param {string} targetFolder Folder where the file is being uploaded.
@@ -113,6 +209,21 @@ function processComplete(targetFolder, options) {
 mock.onPart = function (targetFolder, targetFile, partNumber, reply) {
     onParts[getPartUrl(targetFolder, targetFile, partNumber)] = reply;
 };
+
+/**
+ * Unregisters a part whose URI was registered using onPart().
+ *
+ * @param {string} targetFolder Folder where the file is being uploaded.
+ * @param {string} targetFile Name of the file as it will be in the target instance.
+ * @param {number} partNumber The 0-based index for the file part to reply.
+ */
+mock.removeOnPart = function (targetFolder, targetFile, partNumber) {
+    const url = getPartUrl(targetFolder, targetFile, partNumber);
+
+    if (onParts[url]) {
+        delete onParts[url];
+    }
+}
 
 /**
  * Registers a reply that will be invoked when the complete URI for a given file is invoked.
@@ -126,6 +237,20 @@ mock.onComplete = function (targetFolder, targetFile, reply) {
 }
 
 /**
+ * Unregisters a reply that was registered using onComplete().
+ *
+ * @param {string} targetFolder Folder where the file is being uploaded.
+ * @param {string} targetFile Name of the file as it will be in the target instance.
+ */
+mock.removeOnComplete = function (targetFolder, targetFile) {
+    const url = getFullUrl(targetFolder, targetFile);
+
+    if (onCompletes[url]) {
+        delete onCompletes[url];
+    }
+}
+
+/**
  * Registers a mock folder that will be able to accept direct binary uploads. This will register mock requests
  * for the initiateUpload servlet, file part URIs, and completeUpload servlet.
  *
@@ -134,55 +259,7 @@ mock.onComplete = function (targetFolder, targetFile, reply) {
 mock.addDirectUpload = function (targetFolder) {
     const fullUrl = this.getUrl(targetFolder);
     this.onPost(`${fullUrl}.initiateUpload.json`).reply(config => {
-        return new Promise(resolve => {
-            setTimeout(() => {
-                const query = querystring.parse(config.data);
-                let fileNames = query.fileName;
-
-                if (typeof fileNames === 'string') {
-                    fileNames = [fileNames];
-                }
-                resolve([
-                    201,
-                    {
-                        completeURI: `/content/dam${targetFolder}.completeUpload.json`,
-                        folderPath: URL.parse(config.url).pathname,
-                        files: fileNames.map((file, index) => {
-                            const fileSize = query.fileSize[index];
-                            const numUris = Math.ceil(fileSize / 512);
-                            const uploadUris = [];
-
-                            for (let i = 0; i < numUris; i += 1) {
-                                const partUrl = getPartUrl(targetFolder, file, i);
-                                const partReply = onParts[partUrl];
-                                uploadUris.push(partUrl);
-
-                                if (partReply) {
-                                    this.onPut(partUrl).reply(partReply);
-                                } else {
-                                    this.onPut(partUrl).reply(() => {
-                                        return new Promise(resolve => {
-                                            setTimeout(() => {
-                                                resolve([201]);
-                                            }, 100);
-                                        });
-                                    });
-                                }
-                            }
-
-                            return {
-                                fileName: file,
-                                mimeType: mime.getType(file),
-                                uploadToken: `token_${file}`,
-                                uploadURIs: uploadUris,
-                                minPartSize: 256,
-                                maxPartSize: 1024,
-                            }
-                        }),
-                    },
-                ]);
-            }, 100);
-        });
+        return processInit(targetFolder, config);
     });
 
     this.onPost(`${fullUrl}.completeUpload.json`).reply(options => {

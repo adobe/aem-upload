@@ -106,5 +106,77 @@ describe('DirectBinaryUploadProcessTest', () => {
         it('replace and create version test', async () => {
             await runCompleteTest(true, 'label', 'comment', true);
         });
+
+        function setupRetryTest() {
+            const targetFolder = `/target/folder-retry-recovery-${new Date().getTime()}`;
+            MockRequest.addDirectUpload(targetFolder);
+            const fileData = {
+                fileName: 'myasset.jpg',
+                fileSize: 512,
+                blob: new MockBlob(),
+            };
+
+            const options = new DirectBinaryUploadOptions()
+                .withUrl(MockRequest.getUrl(targetFolder))
+                .withUploadFiles([fileData])
+                .withHttpRetryDelay(100);
+
+            return { targetFolder, process: new DirectBinaryUploadProcess({}, options) };
+        }
+
+        it('init retry recovery', async () => {
+            const { targetFolder, process } = setupRetryTest();
+
+            MockRequest.onInit(targetFolder, async () => {
+                MockRequest.removeOnInit(targetFolder);
+                return [500];
+            });
+
+            const result = await process.upload();
+            should(result).be.ok();
+            should(result.getTotalCompletedFiles()).be.exactly(1);
+            should(result.getErrors().length).be.exactly(0);
+            should(result.getRetryErrors().length).be.exactly(1);
+        });
+
+        it('part retry recover', async () => {
+            const { targetFolder, process } = setupRetryTest();
+
+            MockRequest.onPart(targetFolder, 'myasset.jpg', 0, async () => {
+                MockRequest.removeOnPart(targetFolder, 'myasset.jpg', 0);
+                return [500];
+            });
+
+            const result = await process.upload();
+            should(result).be.ok();
+            should(result.getTotalCompletedFiles()).be.exactly(1);
+            should(result.getErrors().length).be.exactly(0);
+            should(result.getRetryErrors().length).be.exactly(0);
+
+            const fileResults = result.getFileUploadResults();
+            should(fileResults.length).be.exactly(1);
+
+            const partResults = fileResults[0].getPartUploadResults();
+            should(partResults.length).be.exactly(1);
+            should(partResults[0].getRetryErrors().length).be.exactly(1);
+        });
+
+        it('complete retry recover', async () => {
+            const { targetFolder, process } = setupRetryTest();
+
+            MockRequest.onComplete(targetFolder, 'myasset.jpg', async () => {
+                MockRequest.removeOnComplete(targetFolder, 'myasset.jpg');
+                return [500];
+            });
+
+            const result = await process.upload();
+            should(result).be.ok();
+            should(result.getTotalCompletedFiles()).be.exactly(1);
+            should(result.getErrors().length).be.exactly(0);
+
+            const fileResults = result.getFileUploadResults();
+            should(fileResults.length).be.exactly(1);
+            should(fileResults[0].getRetryErrors().length).be.exactly(1);
+        });
     });
 });

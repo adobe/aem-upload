@@ -37,7 +37,7 @@ describe('HttpUtilsTest', () => {
                 elapsedTime,
             } = await timedRequest({
                 url: 'http://timedrequestunittest',
-            });
+            }, {});
 
             should(status).be.exactly(200);
             should(elapsedTime >= 100).be.ok();
