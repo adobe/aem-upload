@@ -139,9 +139,13 @@ describe('DirectBinaryUploadTest', () => {
 
             if (data1.fileName === 'targetfile.jpg') {
                 should(data2.fileName).be.exactly('targetfile2.jpg');
+                should(data2.fileSize).be.exactly('1999');
+                should(data1.fileSize).be.exactly('1024');
             } else {
                 should(data1.fileName).be.exactly('targetfile2.jpg');
+                should(data1.fileSize).be.exactly('1999');
                 should(data2.fileName).be.exactly('targetfile.jpg');
+                should(data2.fileSize).be.exactly('1024');
             }
             should(data1.createVersion).not.be.ok();
             should(data1.replace).not.be.ok();

@@ -171,6 +171,7 @@ export default class DirectBinaryUploadProcess extends UploadOptionsBase {
                     mimeType,
                     uploadToken,
                     uploadDuration: fileUploadResult.getTotalUploadTime(),
+                    fileSize,
                 };
 
                 if (initResponseFile.shouldCreateNewVersion()) {
