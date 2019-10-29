@@ -59,7 +59,7 @@ const DirectBinary = require('@adobe/aem-upload');
 
 ## Uploading Files
 
-Following is the mimimum amount of code required to upload files to a target AEM instance.
+Following is the minimum amount of code required to upload files to a target AEM instance.
 
 ```javascript
 const DirectBinary = require('@adobe/aem-upload');
