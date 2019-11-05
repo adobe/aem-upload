@@ -68,7 +68,7 @@ export default class UploadError extends Error {
                 code = errorCodes.NOT_AUTHORIZED;
             } else if (status === 404) {
                 code = errorCodes.NOT_FOUND;
-            } else if (status === 503) {
+            } else if (status === 501) {
                 code = errorCodes.NOT_SUPPORTED;
             }
             return new UploadError(`Request failed with status code ${status}`, code, stack);
@@ -137,7 +137,7 @@ export default class UploadError extends Error {
         } else if (code === errorCodes.NOT_FOUND) {
             return 404;
         } else if (code === errorCodes.NOT_SUPPORTED) {
-            return 503;
+            return 501;
         } else {
             return 500;
         }

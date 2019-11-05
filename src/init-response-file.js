@@ -148,6 +148,16 @@ export default class InitResponseFile extends UploadOptionsBase {
     }
 
     /**
+     * Retrieves a raw value from the file's data.
+     *
+     * @param {string} propertyName
+     * @returns {*} The corresponding property value, or undefined if not found.
+     */
+    getFileData(propertyName) {
+        return this.fileData[propertyName];
+    }
+
+    /**
      * Calculates and retrieves all the parts in which the file will be uploaded. This will be calculated
      * based on the number of URIs, the size of the file, and the file's getPartSize() value.
      *

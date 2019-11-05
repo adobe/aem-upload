@@ -65,7 +65,7 @@ mock.reset = function() {
  * @param {number} partNumber The part number being uploaded.
  * @returns {string} A full URL.
  */
-function getPartUrl(targetFolder, file, partNumber) {
+mock.getPartUrl = function(targetFolder, file, partNumber) {
     return mock.getUrl(`${targetFolder}/${file}.${partNumber}`);
 }
 
@@ -132,7 +132,7 @@ function processInit(targetFolder, config) {
                         const uploadUris = [];
 
                         for (let i = 0; i < numUris; i += 1) {
-                            const partUrl = getPartUrl(targetFolder, file, i);
+                            const partUrl = mock.getPartUrl(targetFolder, file, i);
                             uploadUris.push(partUrl);
 
                             mock.onPut(partUrl).reply(() => processPart(partUrl));
@@ -207,7 +207,7 @@ mock.removeOnInit = function (targetFolder) {
  * @param {function} reply Function to call when the matching part is uploaded. Should return a Promise.
  */
 mock.onPart = function (targetFolder, targetFile, partNumber, reply) {
-    onParts[getPartUrl(targetFolder, targetFile, partNumber)] = reply;
+    onParts[mock.getPartUrl(targetFolder, targetFile, partNumber)] = reply;
 };
 
 /**
@@ -218,7 +218,7 @@ mock.onPart = function (targetFolder, targetFile, partNumber, reply) {
  * @param {number} partNumber The 0-based index for the file part to reply.
  */
 mock.removeOnPart = function (targetFolder, targetFile, partNumber) {
-    const url = getPartUrl(targetFolder, targetFile, partNumber);
+    const url = mock.getPartUrl(targetFolder, targetFile, partNumber);
 
     if (onParts[url]) {
         delete onParts[url];

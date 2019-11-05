@@ -493,5 +493,103 @@ describe('DirectBinaryUploadTest', () => {
             should(posts.length).be.exactly(1);
             should(posts[0].url).be.exactly(MockRequest.getUrl(`${targetFolder}.initiateUpload.json`));
         });
+
+        it('direct binary not supported', async() => {
+            const targetFolder = '/target/folder_not_supported';
+            MockRequest.addDirectUpload(targetFolder);
+            MockRequest.onInit(targetFolder, () => {
+                return new Promise(resolve => {
+                    resolve([200, {
+                        folderPath: targetFolder,
+                        files: [
+                            { fileName: 'targetfile.jpg' },
+                            { fileName: 'targetfile2.jpg' },
+                        ]
+                    }]);
+                });
+            });
+
+            const options = new DirectBinaryUploadOptions()
+                .withUrl(MockRequest.getUrl(targetFolder))
+                .withUploadFiles(getTestUploadFiles())
+                .withConcurrent(false)
+                .withHttpRetryCount(1);
+
+            const upload = new DirectBinaryUpload();
+
+            let threw = false;
+            try {
+                await upload.uploadFiles(options);
+            } catch (e) {
+                should(e).be.ok();
+                should(e.getCode()).be.exactly(ErrorCodes.NOT_SUPPORTED);
+                threw = true;
+            }
+            should(threw).be.ok();
+
+            MockRequest.onInit(targetFolder, () => {
+                return new Promise(resolve => {
+                    resolve([501]);
+                });
+            });
+
+            threw = false;
+            try {
+                await upload.uploadFiles(options);
+            } catch (e) {
+                should(e).be.ok();
+                should(e.getCode()).be.exactly(ErrorCodes.NOT_SUPPORTED);
+                threw = true;
+            }
+            should(threw).be.ok();
+        });
+
+        it('legacy complete uri', async() => {
+            const targetFolder = '/target/folder_legacy_complete';
+            const part1 = MockRequest.getPartUrl(targetFolder, 'targetfile.jpg', 0);
+            const part2 = MockRequest.getPartUrl(targetFolder, 'targetfile2.jpg', 0);
+            MockRequest.addDirectUpload(targetFolder);
+            MockRequest.onInit(targetFolder, () => {
+                return new Promise(resolve => {
+                    resolve([200, {
+                        files: [
+                            {
+                                fileName: 'targetfile.jpg',
+                                mimeType: 'image/jpeg',
+                                uploadToken: '12345',
+                                completeURI: `http://invalid/prefix/content/dam${targetFolder}.completeUpload.json?fileName=targetfile.jpg&mimeType=image/jpeg&uploadToken=12345`,
+                                uploadURIs: [
+                                    part1
+                                ]
+                            },
+                            {
+                                fileName: 'targetfile2.jpg',
+                                mimeType: 'image/jpeg',
+                                uploadToken: '12345',
+                                completeURI: `http://invalid/content/dam${targetFolder}.completeUpload.json?fileName=targetfile2.jpg&mimeType=image/jpeg&uploadToken=12345`,
+                                uploadURIs: [
+                                    part2
+                                ]
+                            },
+                        ]
+                    }]);
+                });
+            });
+            MockRequest.onPut(part1).reply(async() => [201]);
+            MockRequest.onPut(part2).reply(async() => [201]);
+
+            const options = new DirectBinaryUploadOptions()
+                .withUrl(MockRequest.getUrl(targetFolder))
+                .withUploadFiles(getTestUploadFiles())
+                .withConcurrent(false)
+                .withHttpRetryCount(1);
+
+            const upload = new DirectBinaryUpload();
+            const result = await upload.uploadFiles(options);
+            should(result).be.ok();
+            should(result.getErrors().length).be.exactly(0);
+            should(MockRequest.history.post.length).be.exactly(3);
+            should(MockRequest.history.put.length).be.exactly(2);
+        });
     });
 });

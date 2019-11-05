@@ -10,6 +10,8 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
+import URL from 'url';
+
 import UploadOptionsBase from './upload-options-base';
 import InitResponseFile from './init-response-file';
 
@@ -53,7 +55,29 @@ export default class InitResponse extends UploadOptionsBase {
      * @returns {string} URI to invoke for completing the upload process.
      */
     getCompleteUri() {
-        const { completeURI } = this.initData;
+        let { completeURI } = this.initData;
+
+        // older versions of the API return file-specific completeURIs. In this case, use the
+        // first file's URI.
+        if (!completeURI && this.getFiles().length > 0) {
+            const fileCompleteURI = this.getFiles()[0].getFileData('completeURI');
+
+            if (fileCompleteURI) {
+                completeURI = fileCompleteURI;
+            }
+        }
+
+        // older versions of the API return absolute URIs for the completeURI. In this case,
+        // convert the URI to relative
+        if (completeURI) {
+            completeURI = URL.parse(completeURI).pathname;
+
+            // remove instance context path, if necessary
+            const contentIndex = completeURI.indexOf('/content/dam');
+            if (contentIndex > 0) {
+                completeURI = completeURI.substr(contentIndex);
+            }
+        }
 
         return `${this.getUploadOptions().getUrlPrefix()}${completeURI}`;
     }

@@ -90,6 +90,10 @@ export default class DirectBinaryUploadProcess extends UploadOptionsBase {
             initResponse = new InitResponse(this.getOptions(), options, toUpload, resObj);
             fileListInit = initResponse.getFiles();
 
+            if (!fileListInit.length || !fileListInit[0].getUploadUris().length) {
+                throw new UploadError('direct binary access not supported', ErrorCodes.NOT_SUPPORTED);
+            }
+
             uploadResult.setInitTime(elapsedTime);
             uploadResult.setTotalFiles(fileListInit.length);
         } catch (e) {
