@@ -494,6 +494,51 @@ describe('DirectBinaryUploadTest', () => {
             should(posts[0].url).be.exactly(MockRequest.getUrl(`${targetFolder}.initiateUpload.json`));
         });
 
+        it('progress events', async() => {
+            const targetFolder = '/target/progress_events';
+            MockRequest.addDirectUpload(targetFolder);
+
+            const options = new DirectBinaryUploadOptions()
+                .withUrl(MockRequest.getUrl(targetFolder))
+                .withUploadFiles(getTestUploadFiles())
+                .withConcurrent(false);
+
+            const upload = new DirectBinaryUpload({ progressDelay: 0 });
+            monitorEvents(upload);
+
+            await upload.uploadFiles(options);
+
+            should(events.length).be.exactly(10);
+
+            should(events[0].event).be.exactly('filestart');
+            should(events[0].data.fileName).be.exactly('targetfile.jpg');
+            should(events[1].event).be.exactly('fileprogress');
+            should(events[1].data.fileName).be.exactly('targetfile.jpg');
+            should(events[1].data.transferred).be.exactly(6);
+            should(events[2].event).be.exactly('fileprogress');
+            should(events[2].data.fileName).be.exactly('targetfile.jpg');
+            should(events[2].data.transferred).be.exactly(15);
+            should(events[3].event).be.exactly('fileend');
+            should(events[3].data.fileName).be.exactly('targetfile.jpg');
+
+            should(events[4].event).be.exactly('filestart');
+            should(events[4].data.fileName).be.exactly('targetfile2.jpg');
+            should(events[5].event).be.exactly('fileprogress');
+            should(events[5].data.fileName).be.exactly('targetfile2.jpg');
+            should(events[5].data.transferred).be.exactly(6);
+            should(events[6].event).be.exactly('fileprogress');
+            should(events[6].data.fileName).be.exactly('targetfile2.jpg');
+            should(events[6].data.transferred).be.exactly(15);
+            should(events[7].event).be.exactly('fileprogress');
+            should(events[7].data.fileName).be.exactly('targetfile2.jpg');
+            should(events[7].data.transferred).be.exactly(25);
+            should(events[8].event).be.exactly('fileprogress');
+            should(events[8].data.fileName).be.exactly('targetfile2.jpg');
+            should(events[8].data.transferred).be.exactly(35);
+            should(events[9].event).be.exactly('fileend');
+            should(events[9].data.fileName).be.exactly('targetfile2.jpg');
+        });
+
         it('direct binary not supported', async() => {
             const targetFolder = '/target/folder_not_supported';
             MockRequest.addDirectUpload(targetFolder);

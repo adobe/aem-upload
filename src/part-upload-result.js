@@ -12,7 +12,7 @@ governing permissions and limitations under the License.
 
 import UploadError from './upload-error';
 
-import HttpResult from './upload-result';
+import HttpResult from './http-result';
 
 /**
  * Represents the results of an individual file part upload. These results contain information such as

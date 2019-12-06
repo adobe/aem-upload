@@ -27,12 +27,12 @@ export default class FileUploadResult extends HttpResult {
      *
      * @param {object} options Options as provided when the upload instance was instantiated.
      * @param {DirectBinaryUploadOptions} uploadOptions Options as provided when the upload was initiated.
-     * @param {InitResponseFile} initResponseFile File information on which the results are based.
+     * @param {InitResponseFileInfo} initResponseFileInfo File information on which the results are based.
      */
-    constructor(options, uploadOptions, initResponseFile) {
+    constructor(options, uploadOptions, initResponseFileInfo) {
         super(options, uploadOptions);
 
-        this.initResponseFile = initResponseFile;
+        this.initResponseFileInfo = initResponseFileInfo;
         this.parts = [];
         this.cancelled = false;
     }
@@ -59,7 +59,7 @@ export default class FileUploadResult extends HttpResult {
      * @returns {string} The name of the file.
      */
     getFileName() {
-        return this.initResponseFile.getFileName();
+        return this.initResponseFileInfo.getFileName();
     }
 
     /**
@@ -68,7 +68,7 @@ export default class FileUploadResult extends HttpResult {
      * @returns {number} File size in bytes.
      */
     getFileSize() {
-        return this.initResponseFile.getFileSize();
+        return this.initResponseFileInfo.getFileSize();
     }
 
     /**
@@ -133,7 +133,7 @@ export default class FileUploadResult extends HttpResult {
      * @returns {number} A time span in milliseconds.
      */
     getTotalCompleteTime() {
-        return this.completeTime;
+        return this.completeTime || 0;
     }
 
     /**
@@ -217,7 +217,7 @@ export default class FileUploadResult extends HttpResult {
      * @returns {object} Result data in a simple format.
      */
     toJSON() {
-        const partSize = this.initResponseFile.getPartSize();
+        const partSize = this.initResponseFileInfo.getFilePartSize();
 
         let message = '';
 
@@ -229,11 +229,11 @@ export default class FileUploadResult extends HttpResult {
         });
 
         const data = {
-            fileName: this.initResponseFile.getFileName(),
-            targetPath: this.initResponseFile.getTargetFilePath(),
-            fileSize: this.initResponseFile.getFileSize(),
+            fileName: this.initResponseFileInfo.getFileName(),
+            targetPath: this.initResponseFileInfo.getTargetFilePath(),
+            fileSize: this.initResponseFileInfo.getFileSize(),
             partSize,
-            fileSizeStr: filesize(this.initResponseFile.getFileSize()),
+            fileSizeStr: filesize(this.initResponseFileInfo.getFileSize()),
             partSizeStr: filesize(partSize),
             partNum: this.getPartCount(),
             putSpentFinal: this.getTotalUploadTime(),

@@ -50,6 +50,23 @@ export default class InitResponse extends UploadOptionsBase {
     }
 
     /**
+     * Retrieves all the parts for all the files in the upload. The list will be grouped by
+     * file, in the same order in which the files were provided to the upload process; the
+     * parts themselves will be sorted in the order by which they should be uploaded.
+     *
+     * @returns {Array} A list of InitResponseFilePart instances.
+     */
+    getAllParts() {
+        const parts = [];
+        this.getFiles().forEach(initFile => {
+            initFile.getParts().forEach(initFilePart => {
+                parts.push(initFilePart);
+            });
+        });
+        return parts;
+    }
+
+    /**
      * Retrieves the URI that can be called as-is for completing the upload process.
      *
      * @returns {string} URI to invoke for completing the upload process.

@@ -62,7 +62,7 @@ describe('InitResponseFileTest', () => {
         should(parts[1].getEndOffset()).be.exactly(5);
         should(parts[1].getUrl()).be.exactly(uploadUris[1]);
 
-        should(resFile.getPartSize()).be.exactly(3);
+        should(resFile.getFilePartSize()).be.exactly(3);
 
         const chunk = resFile.getFileChunk(0, 3);
         should(chunk.length).be.exactly(3);
