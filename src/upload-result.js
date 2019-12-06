@@ -45,6 +45,7 @@ export default class UploadResult extends HttpResult {
 
         this.initTime = 0;
         this.totalTime = 0;
+        this.totalFiles = 0;
         this.fileUploadResults = [];
     }
 

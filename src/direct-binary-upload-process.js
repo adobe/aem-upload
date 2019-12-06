@@ -26,6 +26,8 @@ import {
     serialLoop,
 } from './utils';
 
+const DEFAULT_PROGRESS_THRESHOLD = 500;
+
 /**
  * Contains all logic for the process that uploads a set of files using direct binary access.
  */
@@ -37,6 +39,9 @@ export default class DirectBinaryUploadProcess extends UploadOptionsBase {
         this.cancelledFiles = {};
         this.cancelTokens = {};
         this.initCancelToken = null;
+        this.fileResults = {};
+        this.fileEvents = {};
+        this.fileTransfer = {};
     }
 
     /**
@@ -100,27 +105,22 @@ export default class DirectBinaryUploadProcess extends UploadOptionsBase {
             throw UploadError.fromError(e, 'unable to initiate upload');
         }
 
-        const uploadProcess = new DirectBinaryUploadProcess(this.getOptions(), options);
-
-        uploadProcess.on('filestart', data => this.sendEvent('filestart', data));
-        uploadProcess.on('fileprogress', data => this.sendEvent('fileprogress', data));
-        uploadProcess.on('fileend', data => this.sendEvent('fileend', data));
-        uploadProcess.on('fileerror', data => this.sendEvent('fileerror', data));
-        uploadProcess.on('filecancelled', data => this.sendEvent('filecancelled', data));
-
         const controller = options.getController();
 
         controller.on('cancel', data => {
-            uploadProcess.cancel(data);
+            this.cancel(data);
         });
 
+        const allParts = initResponse.getAllParts();
         if (concurrent) {
+            this.logInfo(`Concurrently uploading ${allParts.length} total parts with a max count of ${options.getMaxConcurrent()}`);
             await concurrentLoop(
-                fileListInit,
+                allParts,
                 options.getMaxConcurrent(),
-                (file) => uploadProcess.processFile(options, uploadResult, initResponse, file));
+                (part) => this.processPart(options, uploadResult, initResponse, part));
         } else {
-            await serialLoop(fileListInit, (file) => uploadProcess.processFile(options, uploadResult, initResponse, file));
+            this.logInfo(`Serially uploading ${allParts.length} total parts`);
+            await serialLoop(allParts, (part) => this.processPart(options, uploadResult, initResponse, part));
         }
 
         uploadResult.stopTimer();
@@ -132,139 +132,248 @@ export default class DirectBinaryUploadProcess extends UploadOptionsBase {
     }
 
     /**
-     * Does the work of uploading a single file to the target AEM instance.
+     * If needed, starts a file's upload by initializing an upload result and sending
+     * events.
+     *
+     * @param {DirectBinaryUploadOptions} uploadOptions The upload process's options.
+     * @param {InitResponseFileInfo} initResponseFileInfo File information to be used.
+     * @param {UploadResult} uploadResult Overall result to which file's result will be added.
+     * @returns {FileUploadResult} The file's upload result information.
+     */
+    startFileUpload(uploadOptions, initResponseFileInfo, uploadResult) {
+        const resultKey = initResponseFileInfo.getFileName();
+        if (!this.fileResults[resultKey]) {
+            this.fileResults[resultKey] = new FileUploadResult(this.getOptions, uploadOptions, initResponseFileInfo);
+            this.fileResults[resultKey].startTimer();
+            this.fileEvents[resultKey] = {};
+            this.fileTransfer[resultKey] = 0;
+
+            uploadResult.addFileUploadResult(this.fileResults[resultKey]);
+
+            if (!this.isCancelled(initResponseFileInfo)) {
+                this.sendEvent('filestart', initResponseFileInfo.getFileEventData());
+            }
+        }
+        return this.fileResults[resultKey];
+    }
+
+    /**
+     * Checks if all parts of a file have uploaded and, if so, stops the result timer
+     * and removes the in-progress file data.
+     *
+     * @param {InitResponseFileInfo} initResponseFileInfo Information to use to determine if all parts are finished.
+     * @param {FileUploadResult} fileUploadResult Result whose current part count will be
+     *  compared with total part count.
+     * @returns True if the file is finished, false otherwise.
+     */
+    stopFileUpload(initResponseFileInfo, fileUploadResult) {
+        if (initResponseFileInfo.getFilePartCount() === fileUploadResult.getPartCount()) {
+            const resultKey = initResponseFileInfo.getFileName();
+            const fileUploadResult = this.fileResults[resultKey];
+            fileUploadResult.stopTimer();
+
+            this.logInfo(`Finished uploading '${initResponseFileInfo.getFileName()}', took '${fileUploadResult.getTotalUploadTime()}' ms`);
+
+            delete this.fileResults[resultKey];
+
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Does the work of uploading a single part to its target URL.
      *
      * @param {DirectBinaryUploadOptions} options Controls how the method behaves.
      * @param {UploadResult} uploadResult Results for the overall upload.
      * @param {InitResponse} initResponse The response data from the init request.
-     * @param {InitResponseFile} initResponseFile Initialization info about the file currently being processed.
+     * @param {InitResponseFilePart} initResponseFilePart Initialization info about the part currently being processed.
      */
-    async processFile(options, uploadResult, initResponse, initResponseFile) {
-        const headers = options.getHeaders();
-        const fileName = initResponseFile.getFileName();
-        const fileSize = initResponseFile.getFileSize();
-        const mimeType = initResponseFile.getMimeType();
-        const uploadToken = initResponseFile.getUploadToken();
-        const parts = initResponseFile.getParts();
+    async processPart(options, uploadResult, initResponse, initResponseFilePart) {
+        const fileName = initResponseFilePart.getFileName();
+        const fileSize = initResponseFilePart.getFileSize();
 
-        let success = false;
-        const eventData = initResponseFile.getEventData();
-        const fileUploadResult = new FileUploadResult(this.getOptions(), options, initResponseFile);
+        const eventData = initResponseFilePart.getFileEventData();
+        const fileUploadResult = this.startFileUpload(options, initResponseFilePart, uploadResult);
 
-        if (!this.isCancelled(initResponseFile.getFileName())) {
-            initResponseFile.on('progress', progress => {
-                const { fileName, fileSize, transferred } = progress;
-                this.logInfo(`Upload of ${fileName} ${Math.round(transferred / fileSize * 100)}% complete`);
-                this.sendEvent('fileprogress', progress);
-            });
+        if (fileUploadResult.isSuccessful() && !this.isCancelled(initResponseFilePart)) {
+            this.logInfo(`Start uploading '${fileName}' to cloud, fileSize: '${fileSize}'`);
 
-            this.logInfo(`Start uploading '${fileName}' to cloud, fileSize: '${fileSize}', parts: '${parts.length}'`);
+            await this.uploadPartToCloud(options, fileUploadResult, initResponseFilePart);
 
-            fileUploadResult.startTimer();
-
-            this.sendEvent('filestart', eventData);
-            await this.uploadToCloud(options, initResponseFile, fileUploadResult, parts);
-
-            fileUploadResult.stopTimer();
-
-            this.logInfo(`Finished uploading '${fileName}', took '${fileUploadResult.getTotalUploadTime()}' ms`);
-
-            if (fileUploadResult.isSuccessful() && !this.isCancelled(initResponseFile.getFileName())) {
-                const completeData = {
-                    fileName,
-                    mimeType,
-                    uploadToken,
-                    uploadDuration: fileUploadResult.getTotalUploadTime(),
-                    fileSize,
-                };
-
-                if (initResponseFile.shouldCreateNewVersion()) {
-                    completeData.createVersion = true;
-
-                    const versionLabel = initResponseFile.getVersionLabel();
-                    const versionComment = initResponseFile.getVersionComment();
-                    if (versionLabel) {
-                        completeData.versionLabel = versionLabel;
-                    }
-                    if (versionComment) {
-                        completeData.versionComment = versionComment;
-                    }
-                } else if (initResponseFile.shouldReplace()) {
-                    completeData.replace = true;
-                }
-
-                const completeOptions = {
-                    url: initResponse.getCompleteUri(),
-                    method: 'POST',
-                    headers: {
-                        ...headers,
-                        'content-type': 'application/x-www-form-urlencoded',
-                    },
-                    data: querystring.stringify(completeData),
-                };
-
+            if (this.stopFileUpload(initResponseFilePart, fileUploadResult) && fileUploadResult.isSuccessful() && !this.isCancelled(initResponseFilePart)) {
                 try {
-                    const cancelToken = this.addCancelToken(fileName, 'complete');
-                    const response = await timedRequest(completeOptions, this.getRetryOptions(options, fileUploadResult), cancelToken);
-                    this.removeCancelToken(fileName, 'complete');
-                    const {
-                        elapsedTime: completeElapsedTime = 0,
-                        status: completeStatusCode,
-                    } = response;
-                    fileUploadResult.setTotalCompleteTime(completeElapsedTime);
-
-                    this.logInfo(`Finished complete uploading '${fileName}', response code: '${completeStatusCode}', time elapsed: '${completeElapsedTime}' ms`);
-                    success = true;
+                    await this.completeUpload(options, initResponse, initResponseFilePart, fileUploadResult);
                 } catch (e) {
                     fileUploadResult.setCompleteError(e);
                     this.logError(`Complete uploading error '${fileName}'`, e);
                 }
+
+                if (fileUploadResult.isSuccessful()) {
+                    this.sendEvent('fileend', eventData);
+                }
             }
         }
 
-        if (this.isCancelled(initResponseFile.getFileName())) {
+        if (this.isCancelled(initResponseFilePart)) {
             fileUploadResult.setIsCancelled(true);
-            this.sendEvent('filecancelled', eventData);
-        } else if (!success) {
-            this.sendEvent('fileerror', {
+            this.sendEventOnce(initResponseFilePart, 'filecancelled', eventData);
+        } else if (!fileUploadResult.isSuccessful()) {
+            this.sendEventOnce(initResponseFilePart, 'fileerror', {
                 ...eventData,
                 errors: fileUploadResult.getErrors(),
             });
-        } else {
-            this.sendEvent('fileend', eventData);
         }
-
-        uploadResult.addFileUploadResult(fileUploadResult);
     }
 
     /**
-     * Performs the work of uploading all parts of a file to the target instance.
+     * Does the work of completing an upload by submitting a request to the complete upload servlet.
      *
-     * @param {DirectBinaryUploadOptions} options Controls how the overall upload behaves.
-     * @param {InitResponseFile} initResponseFile The file being uploaded to the cloud.
-     * @param {FileUploadResult} fileUploadResult Information about the upload process of the individual file will be added
-     *  to this result.
-     * @param {Array} parts The list of InitResponseFilePart instances that will be used as each part to upload.
+     * @param {DirectBinaryUploadOptions} options Controls how the method behaves.
+     * @param {InitResponse} initResponse Data from the initiate request.
+     * @param {InitResponseFileInfo} initResponseFileInfo Used to retrieve the file's
+     *  information.
+     * @param {FileUploadResult} fileUploadResult Information about the complete request will
+     *  be added to the result.
      */
-    async uploadToCloud(options, initResponseFile, fileUploadResult, parts) {
-        await serialLoop(parts, part => this.uploadPartToCloud(options, initResponseFile, fileUploadResult, part));
+    async completeUpload(options, initResponse, initResponseFileInfo, fileUploadResult) {
+        const headers = options.getHeaders();
+        const fileName = initResponseFileInfo.getFileName();
+        const fileSize = initResponseFileInfo.getFileSize();
+        const mimeType = initResponseFileInfo.getMimeType();
+        const uploadToken = initResponseFileInfo.getUploadToken();
+
+        const completeData = {
+            fileName,
+            mimeType,
+            uploadToken,
+            uploadDuration: fileUploadResult.getTotalUploadTime(),
+            fileSize,
+        };
+
+        if (initResponseFileInfo.shouldCreateNewVersion()) {
+            completeData.createVersion = true;
+
+            const versionLabel = initResponseFileInfo.getVersionLabel();
+            const versionComment = initResponseFileInfo.getVersionComment();
+            if (versionLabel) {
+                completeData.versionLabel = versionLabel;
+            }
+            if (versionComment) {
+                completeData.versionComment = versionComment;
+            }
+        } else if (initResponseFileInfo.shouldReplace()) {
+            completeData.replace = true;
+        }
+
+        const completeOptions = {
+            url: initResponse.getCompleteUri(),
+            method: 'POST',
+            headers: {
+                ...headers,
+                'content-type': 'application/x-www-form-urlencoded',
+            },
+            data: querystring.stringify(completeData),
+        };
+
+        const cancelToken = this.addCancelToken(fileName, 'complete');
+        const response = await timedRequest(completeOptions, this.getRetryOptions(options, fileUploadResult), cancelToken);
+        this.removeCancelToken(fileName, 'complete');
+        const {
+            elapsedTime: completeElapsedTime = 0,
+            status: completeStatusCode,
+        } = response;
+        fileUploadResult.setTotalCompleteTime(completeElapsedTime);
+
+        this.logInfo(`Finished complete uploading '${fileName}', response code: '${completeStatusCode}', time elapsed: '${completeElapsedTime}' ms`);
+    }
+
+    /**
+     * Retrieves the last time an event was sent for a particular file.
+     *
+     * @param {InitResponseFileInfo} initResponseFileInfo Used to retrieve file information.
+     * @param {string} eventName The name of the event.
+     * @returns {number} Last time an event was sent, in milliseconds. Returns 0 if the event hasn't
+     *  been sent for the given file.
+     */
+    getLastEventTime(initResponseFileInfo, eventName) {
+        const eventKey = initResponseFileInfo.getFileName();
+        if (this.fileEvents[eventKey][eventName]) {
+            return this.fileEvents[eventKey][eventName];
+        }
+
+        return 0;
+    }
+
+    /**
+     * Uses the current time to set the last time an event was sent for a particular file.
+     *
+     * @param {InitResponseFileInfo} initResponseFileInfo Will be used to retrieve file information.
+     * @param {string} eventName The name of the event.
+     */
+    setLastEventTime(initResponseFileInfo, eventName) {
+        const eventKey = initResponseFileInfo.getFileName();
+        this.fileEvents[eventKey][eventName] = new Date().getTime();
+    }
+
+    /**
+     * Sends an event for a given file if it hasn't been sent already.
+     *
+     * @param {InitResponseFileInfo} initResponseFileInfo Will be used to retrieve file information.
+     * @param {string} eventName The name of the event to send.
+     * @param {object} eventData Data to provide with the event.
+     */
+    sendEventOnce(initResponseFileInfo, eventName, eventData) {
+        if (!this.getLastEventTime(initResponseFileInfo, eventName)) {
+            this.setLastEventTime(initResponseFileInfo, eventName);
+
+            this.sendEvent(eventName, eventData);
+        }
+    }
+
+    /**
+     * Sends an event for a given file, but only if the event hasn't been sent for a specified interval.
+     *
+     * @param {InitResponseFileInfo} initResponseFileInfo Will be used to retrieve file information.
+     * @param {string} eventName The name of the event to send.
+     * @param {object} eventData Data to provide with the event.
+     */
+    sendMeteredEvent(initResponseFileInfo, eventName, eventData) {
+        const currTime = new Date().getTime();
+        const { progressDelay = DEFAULT_PROGRESS_THRESHOLD } = this.getOptions();
+
+        if (currTime - this.getLastEventTime(initResponseFileInfo, eventName) > progressDelay) {
+            this.setLastEventTime(initResponseFileInfo, eventName);
+
+            this.sendEvent(eventName, eventData);
+        }
+    }
+
+    /**
+     * Sends a progress event for a given file, but only if it hasn't been sent for a specified interval.
+     *
+     * @param {InitResponseFileInfo} initResponseFileInfo Will be used to retrieve file information.
+     * @param {number} transferred The amount of data, in bytes, that has transferred. Will be added to a
+     *  running total for the file.
+     */
+    sendProgressEvent(initResponseFileInfo, transferred) {
+        const transferKey = initResponseFileInfo.getFileName();
+        this.fileTransfer[transferKey] += transferred;
+        this.sendMeteredEvent(initResponseFileInfo, 'fileprogress', {
+            ...initResponseFileInfo.getFileEventData(),
+            transferred: this.fileTransfer[transferKey]
+        });
     }
 
     /**
      * Performs the work of uploading a single file part to the target instance.
      *
      * @param {DirectBinaryUploadOptions} options Controls how the overall upload behaves.
-     * @param {InitResponseFile} initResponseFile The file being uploaded to the cloud.
      * @param {FileUploadResult} fileUploadResult Information about the upload process of the individual file will be added
      *  to this result.
      * @param {InitResponseFilePart} part The file part whose information will be used to do the upload.
      */
-    async uploadPartToCloud(options, initResponseFile, fileUploadResult, part) {
-        if (!fileUploadResult.isSuccessful() || this.isCancelled(initResponseFile.getFileName())) {
-            // discontinue uploading parts
-            return;
-        }
-
+    async uploadPartToCloud(options, fileUploadResult, part) {
         const data = part.getData();
         const reqOptions = {
             url: part.getUrl(),
@@ -276,13 +385,15 @@ export default class DirectBinaryUploadProcess extends UploadOptionsBase {
         if (data.on) {
             data.on('data', chunk => {
                 totalTransferred += chunk.length;
-                initResponseFile.sendProgress(part.getStartOffset(), totalTransferred);
+                this.sendProgressEvent(part, totalTransferred);
             });
         } else {
             reqOptions.onUploadProgress = progress => {
                 const { loaded } = progress;
                 if (loaded) {
-                    initResponseFile.sendProgress(part.getStartOffset(), loaded);
+                    let incLoaded = loaded - totalTransferred;
+                    totalTransferred = loaded;
+                    this.sendProgressEvent(part, incLoaded);
                 }
             };
         }
@@ -296,9 +407,9 @@ export default class DirectBinaryUploadProcess extends UploadOptionsBase {
         const partResult = new PartUploadResult(this.getOptions(), options, part);
         try {
             const tokenName = `part_${part.getStartOffset()}`;
-            const cancelToken = this.addCancelToken(initResponseFile.getFileName(), tokenName);
+            const cancelToken = this.addCancelToken(part.getFileName(), tokenName);
             const response = await timedRequest(reqOptions, this.getRetryOptions(options, partResult), cancelToken);
-            this.removeCancelToken(initResponseFile.getFileName(), tokenName);
+            this.removeCancelToken(part.getFileName(), tokenName);
 
             const {
                 status: statusCode,
@@ -336,10 +447,10 @@ export default class DirectBinaryUploadProcess extends UploadOptionsBase {
     /**
      * Retrieves a value indicating whether or not a given file transfer has been cancelled.
      *
-     * @param {string} fileName The name of an upload file.
+     * @param {InitResponseFileInfo} initResponseFileInfo The file being uploaded.
      */
-    isCancelled(fileName) {
-        return this.cancelled || !!this.cancelledFiles[fileName];
+    isCancelled(initResponseFileInfo) {
+        return this.cancelled || !!this.cancelledFiles[initResponseFileInfo.getFileName()];
     }
 
     /**

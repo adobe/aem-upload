@@ -37,12 +37,6 @@ export default class DirectBinaryUpload extends UploadBase {
         uploadProcess.on('fileerror', data => this.sendEvent('fileerror', data));
         uploadProcess.on('filecancelled', data => this.sendEvent('filecancelled', data));
 
-        const controller = options.getController();
-
-        controller.on('cancel', data => {
-            uploadProcess.cancel(data);
-        });
-
         return await uploadProcess.upload();
     }
 }

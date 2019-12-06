@@ -45,3 +45,15 @@ module.exports.importFile = (file, fileMocks) => {
     }
     return required;
 }
+
+/**
+ * Retrieves a test logger that will print messages to console.log.
+ */
+module.exports.getConsoleLogger = () => {
+    return {
+        info: console.log,
+        debug: console.log,
+        warn: console.log,
+        error: console.log
+    }
+}

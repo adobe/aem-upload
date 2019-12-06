@@ -10,33 +10,24 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import UploadOptionsBase from './upload-options-base';
+import InitResponseFileInfo from './init-response-file-info';
 
 /**
  * Represents a part of a file to upload, based on the response from the direct binary upload initiate request.
  */
-export default class InitResponseFilePart extends UploadOptionsBase {
+export default class InitResponseFilePart extends InitResponseFileInfo {
     /**
      * Constructs a new part instance, which can be used to retrieve information about the file part.
      *
-     * @param {object} options Options as provided when the upload instance was instantiated.
-     * @param {DirectBinaryUploadOptions} uploadOptions Options as provided when the upload was initiated.
+     * @param {object} options Options controlling the overall process.
+     * @param {DirectBinaryUploadOptions} uploadOptions Options controlling the upload process.
+     * @param {UploadFile} uploadFile The original upload file from which the init data is based.
+     * @param {object} fileData Raw file data as received from the init api.
      * @param {object} partOptions Raw part data as received from the direct binary upload initiate request.
-     * @param {InitResponseFile} initResponseFile The file on which the part is based.
      */
-    constructor(options, uploadOptions, partOptions, initResponseFile) {
-        super(options, uploadOptions);
+    constructor(options, uploadOptions, uploadFile, fileData, partOptions) {
+        super(options, uploadOptions, uploadFile, fileData);
         this.partOptions = partOptions;
-        this.fileData = initResponseFile;
-    }
-
-    /**
-     * Retrieves the name of the file to which the part belongs, as specified in the upload options.
-     *
-     * @returns {string} The name of the file.
-     */
-    getFileName() {
-        return this.fileData.getFileName();
     }
 
     /**
@@ -81,7 +72,7 @@ export default class InitResponseFilePart extends UploadOptionsBase {
      * @returns {Readable|Array} A node.js stream, or an array of bytes, containing the part's data.
      */
     getData() {
-        return this.fileData.getFileChunk(this.getStartOffset(), this.getEndOffset());
+        return this.getFileChunk(this.getStartOffset(), this.getEndOffset());
     }
 
     /**
