@@ -13,6 +13,7 @@ governing permissions and limitations under the License.
 import URL from 'url';
 
 import DirectBinaryUploadController from './direct-binary-upload-controller';
+import { trimRight } from './utils';
 import { DefaultValues } from './constants';
 
 /**
@@ -176,7 +177,7 @@ export default class DirectBinaryUploadOptions {
      * @returns {string} Target URL as provided to the options instance.
      */
     getUrl() {
-        return this.options.url;
+        return trimRight(this.options.url, ['/']) || '/';
     }
 
     /**
