@@ -12,6 +12,7 @@ governing permissions and limitations under the License.
 
 const should = require('should');
 const querystring = require('querystring');
+const { Readable } = require('stream');
 
 const { importFile } = require('./testutils');
 const MockRequest = require('./mock-request');
@@ -177,6 +178,43 @@ describe('DirectBinaryUploadProcessTest', () => {
             const fileResults = result.getFileUploadResults();
             should(fileResults.length).be.exactly(1);
             should(fileResults[0].getRetryErrors().length).be.exactly(1);
+        });
+
+        it('file upload smoke', async () => {
+            const fileSize = 1024;
+            const targetFolder = '/target/file-upload-smoke';
+            MockRequest.addDirectUpload(targetFolder);
+            const options = new DirectBinaryUploadOptions()
+                .withUrl(MockRequest.getUrl(targetFolder))
+                .withUploadFiles([{
+                    fileName: 'fileuploadsmoke.jpg',
+                    fileSize,
+                    blob: {
+                        slice: () => {
+                            const s = new Readable();
+                            s._read = () => {};
+                            let value = '';
+                            for (let i = 0; i < fileSize / 2; i += 1) {
+                                value += 'a';
+                            }
+                            s.push(value);
+                            s.push(value);
+                            s.push(null);
+
+                            return s;
+                        }
+                    }
+                }]);
+            const process = new DirectBinaryUploadProcess({ progressDelay: 0 }, options);
+
+            process.on('fileprogress', event => {
+                const { transferred } = event;
+                if (transferred !== 512 && transferred !== 1024 && transferred !== 1536 && transferred !== 2048) {
+                    should(false).be.ok();
+                }
+            });
+
+            await process.upload();
         });
     });
 });

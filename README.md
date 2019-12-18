@@ -517,7 +517,10 @@ through the stages of uploading a file. These events are listed below.
                         <tr>
                             <td>transferred</td>
                             <td>number</td>
-                            <td>The number of the file's bytes that have been uploaded so far.</td>
+                            <td>
+                                The number of the file's bytes that have been uploaded so far. This will
+                                be a cumulative value, increasing each time the event is sent.
+                            </td>
                         </tr>
                     </tbody>
                 </table>
