@@ -384,8 +384,7 @@ export default class DirectBinaryUploadProcess extends UploadOptionsBase {
         let totalTransferred = 0;
         if (data.on) {
             data.on('data', chunk => {
-                totalTransferred += chunk.length;
-                this.sendProgressEvent(part, totalTransferred);
+                this.sendProgressEvent(part, chunk.length);
             });
         } else {
             reqOptions.onUploadProgress = progress => {
