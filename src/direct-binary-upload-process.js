@@ -199,7 +199,8 @@ export default class DirectBinaryUploadProcess extends UploadOptionsBase {
         if (fileUploadResult.isSuccessful() && !this.isCancelled(initResponseFilePart)) {
             this.logInfo(`Start uploading '${fileName}' to cloud, fileSize: '${fileSize}'`);
 
-            await this.uploadPartToCloud(options, fileUploadResult, initResponseFilePart);
+            const partResult = await this.uploadPartToCloud(options, initResponseFilePart);
+            fileUploadResult.addPartResult(partResult);
 
             if (this.stopFileUpload(initResponseFilePart, fileUploadResult) && fileUploadResult.isSuccessful() && !this.isCancelled(initResponseFilePart)) {
                 try {
@@ -369,11 +370,9 @@ export default class DirectBinaryUploadProcess extends UploadOptionsBase {
      * Performs the work of uploading a single file part to the target instance.
      *
      * @param {DirectBinaryUploadOptions} options Controls how the overall upload behaves.
-     * @param {FileUploadResult} fileUploadResult Information about the upload process of the individual file will be added
-     *  to this result.
      * @param {InitResponseFilePart} part The file part whose information will be used to do the upload.
      */
-    async uploadPartToCloud(options, fileUploadResult, part) {
+    async uploadPartToCloud(options, part) {
         const data = part.getData();
         const reqOptions = {
             url: part.getUrl(),
@@ -384,8 +383,7 @@ export default class DirectBinaryUploadProcess extends UploadOptionsBase {
         let totalTransferred = 0;
         if (data.on) {
             data.on('data', chunk => {
-                totalTransferred += chunk.length;
-                this.sendProgressEvent(part, totalTransferred);
+                this.sendProgressEvent(part, chunk.length);
             });
         } else {
             reqOptions.onUploadProgress = progress => {
@@ -418,12 +416,12 @@ export default class DirectBinaryUploadProcess extends UploadOptionsBase {
 
             this.logInfo(`Put upload part done for file: '${part.getFileName()}', offset: '${part.getStartOffset()}-${part.getEndOffset()}', partSize: '${part.getSize()}', spent: '${elapsedTime}' ms, status: ${statusCode}`);
             partResult.setUploadTime(elapsedTime);
-            fileUploadResult.addPartResult(partResult);
         } catch (e) {
             partResult.setError(e);
-            fileUploadResult.addPartResult(partResult);
             this.logError(`Put upload part done for file: '${part.getFileName()}', offset: '${part.getStartOffset()}-${part.getEndOffset()}', partSize: '${part.getSize()}'`, e);
         }
+
+        return partResult;
     }
 
     /**

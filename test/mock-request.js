@@ -45,6 +45,7 @@ const origReset = mock.reset;
 let onInits = {};
 let onParts = {};
 let onCompletes = {};
+let partSize = 512;
 
 /**
  * Calls the default mock axios version of the method, and also resets registered part or complete
@@ -55,7 +56,17 @@ mock.reset = function() {
     onInits = {};
     onParts = {};
     onCompletes = {};
+    partSize = 512;
 };
+
+/**
+ * Sets the size of each part for a file.
+ *
+ * @param {number} newSize The new part size, in bytes.
+ */
+mock.setPartSize = function(newSize) {
+    partSize = newSize;
+}
 
 /**
  * Retrieves the full URL to a file part in the mocked request framework.
@@ -117,9 +128,11 @@ function processInit(targetFolder, config) {
         setTimeout(() => {
             const query = querystring.parse(config.data);
             let fileNames = query.fileName;
+            let fileSizes = query.fileSize;
 
             if (typeof fileNames === 'string') {
                 fileNames = [fileNames];
+                fileSizes = [fileSizes];
             }
             resolve([
                 201,
@@ -127,8 +140,8 @@ function processInit(targetFolder, config) {
                     completeURI: `/content/dam${targetFolder}.completeUpload.json`,
                     folderPath: URL.parse(config.url).pathname,
                     files: fileNames.map((file, index) => {
-                        const fileSize = query.fileSize[index];
-                        const numUris = Math.ceil(fileSize / 512);
+                        const fileSize = fileSizes[index];
+                        const numUris = Math.ceil(fileSize / partSize);
                         const uploadUris = [];
 
                         for (let i = 0; i < numUris; i += 1) {
