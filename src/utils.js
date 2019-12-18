@@ -149,3 +149,64 @@ export async function exponentialRetry(options, toRetry) {
         throw lastErr;
     }
 }
+
+function buildCharRegex(charArray) {
+    let regex = '[';
+
+    charArray.forEach(char => {
+        if (char === '\\' || char === ']') {
+            regex += '\\';
+        }
+        regex += char;
+    });
+
+    regex += ']';
+
+    return regex;
+}
+
+/**
+ * Removes a given set of characters from the end of a string.
+ *
+ * @param {string} toTrim The value to be trimmed.
+ * @param {Array} charArray An array of single characters to trim.
+ */
+export function trimRight(toTrim, charArray) {
+    if (toTrim && toTrim.replace) {
+        return toTrim.replace(new RegExp(`${buildCharRegex(charArray)}*$`, 'g'), '');
+    }
+    return toTrim;
+}
+
+/**
+ * Removes a given set of characters from the beginning of a string.
+ *
+ * @param {string} toTrim The value to be trimmed.
+ * @param {Array} charArray An array of single characters to trim.
+ */
+export function trimLeft(toTrim, charArray) {
+    if (toTrim && toTrim.replace) {
+        return toTrim.replace(new RegExp(`^${buildCharRegex(charArray)}*`, 'g'), '');
+    }
+    return toTrim;
+}
+
+/**
+ * Joins a list of values together to form a URL path. Each of the given values
+ * is guaranteed to be separated from all other values by a forward slash.
+ *
+ * @param  {...string} theArguments Any number of parameters to join.
+ */
+export function joinUrlPath(...theArguments) {
+    let path = '';
+
+    theArguments.forEach(arg => {
+        const toJoin = trimRight(trimLeft(arg, ['/']), ['/']);
+
+        if (toJoin) {
+            path += `/${toJoin}`;
+        }
+    });
+
+    return path;
+}

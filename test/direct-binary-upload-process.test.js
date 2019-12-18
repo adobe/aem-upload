@@ -180,6 +180,27 @@ describe('DirectBinaryUploadProcessTest', () => {
             should(fileResults[0].getRetryErrors().length).be.exactly(1);
         });
 
+        it('trailing slash', async () => {
+            const targetFolder = '/target/folder-trailing-slash';
+            MockRequest.addDirectUpload(targetFolder);
+
+            const options = new DirectBinaryUploadOptions()
+                .withUrl(MockRequest.getUrl(`${targetFolder}/`))
+                .withUploadFiles([{
+                    fileName: 'myasset.jpg',
+                    fileSize: 512,
+                    blob: new MockBlob(),
+                }]);
+            const process = new DirectBinaryUploadProcess({}, options);
+            await process.upload();
+
+            const posts = MockRequest.history.post;
+
+            should(posts.length).be.exactly(2);
+            should(posts[0].url).be.exactly(`${MockRequest.getUrl(targetFolder)}.initiateUpload.json`);
+            should(posts[1].url).be.exactly(`${MockRequest.getUrl(targetFolder)}.completeUpload.json`);
+        });
+
         it('file upload smoke', async () => {
             const fileSize = 1024;
             const targetFolder = '/target/file-upload-smoke';

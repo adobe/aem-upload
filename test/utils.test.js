@@ -14,7 +14,13 @@ const should = require('should');
 
 const { importFile } = require('./testutils');
 
-const { concurrentLoop, exponentialRetry } = importFile('utils');
+const {
+    concurrentLoop,
+    exponentialRetry,
+    trimRight,
+    trimLeft,
+    joinUrlPath
+} = importFile('utils');
 const { DefaultValues } = importFile('constants');
 
 describe('UtilsTest', () => {
@@ -96,5 +102,31 @@ describe('UtilsTest', () => {
             should(count).be.exactly(4);
         }
         should(verified).be.ok();
+    });
+
+    it('test trim right', () => {
+        should(trimRight('/test/', ['/'])).be.exactly('/test');
+        should(trimRight('/test', ['/'])).be.exactly('/test');
+        should(trimRight('/', ['/'])).be.exactly('');
+        should(trimRight('', ['/'])).be.exactly('');
+        should(trimRight(null, ['/'])).be.exactly(null);
+        should(trimRight(1, ['/'])).be.exactly(1);
+        should(trimRight('/trim\\]', ['\\', ']'])).be.exactly('/trim');
+    });
+
+    it('test trim left', () => {
+        should(trimLeft('/test/', ['/'])).be.exactly('test/');
+        should(trimLeft('/test', ['/'])).be.exactly('test');
+        should(trimLeft('/', ['/'])).be.exactly('');
+        should(trimLeft('', ['/'])).be.exactly('');
+        should(trimLeft(null, ['/'])).be.exactly(null);
+        should(trimLeft(1, ['/'])).be.exactly(1);
+        should(trimLeft('\\]trim', ['\\', ']'])).be.exactly('trim');
+    });
+
+    it('test join url path', () => {
+        should(joinUrlPath('1', '2', '3')).be.exactly('/1/2/3');
+        should(joinUrlPath('/1', '/2/', '3/')).be.exactly('/1/2/3');
+        should(joinUrlPath('/', '1', '')).be.exactly('/1');
     });
 });
