@@ -18,7 +18,7 @@
 
 # Background
 
-In legacy AEM Assets, a single post request to createAsset servlet is enough for uploading files. Skyline uses direct binary access, which requires
+In legacy AEM Assets, a single post request to createAsset servlet is enough for uploading files. Newer versions of AEM use direct binary access, which requires
 a more involved algorithm.
 
 This tool is provided for making uploading easier, and can be used as a command line executable
@@ -59,7 +59,7 @@ const DirectBinary = require('@adobe/aem-upload');
 
 ## Uploading Files
 
-Following is the mimimum amount of code required to upload files to a target AEM instance.
+Following is the minimum amount of code required to upload files to a target AEM instance.
 
 ```javascript
 const DirectBinary = require('@adobe/aem-upload');
