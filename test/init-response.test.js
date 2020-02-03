@@ -21,6 +21,7 @@ const UploadFile = importFile('upload-file');
 describe('InitResponseTest', () => {
     it('test get all parts', () => {
         const uploadFiles = [];
+        const completeURI = 'http://unittestupload.com/￡‰§№￠℡㈱/￡‰§№￠℡㈱.jpg';
 
         for (let i = 0; i < 10; i += 1) {
             const fileName = `testfile${i}.jpg`;
@@ -39,7 +40,7 @@ describe('InitResponseTest', () => {
         const uploadFileInstances = [];
         const initData = {
             files: [],
-            completeURI: 'http://unittestupload.com/complete'
+            completeURI
         }
         uploadOptions.getUploadFiles().forEach(uploadFile => {
             const { fileName } = uploadFile;
@@ -67,5 +68,6 @@ describe('InitResponseTest', () => {
             should(part.getFileName()).be.exactly(fileName);
             should(part.getUrl()).be.exactly(`http://unittestupload.com/${fileName}/${partIndex % 10}`);
         });
+        should(initResponse.getCompleteUri()).be.exactly(encodeURI(completeURI));
     });
 });
