@@ -19,7 +19,7 @@ const DirectBinaryUploadOptions = importFile('direct-binary-upload-options');
 const UploadFile = importFile('upload-file');
 
 describe('InitResponseTest', () => {
-    it.only('test get all parts', () => {
+    it('test get all parts', () => {
         const uploadFiles = [];
         const completeURI = 'http://unittestupload.com/￡‰§№￠℡㈱/￡‰§№￠℡㈱.jpg';
 
