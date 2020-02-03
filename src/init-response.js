@@ -87,7 +87,7 @@ export default class InitResponse extends UploadOptionsBase {
         // older versions of the API return absolute URIs for the completeURI. In this case,
         // convert the URI to relative
         if (completeURI) {
-            completeURI = URL.parse(completeURI).pathname;
+            completeURI = URL.parse(encodeURI(completeURI)).pathname;
 
             // remove instance context path, if necessary
             const contentIndex = completeURI.indexOf('/content/dam');
