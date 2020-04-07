@@ -19,7 +19,8 @@ const {
     exponentialRetry,
     trimRight,
     trimLeft,
-    joinUrlPath
+    joinUrlPath,
+    trimContentDam
 } = importFile('utils');
 const { DefaultValues } = importFile('constants');
 
@@ -128,5 +129,16 @@ describe('UtilsTest', () => {
         should(joinUrlPath('1', '2', '3')).be.exactly('/1/2/3');
         should(joinUrlPath('/1', '/2/', '3/')).be.exactly('/1/2/3');
         should(joinUrlPath('/', '1', '')).be.exactly('/1');
+    });
+
+    it('test trim content dam', () => {
+        should(trimContentDam('/content/dam')).be.exactly('');
+        should(trimContentDam('/content/dam/')).be.exactly('');
+        should(trimContentDam('/content/dam/test')).be.exactly('/test');
+        should(trimContentDam(null)).be.exactly(null);
+        should(trimContentDam('/')).be.exactly('/');
+        should(trimContentDam('/content/dame')).be.exactly('/content/dame');
+        should(trimContentDam('/content/dame/test')).be.exactly('/content/dame/test');
+        should(trimContentDam('/test')).be.exactly('/test');
     });
 });
