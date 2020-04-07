@@ -13,10 +13,10 @@ governing permissions and limitations under the License.
 import fs from 'fs';
 import path from 'path';
 import axios from 'axios';
-import querystring from 'querystring';
 
 import UploadBase from './upload-base';
 import DirectBinaryUpload from './direct-binary-upload';
+import { trimContentDam } from './utils';
 
 /**
  * Promise-ified version of fs.stat().
@@ -149,34 +149,41 @@ export default class FileSystemUpload extends UploadBase {
      *  with an error.
      */
     async createAemFolder(options) {
-        const folderUrl = options.getUrl();
         const targetFolder = options.getTargetFolderPath();
         const headers = options.getHeaders();
+        const trimmedFolder = trimContentDam(targetFolder);
 
-        try {
-            await axios({
-                url: `${folderUrl}.0.json`,
-                method: 'GET',
-                headers,
-            });
-            this.logInfo(`AEM target folder '${targetFolder}' exists`);
-            return;
-        } catch (error) {
-            this.logInfo(`AEM target folder '${targetFolder}' does not exist, create it`);
+        if (trimmedFolder) {
+            const folderName = path.basename(trimmedFolder);
+            try {
+                await axios({
+                    url: `${options.getUrlPrefix()}/api/assets${trimmedFolder}`,
+                    method: 'POST',
+                    headers,
+                    data: {
+                        class: 'assetFolder',
+                        properties: {
+                            title: folderName
+                        }
+                    }
+                });
+            } catch (e) {
+                let rethrow = true;
+                if (e) {
+                    const { response = {} } = e;
+                    const { status } = response;
+
+                    if (status === 409) {
+                        rethrow = false;
+                        this.logInfo(`AEM target folder '${targetFolder}' already exists`);
+                    }
+                }
+
+                if (rethrow) {
+                    throw e;
+                }
+            }
         }
-
-        await axios({
-            url: folderUrl,
-            method: 'POST',
-            headers,
-            data: querystring.stringify({
-                './jcr:content/jcr:title': path.basename(targetFolder),
-                ':name': path.basename(targetFolder),
-                './jcr:primaryType': 'sling:Folder',
-                './jcr:content/jcr:primaryType': 'nt:unstructured',
-                '_charset_': 'UTF-8'
-            }),
-        });
 
         this.logInfo(`AEM target folder '${targetFolder}' is created`);
     }

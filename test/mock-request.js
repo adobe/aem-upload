@@ -41,6 +41,16 @@ mock.getUrl = (targetPath) => {
     return `${mock.getHost()}/content/dam${targetPath}`;
 };
 
+/**
+ * Retrieves a full URL to a target path in the mocked request framework. This URL
+ * will be a path to /api/assets.
+ *
+ * @returns {string} Absolute URL.
+ */
+mock.getApiUrl = (targetPath) => {
+    return `${mock.getHost()}/api/assets${targetPath}`;
+};
+
 const origReset = mock.reset;
 let onInits = {};
 let onParts = {};

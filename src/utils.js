@@ -210,3 +210,30 @@ export function joinUrlPath(...theArguments) {
 
     return path;
 }
+
+/**
+ * Removes "/content/dam" from the beginning of a given path, if its
+ * present. If the path equals "/content/dam" then the method will
+ * return an empty string.
+ *
+ * @param {string} path The path to trim.
+ */
+export function trimContentDam(path) {
+    if (!path) {
+        return path;
+    }
+
+    if (path === '/content/dam') {
+        return '';
+    }
+
+    let trimmed = String(path);
+    if (trimmed.startsWith('/content/dam/')) {
+        trimmed = trimmed.substr('/content/dam'.length);
+        if (trimmed === '/') {
+            return '';
+        }
+    }
+
+    return trimmed;
+}

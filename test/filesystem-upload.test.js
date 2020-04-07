@@ -90,7 +90,7 @@ describe('FileSystemUpload Tests', () => {
             addTestPath('/test/dir/4', 2000);
             addTestPath('/test/dir', 0, ['3', '4']);
 
-            MockRequest.onPost(MockRequest.getUrl('/target')).reply([201]);
+            MockRequest.onPost(MockRequest.getApiUrl('/target')).reply(201);
 
             const uploadOptions = new DirectBinaryUploadOptions()
                 .withUrl(MockRequest.getUrl('/target'))
@@ -118,6 +118,32 @@ describe('FileSystemUpload Tests', () => {
             validateUploadFile(fileLookup['2'], '/test/file/2', 1024);
             validateUploadFile(fileLookup['3'], '/test/dir/3', 2048);
             validateUploadFile(fileLookup['4'], '/test/dir/4', 2000);
+        });
+
+        it('test directory already exists', async () => {
+            MockRequest.onPost(MockRequest.getApiUrl('/existing_target')).reply(409);
+
+            const uploadOptions = new DirectBinaryUploadOptions()
+                .withUrl(MockRequest.getUrl('/existing_target'))
+                .withBasicAuth('testauth');
+            const fsUpload = new FileSystemUpload();
+            return fsUpload.createAemFolder(uploadOptions);
+        });
+
+        it('test directory not found', async () => {
+            MockRequest.onPost(MockRequest.getApiUrl('/existing_target')).reply(404);
+
+            const uploadOptions = new DirectBinaryUploadOptions()
+                .withUrl(MockRequest.getUrl('/existing_target'))
+                .withBasicAuth('testauth');
+            const fsUpload = new FileSystemUpload();
+            let threw = false;
+            try {
+                await fsUpload.createAemFolder(uploadOptions);
+            } catch (e) {
+                threw = true;
+            }
+            should(threw).be.ok();
         });
     });
 });
