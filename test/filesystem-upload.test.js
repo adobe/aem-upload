@@ -74,6 +74,7 @@ function addTestPath(path, size, children) {
 describe('FileSystemUpload Tests', () => {
     beforeEach(() => {
         paths = {};
+        MockRequest.reset();
     });
 
     describe('upload', () => {
@@ -144,6 +145,21 @@ describe('FileSystemUpload Tests', () => {
                 threw = true;
             }
             should(threw).be.ok();
+        });
+
+        it('test create directory structure', async () => {
+            MockRequest.onPost(MockRequest.getApiUrl('/folder')).reply(409);
+            MockRequest.onPost(MockRequest.getApiUrl('/folder/structure')).reply(201);
+
+            const uploadOptions = new DirectBinaryUploadOptions()
+                .withUrl(MockRequest.getUrl('/folder/structure'))
+                .withBasicAuth('testauth');
+            const fsUpload = new FileSystemUpload();
+            await fsUpload.createAemFolderStructure(uploadOptions);
+            const { post: posts = [] } = MockRequest.history;
+            should(posts.length).be.exactly(2);
+            should(posts[0].url).be.exactly(MockRequest.getApiUrl('/folder'));
+            should(posts[1].url).be.exactly(MockRequest.getApiUrl('/folder/structure'));
         });
     });
 });

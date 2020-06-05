@@ -70,7 +70,7 @@ export default class FileSystemUpload extends UploadBase {
      *  passed in successful resolution will be an instance of UploadResult.
      */
     async upload(options, localPaths) {
-        await this.createAemFolder(options);
+        await this.createAemFolderStructure(options);
 
         // start initiate uploading, single for all files
         const directUpload = new DirectBinaryUpload(this.options);
@@ -142,14 +142,38 @@ export default class FileSystemUpload extends UploadBase {
     }
 
     /**
+     * Creates a folder and all of its parents if they do not already exist.
+     * @param {DirectBinaryUploadOptions} options Options controlling how the upload process behaves.
+     * @returns {Promise} Will be resolved if the folders are created successfully, otherwise will be
+     *  rejected with an error.
+     */
+    async createAemFolderStructure(options) {
+        const targetFolder = options.getTargetFolderPath();
+        const trimmedFolder = trimContentDam(targetFolder);
+
+        if (trimmedFolder) {
+            let currPath = '/content/dam';
+            const paths = String(trimmedFolder).split('/').filter(e => e.length);
+
+            for (let i = 0; i < paths.length; i += 1) {
+                currPath += `/${paths[i]}`;
+                await this.createAemFolder(options, currPath);
+            }
+            
+        }
+    }
+
+    /**
      * Creates a folder in AEM if it does not already exist.
      *
      * @param {DirectBinaryUploadOptions} options Options controlling how the upload process behaves.
+     * @param {string} [folderPath] If specified, the path of the folder to create. If not specified, the
+     *  target folder in the provided options will be used.
      * @returns {Promise} Will be resolved if the folder is created successfully, otherwise will be rejected
      *  with an error.
      */
-    async createAemFolder(options) {
-        const targetFolder = options.getTargetFolderPath();
+    async createAemFolder(options, folderPath = '') {
+        const targetFolder = folderPath ? folderPath : options.getTargetFolderPath();
         const headers = options.getHeaders();
         const trimmedFolder = trimContentDam(targetFolder);
 
