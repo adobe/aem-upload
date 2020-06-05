@@ -230,10 +230,7 @@ export function trimContentDam(path) {
     let trimmed = String(path);
     if (trimmed.startsWith('/content/dam/')) {
         trimmed = trimmed.substr('/content/dam'.length);
-        if (trimmed === '/') {
-            return '';
-        }
     }
 
-    return trimmed;
+    return trimRight(trimmed, ['/']);
 }
