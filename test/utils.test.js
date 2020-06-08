@@ -136,9 +136,10 @@ describe('UtilsTest', () => {
         should(trimContentDam('/content/dam/')).be.exactly('');
         should(trimContentDam('/content/dam/test')).be.exactly('/test');
         should(trimContentDam(null)).be.exactly(null);
-        should(trimContentDam('/')).be.exactly('/');
+        should(trimContentDam('/')).be.exactly('');
         should(trimContentDam('/content/dame')).be.exactly('/content/dame');
         should(trimContentDam('/content/dame/test')).be.exactly('/content/dame/test');
         should(trimContentDam('/test')).be.exactly('/test');
+        should(trimContentDam('/test/')).be.exactly('/test');
     });
 });
