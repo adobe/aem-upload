@@ -20,7 +20,11 @@ import UploadError from './upload-error';
 import ErrorCodes from './error-codes';
 import FileUploadResult from './file-upload-result';
 import PartUploadResult from './part-upload-result';
-import { timedRequest, createCancelToken } from './http-utils';
+import { 
+    timedRequest,
+    createCancelToken,
+    updateOptionsWithResponse,
+} from './http-utils';
 import {
     concurrentLoop,
     serialLoop,
@@ -50,7 +54,7 @@ export default class DirectBinaryUploadProcess extends UploadOptionsBase {
      * @returns {Promise} Resolved with an UploadResult instance when the process has finished.
      */
     async upload() {
-        const options = this.getUploadOptions();
+        let options = this.getUploadOptions();
         const url = options.getUrl();
         const targetFolder = options.getTargetFolderPath();
         const toUpload = options.getUploadFiles().map(upload => new UploadFile(this.getOptions(), options, upload));
@@ -87,6 +91,7 @@ export default class DirectBinaryUploadProcess extends UploadOptionsBase {
                 status: statusCode,
                 elapsedTime = 0,
             } = response;
+            options = updateOptionsWithResponse(options, response);
 
             this.logInfo(`Finished initialize uploading, response code: '${statusCode}', time elapsed: '${elapsedTime}' ms`);
 

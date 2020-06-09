@@ -11,11 +11,13 @@ governing permissions and limitations under the License.
 */
 
 const should = require('should');
+const cookie = require('cookie');
 
 const { importFile } = require('./testutils');
 const MockRequest = require('./mock-request');
+const DirectBinaryUploadOptions = importFile('direct-binary-upload-options');
 
-const { timedRequest } = importFile('http-utils');
+const { timedRequest, updateOptionsWithResponse } = importFile('http-utils');
 
 describe('HttpUtilsTest', () => {
     beforeEach(() => {
@@ -42,5 +44,16 @@ describe('HttpUtilsTest', () => {
             should(status).be.exactly(200);
             should(elapsedTime >= 100).be.ok();
         });
+    });
+
+    it('test update options', () => {
+        let options = new DirectBinaryUploadOptions();
+        options = updateOptionsWithResponse(options, {});
+        should(options.getHeaders().Cookie).not.be.ok();
+        options = updateOptionsWithResponse(options, { headers: { 'set-cookie': [] } });
+        should(options.getHeaders().Cookie).not.be.ok();
+        options = updateOptionsWithResponse(options, { headers: { 'set-cookie': [cookie.serialize('cookie', 'value')]} });
+        should(options.getHeaders().Cookie).be.ok();
+        should(cookie.parse(options.getHeaders().Cookie).cookie).be.exactly('value');
     });
 });

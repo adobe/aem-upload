@@ -11,6 +11,7 @@ governing permissions and limitations under the License.
 */
 
 const should = require('should');
+const cookie = require('cookie');
 
 const { importFile } = require('./testutils');
 
@@ -24,5 +25,21 @@ describe('DirectBinaryUploadOptionsTest', () => {
         should(options.getUrl()).be.exactly('/');
         options.withUrl('/trailing/');
         should(options.getUrl()).be.exactly('/trailing');
+    });
+
+    it('test cookies', () => {
+        let options = new DirectBinaryUploadOptions()
+            .withCookies({ cookie: 'value' });
+
+        let cookies = cookie.parse(options.getHeaders()['Cookie']);
+        should(cookies).be.ok();
+        should(cookies.cookie).be.exactly('value');
+
+        options = options.withCookies({ cookie: 'value2', anotherCookie: 'another' });
+        cookies = cookie.parse(options.getHeaders()['Cookie']);
+        should(cookies).be.ok();
+        should(cookies.cookie).be.exactly('value2');
+        should(cookies.anotherCookie).be.exactly('another');
+        console.log(options.getHeaders());
     });
 });

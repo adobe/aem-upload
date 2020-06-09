@@ -11,6 +11,7 @@ governing permissions and limitations under the License.
 */
 
 import URL from 'url';
+import cookie from 'cookie';
 
 import DirectBinaryUploadController from './direct-binary-upload-controller';
 import { trimRight } from './utils';
@@ -83,6 +84,39 @@ export default class DirectBinaryUploadOptions {
             ...headers,
         };
         return this;
+    }
+
+    /**
+     * The given cookies will be merged with any cookies specified previously using the
+     * method.
+     *
+     * @param {object} cookies Keys should be cookie names, values should be the cookie's value.
+     * @returns {DirectBinaryUploadOptions} The current options instance. Allows for chaining.
+     */
+    withCookies(cookies) {
+        const headers = this.getHeaders() || {};
+        const existingCookies = cookie.parse(headers.Cookie || '');
+        let cookieString = '';
+
+        Object.keys(existingCookies).forEach(toSerialize => {
+            if (!cookies[toSerialize]) {
+                if (cookieString) {
+                    cookieString += '; ';
+                }
+                cookieString += cookie.serialize(toSerialize, existingCookies[toSerialize]);
+            }
+        });
+
+        Object.keys(cookies).forEach(toSerialize => {
+            if (cookieString) {
+                cookieString += '; ';
+            }
+            cookieString += cookie.serialize(toSerialize, cookies[toSerialize]);
+        });
+
+        return this.withHeaders({ 
+            Cookie: cookieString
+        });
     }
 
     /**
