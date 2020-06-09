@@ -17,6 +17,7 @@ import axios from 'axios';
 import UploadBase from './upload-base';
 import DirectBinaryUpload from './direct-binary-upload';
 import { trimContentDam } from './utils';
+import { updateOptionsWithResponse } from './http-utils';
 
 /**
  * Promise-ified version of fs.stat().
@@ -70,11 +71,11 @@ export default class FileSystemUpload extends UploadBase {
      *  passed in successful resolution will be an instance of UploadResult.
      */
     async upload(options, localPaths) {
-        await this.createAemFolderStructure(options);
+        const folderOptions = await this.createAemFolderStructure(options);
 
         // start initiate uploading, single for all files
         const directUpload = new DirectBinaryUpload(this.options);
-        const uploadOptions = options
+        const uploadOptions = folderOptions
             .withAddContentLengthHeader(true)
             .withUploadFiles(await this.getUploadFiles(localPaths));
 
@@ -148,6 +149,7 @@ export default class FileSystemUpload extends UploadBase {
      *  rejected with an error.
      */
     async createAemFolderStructure(options) {
+        let returnOptions = options;
         const targetFolder = options.getTargetFolderPath();
         const trimmedFolder = trimContentDam(targetFolder);
 
@@ -157,10 +159,11 @@ export default class FileSystemUpload extends UploadBase {
 
             for (let i = 0; i < paths.length; i += 1) {
                 currPath += `/${paths[i]}`;
-                await this.createAemFolder(options, currPath);
+                returnOptions = await this.createAemFolder(options, currPath);
             }
             
         }
+        return returnOptions;
     }
 
     /**
@@ -173,6 +176,7 @@ export default class FileSystemUpload extends UploadBase {
      *  with an error.
      */
     async createAemFolder(options, folderPath = '') {
+        let returnOptions = options;
         const targetFolder = folderPath ? folderPath : options.getTargetFolderPath();
         const headers = options.getHeaders();
         const trimmedFolder = trimContentDam(targetFolder);
@@ -180,7 +184,7 @@ export default class FileSystemUpload extends UploadBase {
         if (trimmedFolder) {
             const folderName = path.basename(trimmedFolder);
             try {
-                await axios({
+                const response = await axios({
                     url: `${options.getUrlPrefix()}/api/assets${trimmedFolder}`,
                     method: 'POST',
                     headers,
@@ -191,6 +195,7 @@ export default class FileSystemUpload extends UploadBase {
                         }
                     }
                 });
+                returnOptions = updateOptionsWithResponse(options, response);
             } catch (e) {
                 let rethrow = true;
                 if (e) {
@@ -210,5 +215,6 @@ export default class FileSystemUpload extends UploadBase {
         }
 
         this.logInfo(`AEM target folder '${targetFolder}' is created`);
+        return returnOptions;
     }
 }

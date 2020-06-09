@@ -11,6 +11,7 @@ governing permissions and limitations under the License.
 */
 
 import axios, { CancelToken } from 'axios';
+import cookie from 'cookie';
 
 import UploadError from './upload-error';
 import { exponentialRetry } from './utils';
@@ -64,4 +65,24 @@ export async function timedRequest(requestOptions, retryOptions, cancelToken) {
     } catch (e) {
         throw UploadError.fromError(e);
     }
+}
+
+/**
+ * Does any necessary work to update an existing options object with the results
+ * of an HTTP response. For example, if the response contains a set-cookie header
+ * then the cookies will be added to the options.
+ *
+ * @param {DirectBinaryUploadOptions} options Options to update.
+ * @param {object} response A response object from an HTTP request.
+ * @returns {DirectBinaryUploadOptions} Options with updated values.
+ */
+export function updateOptionsWithResponse(options, response) {
+    const { headers = {} } = response;
+    const setCookie = headers['set-cookie'];
+
+    if (setCookie && setCookie.length) {
+        return options.withCookies(cookie.parse(setCookie[0]));
+    }
+
+    return options;
 }
