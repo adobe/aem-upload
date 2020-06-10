@@ -40,6 +40,5 @@ describe('DirectBinaryUploadOptionsTest', () => {
         should(cookies).be.ok();
         should(cookies.cookie).be.exactly('value2');
         should(cookies.anotherCookie).be.exactly('another');
-        console.log(options.getHeaders());
     });
 });
