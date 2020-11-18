@@ -59,4 +59,9 @@ export default {
      * The user cancelled an operation.
      */
     USER_CANCELLED: 'EUSERCANCELLED',
+
+    /**
+     * Payload provided by user is too large.
+     */
+    TOO_LARGE: 'ETOOLARGE',
 };

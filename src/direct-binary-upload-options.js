@@ -36,6 +36,7 @@ export default class DirectBinaryUploadOptions {
             headers: {},
             retryCount: DefaultValues.RETRY_COUNT,
             retryDelay: DefaultValues.RETRY_DELAY,
+            requestTimeout: DefaultValues.REQUEST_TIMEOUT,
         };
         this.controller = new DirectBinaryUploadController();
     }
@@ -95,7 +96,7 @@ export default class DirectBinaryUploadOptions {
      */
     withCookies(cookies) {
         const headers = this.getHeaders() || {};
-        const existingCookies = cookie.parse(headers.Cookie || '');
+        const existingCookies = cookie.parse(headers.Cookie || headers.cookie || '');
         let cookieString = '';
 
         Object.keys(existingCookies).forEach(toSerialize => {
@@ -167,6 +168,10 @@ export default class DirectBinaryUploadOptions {
     }
 
     /**
+     * DEPRECATED: This method has been deprecated and should no longer be used. The library
+     * will now automatically determine if a content length header is needed. The value will
+     * be ignored.
+     *
      * If true, the process will manually add a "Content-Length" header to requests that upload a
      * file's chunks. If false, the process will assume the header is not needed. The purpose of
      * this option is primarily to support browser upload cases, which won't require this process
@@ -176,8 +181,7 @@ export default class DirectBinaryUploadOptions {
      *  header value.
      * @returns {DirectBinaryUploadOptions} The current options instance. Allows for chaining.
      */
-    withAddContentLengthHeader(doAddContentLengthHeader) {
-        this.options.addContentLengthHeader = doAddContentLengthHeader;
+    withAddContentLengthHeader() {
         return this;
     }
 
@@ -186,6 +190,7 @@ export default class DirectBinaryUploadOptions {
      * giving up and reporting an error. Default: 3.
      *
      * @param {number} retryCount Number of times to resubmit a request.
+     * @returns {DirectBinaryUploadOptions} The current options instance. Allows for chaining.
      */
     withHttpRetryCount(retryCount) {
         this.options.retryCount = retryCount;
@@ -199,9 +204,21 @@ export default class DirectBinaryUploadOptions {
      * 5,000 milliseconds for the first retry, then 10,000, then 15,000, etc. Default: 5,000.
      *
      * @param {number} retryDelay A timespan in milliseconds.
+     * @returns {DirectBinaryUploadOptions} The current options instance. Allows for chaining.
      */
     withHttpRetryDelay(retryDelay) {
         this.options.retryDelay = retryDelay;
+        return this;
+    }
+
+    /**
+     * Sets the maximum amount of time the module will wait for an HTTP request to complete
+     * before timing out. Default: 1 minute.
+     * @param {number} timeout Timeout duration, in milliseconds.
+     * @returns {DirectBinaryUploadOptions} The current options instance. Allows for chaining.
+     */
+    withHttpRequestTimeout(timeout) {
+        this.options.requestTimeout = timeout;
         return this;
     }
 
@@ -278,13 +295,16 @@ export default class DirectBinaryUploadOptions {
     }
 
     /**
+     * DEPRECATED: This method has been deprecated and should no longer be used. The library
+     * will now automatically determine if a content length header is needed.
+     *
      * Retrieves a value indicating whether or not the upload process will add its own
      * Content-Length header to file chunk requests.
      *
      * @returns {boolean} The value as provided to the options instance.
      */
     addContentLengthHeader() {
-        return !!this.options.addContentLengthHeader;
+        return false;
     }
 
     /**
@@ -314,6 +334,16 @@ export default class DirectBinaryUploadOptions {
      */
     getHttpRetryDelay() {
         return this.options.retryDelay;
+    }
+
+    /**
+     * Retrieves the maximum amount of time that the module will wait for an HTTP request to
+     * complete before timing out.
+     *
+     * @returns {number} Timeout duration, in milliseconds.
+     */
+    getHttpRequestTimeout() {
+        return this.options.requestTimeout;
     }
 
     /**

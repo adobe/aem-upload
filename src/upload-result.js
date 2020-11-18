@@ -12,6 +12,7 @@ governing permissions and limitations under the License.
 
 import { getAverage } from './utils';
 import HttpResult from './http-result';
+import UploadError from './upload-error';
 
 /**
  * Retrieves a list of all file results that were successful.
@@ -47,6 +48,7 @@ export default class UploadResult extends HttpResult {
         this.totalTime = 0;
         this.totalFiles = 0;
         this.fileUploadResults = [];
+        this.errors = [];
     }
 
     /**
@@ -62,7 +64,7 @@ export default class UploadResult extends HttpResult {
      */
     stopTimer() {
         if (this.start) {
-            this.totalTime = new Date().getTime() - this.start;
+            this.totalTime += new Date().getTime() - this.start;
         }
     }
 
@@ -76,13 +78,13 @@ export default class UploadResult extends HttpResult {
     }
 
     /**
-     * Sets the amount of time, in milliseconds, that it took for the upload process's initiate upload request
+     * Adds an amount of time, in milliseconds, to the result's total time it's taken for initiate upload requests
      * to complete.
      *
      * @param {number} elapsedTime Time span in milliseconds.
      */
-    setInitTime(elapsedTime) {
-        this.initTime = elapsedTime;
+    addInitTime(elapsedTime) {
+        this.initTime += elapsedTime;
     }
 
     /**
@@ -100,8 +102,8 @@ export default class UploadResult extends HttpResult {
      *
      * @param {number} totalFiles Number of files.
      */
-    setTotalFiles(totalFiles) {
-        this.totalFiles = totalFiles;
+    addTotalFiles(totalFiles) {
+        this.totalFiles += totalFiles;
     }
 
     /**
@@ -129,6 +131,15 @@ export default class UploadResult extends HttpResult {
      */
     getElapsedTime() {
         return this.totalTime;
+    }
+
+    /**
+     * Sets the total amount of time, in milliseconds, that it took for the upload to complete.
+     *
+     * @param {number} totalTime Time span in milliseconds.
+     */
+    setElapsedTime(totalTime) {
+        this.totalTime = totalTime;
     }
 
     /**
@@ -196,10 +207,12 @@ export default class UploadResult extends HttpResult {
             .map(result => {
                 return result.getTotalUploadTime() + result.getTotalCompleteTime();
             });
-        const sortedTotalSpentArr = totalSpentArr.sort((x, y) => x - y);
-        const nintyPercentileIndex = Math.round(this.getTotalCompletedFiles() * 0.9) - 1;
-        return sortedTotalSpentArr[nintyPercentileIndex];
-
+        if (totalSpentArr.length > 0) {
+            const sortedTotalSpentArr = totalSpentArr.sort((x, y) => x - y);
+            const nintyPercentileIndex = Math.round(this.getTotalCompletedFiles() * 0.9) - 1;
+            return sortedTotalSpentArr[nintyPercentileIndex];
+        }
+        return 0;
     }
 
     /**
@@ -217,7 +230,7 @@ export default class UploadResult extends HttpResult {
      * @returns {Array} List of UploadError instances.
      */
     getErrors() {
-        const errors = [];
+        const errors = [...this.getUploadErrors()];
 
         this.getFileUploadResults().forEach(result => {
             result.getErrors().forEach(error => {
@@ -226,6 +239,25 @@ export default class UploadResult extends HttpResult {
         });
 
         return errors;
+    }
+
+    /**
+     * Adds a high-level error that prevented the upload from completing.
+     *
+     * @param {*} e An error object.
+     */
+    addUploadError(e) {
+        this.errors.push(UploadError.fromError(e));
+    }
+
+    /**
+     * Retrieves a list of high-level errors that prevented the upload from
+     * completing.
+     *
+     * @returns {Array} An array of error objects.
+     */
+    getUploadErrors() {
+        return this.errors;
     }
 
     /**
@@ -247,6 +279,7 @@ export default class UploadResult extends HttpResult {
             avgCompleteSpent: this.getAverageCompleteTime(),
             nintyPercentileTotal: this.getNinetyPercentileTotal(),
             detailedResult: this.fileUploadResults.map(result => result.toJSON()),
+            errors: this.errors,
             ...super.toJSON(),
         };
     }

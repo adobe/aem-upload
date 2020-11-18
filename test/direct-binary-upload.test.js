@@ -13,7 +13,7 @@ governing permissions and limitations under the License.
 const should = require('should');
 const querystring = require('querystring');
 
-const { importFile } = require('./testutils');
+const { importFile, getTestOptions } = require('./testutils');
 const MockRequest = require('./mock-request');
 const MockBlob = require('./mock-blob');
 
@@ -102,7 +102,7 @@ describe('DirectBinaryUploadTest', () => {
                 .withUploadFiles(getTestUploadFiles())
                 .withConcurrent(false);
 
-            const upload = new DirectBinaryUpload();
+            const upload = new DirectBinaryUpload(getTestOptions());
             monitorEvents(upload);
 
             const result = await upload.uploadFiles(options);
@@ -286,7 +286,7 @@ describe('DirectBinaryUploadTest', () => {
                 .withUploadFiles(getTestUploadFiles())
                 .withHttpRetryCount(1);
 
-            const upload = new DirectBinaryUpload();
+            const upload = new DirectBinaryUpload(getTestOptions());
 
             let uploadErr;
             try {
@@ -375,7 +375,7 @@ describe('DirectBinaryUploadTest', () => {
                 });
             });
 
-            const upload = new DirectBinaryUpload();
+            const upload = new DirectBinaryUpload(getTestOptions());
             monitorEvents(upload);
 
             const result = await upload.uploadFiles(options);
@@ -401,7 +401,7 @@ describe('DirectBinaryUploadTest', () => {
                 return [400];
             });
 
-            const upload = new DirectBinaryUpload();
+            const upload = new DirectBinaryUpload(getTestOptions());
             monitorEvents(upload);
 
             const result = await upload.uploadFiles(options);
@@ -429,13 +429,13 @@ describe('DirectBinaryUploadTest', () => {
             MockRequest.onPart(targetFolder, 'targetfile.jpg', '0', () => {
                 return new Promise(resolve => {
                     setTimeout(() => {
-                        controller.cancelFile('targetfile.jpg');
+                        controller.cancelFile('/content/dam/target/folder_cancel_file/targetfile.jpg');
                         resolve([201]);
                     }, 300);
                 });
             });
 
-            const upload = new DirectBinaryUpload();
+            const upload = new DirectBinaryUpload(getTestOptions());
             monitorEvents(upload);
 
             const result = await upload.uploadFiles(options);
@@ -468,7 +468,7 @@ describe('DirectBinaryUploadTest', () => {
                 });
             });
 
-            const upload = new DirectBinaryUpload();
+            const upload = new DirectBinaryUpload(getTestOptions());
             monitorEvents(upload);
 
             const result = await upload.uploadFiles(options);
@@ -503,7 +503,10 @@ describe('DirectBinaryUploadTest', () => {
                 .withUploadFiles(getTestUploadFiles())
                 .withConcurrent(false);
 
-            const upload = new DirectBinaryUpload({ progressDelay: 0 });
+            const upload = new DirectBinaryUpload({
+                ...getTestOptions(),
+                progressDelay: 0
+            });
             monitorEvents(upload);
 
             await upload.uploadFiles(options);
@@ -560,7 +563,7 @@ describe('DirectBinaryUploadTest', () => {
                 .withConcurrent(false)
                 .withHttpRetryCount(1);
 
-            const upload = new DirectBinaryUpload();
+            const upload = new DirectBinaryUpload(getTestOptions());
 
             let threw = false;
             try {
@@ -629,7 +632,7 @@ describe('DirectBinaryUploadTest', () => {
                 .withConcurrent(false)
                 .withHttpRetryCount(1);
 
-            const upload = new DirectBinaryUpload();
+            const upload = new DirectBinaryUpload(getTestOptions());
             const result = await upload.uploadFiles(options);
             should(result).be.ok();
             should(result.getErrors().length).be.exactly(0);

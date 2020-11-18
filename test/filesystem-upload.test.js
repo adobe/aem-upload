@@ -11,9 +11,11 @@ governing permissions and limitations under the License.
 */
 
 const should = require('should');
+const MockFs = require('mock-fs');
 
-const { importFile } = require('./testutils');
+const { importFile, getTestOptions } = require('./testutils');
 const MockRequest = require('./mock-request');
+const HttpClient = importFile('http/http-client');
 
 function MockDirectBinaryUpload() {
 
@@ -25,79 +27,58 @@ MockDirectBinaryUpload.prototype.uploadFiles = function (uploadOptions) {
     });
 }
 
-const DirectBinaryUploadOptions = importFile('direct-binary-upload-options');
+const FileSystemUploadOptions = importFile('filesystem-upload-options');
 
-let paths = {};
-const FileSystemUpload = importFile('filesystem-upload', {
-    './direct-binary-upload': MockDirectBinaryUpload,
-    'fs': {
-        stat: function (path, callback) {
-            if (!paths[path]) {
-                callback(`path '${path}' not found`);
-                return;
-            }
-            callback(null, paths[path]);
-        }, readdir: function (path, callback) {
-            if (!paths[path]) {
-                callback(`path '${path}' not found`);
-                return;
-            }
-
-            const { children } = paths[path];
-
-            if (!children) {
-                callback(`path '${path}' is not a directory`);
-                return;
-            }
-
-            callback(null, children);
-        }
-    },
-});
-
-function addTestPath(path, size, children) {
-    paths[path] = {
-        size,
-        isFile: function () {
-            return !children;
-        },
-        isDirectory: function () {
-            return !!children;
-        }
-    };
-
-    if (children) {
-        paths[path].children = children;
-    }
-}
+const FileSystemUpload = importFile('filesystem-upload');
 
 describe('FileSystemUpload Tests', () => {
+    let httpClient;
     beforeEach(() => {
-        paths = {};
+        MockFs.restore();
         MockRequest.reset();
+
+        httpClient = new HttpClient(getTestOptions(), new FileSystemUploadOptions());
     });
 
     describe('upload', () => {
-        function validateUploadFile(uploadFile, filePath, fileSize) {
+        function validateUploadFile(uploadFile, fileSize) {
             should(uploadFile).be.ok();
-            should(uploadFile.filePath).be.exactly(filePath);
-            should(uploadFile.fileSize).be.exactly(fileSize);
+            should(uploadFile.getFileSize()).be.exactly(fileSize);
         }
 
-        it('smoke test', async () => {
-            addTestPath('/test/file/1', 512);
-            addTestPath('/test/file/2', 1024);
-            addTestPath('/test/dir/3', 2048);
-            addTestPath('/test/dir/4', 2000);
-            addTestPath('/test/dir', 0, ['3', '4']);
+        function createFsStructure() {
+            MockFs({
+                '/test/dir': {
+                    '3': '12345678',
+                    '4': '1234567',
+                    'subdir': {
+                        'subsubdir': {
+                            '7': '123',
+                            '8': '12'
+                        },
+                        '5': '12345',
+                        '6': '123456'
+                    }
+                },
+                '/test/file': {
+                    '1': '123456789',
+                    '2': '1234567890'
+                }
+            });
+        }
+
+        it('filesystem upload smoke test', async () => {
+            createFsStructure();
 
             MockRequest.onPost(MockRequest.getApiUrl('/target')).reply(201);
 
-            const uploadOptions = new DirectBinaryUploadOptions()
+            MockRequest.addDirectUpload('/target');
+
+            const uploadOptions = new FileSystemUploadOptions()
                 .withUrl(MockRequest.getUrl('/target'))
                 .withBasicAuth('testauth');
 
-            const fileSystemUpload = new FileSystemUpload();
+            const fileSystemUpload = new FileSystemUpload(getTestOptions());
             const result = await fileSystemUpload.upload(uploadOptions, [
                 '/test/file/1',
                 '/test/file/2',
@@ -105,61 +86,183 @@ describe('FileSystemUpload Tests', () => {
             ]);
 
             should(result).be.ok();
-            should(result.getUrl()).be.exactly(MockRequest.getUrl('/target'));
+            should(result.getErrors().length).be.exactly(0);
 
-            const uploadFiles = result.getUploadFiles();
+            const uploadFiles = result.getFileUploadResults();
             should(uploadFiles.length).be.exactly(4);
 
             const fileLookup = {};
             uploadFiles.forEach(uploadFile => {
-                fileLookup[uploadFile.fileName] = uploadFile;
+                fileLookup[uploadFile.getFileName()] = uploadFile;
             });
 
-            validateUploadFile(fileLookup['1'], '/test/file/1', 512);
-            validateUploadFile(fileLookup['2'], '/test/file/2', 1024);
-            validateUploadFile(fileLookup['3'], '/test/dir/3', 2048);
-            validateUploadFile(fileLookup['4'], '/test/dir/4', 2000);
+            validateUploadFile(fileLookup['1'], 9);
+            validateUploadFile(fileLookup['2'], 10);
+            validateUploadFile(fileLookup['3'], 8);
+            validateUploadFile(fileLookup['4'], 7);
         });
 
         it('test directory already exists', async () => {
             MockRequest.onPost(MockRequest.getApiUrl('/existing_target')).reply(409);
 
-            const uploadOptions = new DirectBinaryUploadOptions()
+            const uploadOptions = new FileSystemUploadOptions()
                 .withUrl(MockRequest.getUrl('/existing_target'))
+                .withHttpRetryDelay(10)
                 .withBasicAuth('testauth');
-            const fsUpload = new FileSystemUpload();
-            return fsUpload.createAemFolder(uploadOptions);
+            const fsUpload = new FileSystemUpload(getTestOptions());
+            return fsUpload.createAemFolder(uploadOptions, httpClient);
         });
 
         it('test directory not found', async () => {
             MockRequest.onPost(MockRequest.getApiUrl('/existing_target')).reply(404);
 
-            const uploadOptions = new DirectBinaryUploadOptions()
+            const uploadOptions = new FileSystemUploadOptions()
                 .withUrl(MockRequest.getUrl('/existing_target'))
+                .withHttpRetryDelay(10)
                 .withBasicAuth('testauth');
-            const fsUpload = new FileSystemUpload();
+            const fsUpload = new FileSystemUpload(getTestOptions());
             let threw = false;
             try {
-                await fsUpload.createAemFolder(uploadOptions);
+                await fsUpload.createAemFolder(uploadOptions, httpClient);
             } catch (e) {
                 threw = true;
             }
             should(threw).be.ok();
         });
 
-        it('test create directory structure', async () => {
+        it('test create target folder', async () => {
             MockRequest.onPost(MockRequest.getApiUrl('/folder')).reply(409);
             MockRequest.onPost(MockRequest.getApiUrl('/folder/structure')).reply(201);
 
-            const uploadOptions = new DirectBinaryUploadOptions()
+            const uploadOptions = new FileSystemUploadOptions()
                 .withUrl(MockRequest.getUrl('/folder/structure'))
                 .withBasicAuth('testauth');
-            const fsUpload = new FileSystemUpload();
-            await fsUpload.createAemFolderStructure(uploadOptions);
+            const fsUpload = new FileSystemUpload(getTestOptions());
+            await fsUpload.createTargetFolder(uploadOptions, httpClient);
             const { post: posts = [] } = MockRequest.history;
             should(posts.length).be.exactly(2);
             should(posts[0].url).be.exactly(MockRequest.getApiUrl('/folder'));
             should(posts[1].url).be.exactly(MockRequest.getApiUrl('/folder/structure'));
+        });
+
+        it('test create upload directories', async () => {
+            MockRequest.onPost(MockRequest.getApiUrl('/folder/structure/path1')).reply(409);
+            MockRequest.onPost(MockRequest.getApiUrl('/folder/structure/path1/dir1')).reply(201);
+            MockRequest.onPost(MockRequest.getApiUrl('/folder/structure/path1/dir2')).reply(201);
+
+            const uploadOptions = new FileSystemUploadOptions()
+                .withUrl(MockRequest.getUrl('/folder/structure'))
+                .withBasicAuth('testauth');
+            const fsUpload = new FileSystemUpload(getTestOptions());
+            await fsUpload.createUploadDirectories(uploadOptions, httpClient, [
+                    {remoteUrl: MockRequest.getUrl('/folder/structure/path1'), path: '/prefix/path1'},
+                    {remoteUrl: MockRequest.getUrl('/folder/structure/path1/dir1'), path: '/prefix/path1/dir1/' },
+                    {remoteUrl: MockRequest.getUrl('/folder/structure/path1/dir2'), path: '/prefix/path1/dir2' }
+                ],
+            );
+
+            const { post: posts = [] } = MockRequest.history;
+            should(posts.length).be.exactly(3);
+            should(posts[0].url).be.exactly(MockRequest.getApiUrl('/folder/structure/path1'))
+            should(posts[1].url).be.exactly(MockRequest.getApiUrl('/folder/structure/path1/dir1'))
+            should(posts[2].url).be.exactly(MockRequest.getApiUrl('/folder/structure/path1/dir2'))
+        });
+
+        it('smoke test directory descendent upload', async function () {
+            createFsStructure();
+
+            MockRequest.onPost(MockRequest.getApiUrl('/target')).reply(201);
+            MockRequest.onPost(MockRequest.getApiUrl('/target/test')).reply(201);
+            MockRequest.onPost(MockRequest.getApiUrl('/target/test/dir')).reply(201);
+            MockRequest.onPost(MockRequest.getApiUrl('/target/test/dir/subdir')).reply(201);
+            MockRequest.onPost(MockRequest.getApiUrl('/target/test/dir/subdir/subsubdir')).reply(201);
+            MockRequest.onPost(MockRequest.getApiUrl('/target/test/file')).reply(201);
+
+            MockRequest.addDirectUpload('/target');
+            MockRequest.addDirectUpload('/target/test/dir');
+            MockRequest.addDirectUpload('/target/test/dir/subdir');
+            MockRequest.addDirectUpload('/target/test/dir/subdir/subsubdir');
+            MockRequest.addDirectUpload('/target/test/file');
+
+            const uploadOptions = new FileSystemUploadOptions()
+                .withUrl(MockRequest.getUrl('/target'))
+                .withBasicAuth('testauth')
+                .withHttpRetryCount(1)
+                .withHttpRetryDelay(10)
+                .withDeepUpload(true);
+
+            const fileSystemUpload = new FileSystemUpload(getTestOptions());
+            const result = await fileSystemUpload.upload(uploadOptions, [
+                '/test',
+                '/test/file/1'
+            ]);
+
+            should(result).be.ok();
+            should(result.getTotalFiles()).be.exactly(9);
+            should(result.getTotalCompletedFiles()).be.exactly(result.getTotalFiles());
+            should(result.getTotalSize()).be.exactly(59);
+            should(result.getErrors().length).be.exactly(0);
+
+            let postedUrls = {};
+            MockRequest.history.post.forEach(post => {
+                const { url } = post;
+
+                if (!postedUrls[url]) {
+                    postedUrls[url] = 0;
+                }
+                postedUrls[url]++;
+            });
+
+            should(Object.keys(postedUrls).length).be.exactly(16);
+            should(postedUrls[MockRequest.getApiUrl('/target')]).be.exactly(1);
+            should(postedUrls[MockRequest.getApiUrl('/target/test')]).be.exactly(1);
+            should(postedUrls[MockRequest.getApiUrl('/target/test/dir')]).be.exactly(1);
+            should(postedUrls[MockRequest.getApiUrl('/target/test/file')]).be.exactly(1);
+            should(postedUrls[MockRequest.getApiUrl('/target/test/dir/subdir')]).be.exactly(1);
+            should(postedUrls[MockRequest.getApiUrl('/target/test/dir/subdir/subsubdir')]).be.exactly(1);
+
+            should(postedUrls[MockRequest.getUrl('/target.initiateUpload.json')]).be.exactly(1);
+            should(postedUrls[MockRequest.getUrl('/target/test/dir.initiateUpload.json')]).be.exactly(1);
+            should(postedUrls[MockRequest.getUrl('/target/test/file.initiateUpload.json')]).be.exactly(1);
+            should(postedUrls[MockRequest.getUrl('/target/test/dir/subdir.initiateUpload.json')]).be.exactly(1);
+            should(postedUrls[MockRequest.getUrl('/target/test/dir/subdir/subsubdir.initiateUpload.json')]).be.exactly(1);
+
+            should(postedUrls[MockRequest.getUrl('/target.completeUpload.json')]).be.exactly(1);
+            should(postedUrls[MockRequest.getUrl('/target/test/dir.completeUpload.json')]).be.exactly(2);
+            should(postedUrls[MockRequest.getUrl('/target/test/file.completeUpload.json')]).be.exactly(2);
+            should(postedUrls[MockRequest.getUrl('/target/test/dir/subdir.completeUpload.json')]).be.exactly(2);
+            should(postedUrls[MockRequest.getUrl('/target/test/dir/subdir/subsubdir.completeUpload.json')]).be.exactly(2);
+        });
+
+        it('test directory descendent upload error', async function() {
+            createFsStructure();
+
+            MockRequest.onPost(MockRequest.getApiUrl('/target')).reply(201);
+            MockRequest.onPost(MockRequest.getApiUrl('/target/test')).reply(201);
+            MockRequest.onPost(MockRequest.getApiUrl('/target/test/dir')).reply(201);
+            MockRequest.onPost(MockRequest.getApiUrl('/target/test/dir/subdir')).reply(201);
+            MockRequest.onPost(MockRequest.getApiUrl('/target/test/dir/subdir/subsubdir')).reply(201);
+            MockRequest.onPost(MockRequest.getApiUrl('/target/test/file')).reply(201);
+
+            MockRequest.addDirectUpload('/target/test/dir');
+
+            const uploadOptions = new FileSystemUploadOptions()
+                .withUrl(MockRequest.getUrl('/target'))
+                .withBasicAuth('testauth')
+                .withHttpRetryCount(1)
+                .withHttpRetryDelay(10)
+                .withDeepUpload(true);
+
+            const fileSystemUpload = new FileSystemUpload(getTestOptions());
+            const result = await fileSystemUpload.upload(uploadOptions, [
+                '/test'
+            ]);
+
+            should(result).be.ok();
+            should(result.getTotalFiles()).be.exactly(2);
+            should(result.getTotalCompletedFiles()).be.exactly(result.getTotalFiles());
+            should(result.getTotalSize()).be.exactly(15);
+            should(result.getErrors().length).be.exactly(3);
         });
     });
 });

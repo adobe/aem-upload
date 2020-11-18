@@ -31,4 +31,15 @@ export const DefaultValues = {
      * each retry.
      */
     RETRY_DELAY: 5000,
+
+    /**
+     * Default timeout for HTTP requests: 1 minute.
+     */
+    REQUEST_TIMEOUT: 60000,
+
+    /**
+     * Maximum number of files allowed to be uploaded as part of the file system
+     * upload process.
+     */
+    MAX_FILE_UPLOAD: 1000
 }

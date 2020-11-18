@@ -7,11 +7,13 @@
   "license": "Apache-2.0",
   "repository": "adobe/aem-upload",
   "scripts": {
-    "test": "mocha --recursive --require @babel/register ./test && npm run lint",
+    "test": "npm run testOnly && npm run lint",
+    "testOnly": "mocha --recursive --require @babel/register ./test",
     "build": "./node_modules/.bin/rimraf dist && babel ./src --out-dir dist",
     "prepublishOnly": "npm run coverage && npm run build",
     "coverage": "nyc npm run test",
-    "lint": "eslint ./src"
+    "lint": "eslint ./src",
+    "e2e": "mocha --recursive --require @babel/register ./e2e"
   },
   "author": "Adobe",
   "contributors": [
@@ -21,11 +23,13 @@
   "bugs": "https://github.com/adobe/aem-upload",
   "dependencies": {
     "async": "^3.2.0",
+    "async-lock": "^1.2.8",
     "axios": "^0.19.2",
     "cookie": "^0.4.1",
     "core-js": "^3.6.4",
     "filesize": "^4.2.1",
-    "regenerator-runtime": "^0.13.5"
+    "regenerator-runtime": "^0.13.5",
+    "uuid": "^8.3.1"
   },
   "devDependencies": {
     "@babel/cli": "^7.8.4",
@@ -35,10 +39,12 @@
     "@babel/preset-stage-2": "^7.8.3",
     "@babel/register": "^7.9.0",
     "axios-mock-adapter": "^1.18.1",
+    "dotenv": "^8.2.0",
     "eslint": "^6.8.0",
     "json-loader": "^0.5.7",
     "mime": "^2.4.4",
     "mocha": "^6.2.3",
+    "mock-fs": "^4.13.0",
     "nyc": "^14.1.1",
     "proxyquire": "^2.1.3",
     "rimraf": "^3.0.2",

@@ -9,6 +9,7 @@
     - [Upload Events](#upload-events)
     - [Controlling In-Progress Uploads](#controlling-in-progress-uploads)
   - [Uploading Local Files](#uploading-local-files)
+    - [Supported File Options](#supported-file-options)
 - [Features](#features)
 - [Releasing](#releasing)
 - [Todo](#todo)
@@ -316,9 +317,13 @@ options.withUploadFiles([
             </td>
         </tr>
         <tr>
-            <td>add content length header</td>
+            <td>*DEPRECATED* add content length header</td>
             <td>boolean</td>
             <td>
+                *DEPRECATED* The module will now perform the operation that this option controlled automatically.
+                The option no longer does anything.
+                <br/>
+                <br/>
                 If <code>true</code>, the upload process will automatically add a
                 <code>Content-Length</code> header when uploading file parts to AEM. If
                 <code>false</code>, no such header will be added.
@@ -631,8 +636,10 @@ upload.uploadFiles(options);
 // at this point its possible to send command to the upload process using
 // the controller
 
-// cancel the upload of an individual file
-controller.cancelFile(fileName);
+// cancel the upload of an individual file. Note that the "filePath" parameter
+// should be the full target AEM path to the file. an example value might be:
+// "/content/dam/uploadfolder/file-to-cancel.jpg"
+controller.cancelFile(filePath);
 
 // cancel ALL files in the upload
 controller.cancel();
@@ -647,15 +654,14 @@ The following example illustrates how to upload local files.
 
 ```javascript
 const {
-    DirectBinaryUploadOptions,
+    FileSystemUploadOptions,
     FileSystemUpload
 } = require('@adobe/aem-upload');
 
 // configure options to use basic authentication
-const options = new DirectBinaryUploadOptions()
+const options = new FileSystemUploadOptions()
     .withUrl('http://localhost:4502/content/dam/target-folder')
-    .withBasicAuth('admin:admin')
-    .withAddContentLengthHeader(true);
+    .withBasicAuth('admin:admin');
 
 // upload a single asset and all assets in a given directory
 const fileUpload = new FileSystemUpload();
@@ -664,6 +670,50 @@ await fileUpload.upload(options, [
     '/Users/me/mydirectory'
 ]);
 ```
+
+### Supported File Options
+
+There is a set of options, `FileSystemUploadOptions`, that are specific to uploading local files. In addition to [default options](#supported-options), the following options are available.
+
+<table>
+    <thead>
+        <tr>
+            <th>Option</th>
+            <th>Type</th>
+            <th>Description</th>
+        </tr>
+    </thead>
+    <tbody style="vertical-align: top">
+        <tr>
+            <td>Maximum number of files</td>
+            <td>number</td>
+            <td>
+                The maximum number of files that the library will attempt to upload. If the target upload exceeds this number then the process will fail with an exception. Default: 1000.
+                <br/>
+                <br/>
+                <b>Example</b>
+                <br/>
+                <code>
+                options.withMaxUploadFiles(100);
+                </code>
+            </td>
+        </tr>
+        <tr>
+            <td>Perform deep upload</td>
+            <td>boolean</td>
+            <td>
+                If true, the process will include all descendent directories and files when given a directory to upload. If false, the process will only upload those files immediately inside the directory to upload. Default: false.
+                <br/>
+                <br/>
+                <b>Example</b>
+                <br/>
+                <code>
+                options.withDeepUpload(true);
+                </code>
+            </td>
+        </tr>
+    </tbody>
+</table>
 
 # Features
 * Well tunning for take advantage of nodejs for best uploading performance

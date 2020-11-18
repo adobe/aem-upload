@@ -94,7 +94,7 @@ export default class PartUploadResult extends HttpResult {
      * @param {*} error Error object, which will be wrapped in an UploadError instance.
      */
     setError(error) {
-        this.error = UploadError.fromError(error, `unable to upload '${this.filePart.getFileName()}' part ${this.getStartOffset()}-${this.getEndOffset()} to ${this.getUrl()}`);
+        this.error = UploadError.fromError(error, `unable to upload '${this.filePart.getFileName()}' part ${this.getStartOffset()}-${this.getEndOffset()} to signed URL`);
     }
 
     /**
@@ -115,7 +115,6 @@ export default class PartUploadResult extends HttpResult {
         return {
             start: this.getStartOffset(),
             end: this.getEndOffset(),
-            url: this.getUrl(),
             message: this.getError() ? this.getError().getMessage() : '',
             elapsedTime: this.getUploadTime(),
             ...super.toJSON(),
