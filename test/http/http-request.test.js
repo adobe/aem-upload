@@ -1,0 +1,151 @@
+/*
+Copyright 2020 Adobe. All rights reserved.
+This file is licensed to you under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License. You may obtain a copy
+of the License at http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed under
+the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS
+OF ANY KIND, either express or implied. See the License for the specific language
+governing permissions and limitations under the License.
+*/
+
+const should = require('should');
+const { EventEmitter } = require('events');
+const fs = require('fs');
+const MockFs = require('mock-fs');
+
+const { importFile, getTestOptions } = require('../testutils');
+
+const HttpRequest = importFile('http/http-request');
+const DirectBinaryUploadOptions = importFile('direct-binary-upload-options');
+
+describe('HTTP Request Tests', function() {
+
+    beforeEach(function() {
+        MockFs.restore();
+
+        MockFs({
+            '/testfile.txt': '1234567890'
+        });
+    });
+
+    it('test empty', function() {
+        const request = new HttpRequest(getTestOptions(), 'http://test')
+            .withUploadOptions(new DirectBinaryUploadOptions());
+
+        const options = request.toJSON();
+        const {
+            url,
+            method,
+            headers,
+            timeout
+        } = options;
+        should(url).be.exactly('http://test');
+        should(method).be.exactly(HttpRequest.Method.GET);
+        should(headers).be.ok();
+        should(timeout).be.ok();
+    });
+
+    it('test accessors', function() {
+        const request = new HttpRequest(getTestOptions(), 'http://testrequest')
+        .withUploadOptions(new DirectBinaryUploadOptions()
+            .withHeaders({
+                uploadHeader: 'upload',
+                header1: 'uploadoptions'
+            }
+        ))
+        .withContentType('application/json')
+        .withHeaders({
+            header1: 'test1',
+            header2: 'test'
+        })
+        .withHeaders({
+            header2: 'test2',
+            header3: 'test3'
+        })
+        .withData('hello world!', 10)
+        .withResponseType(HttpRequest.ResponseType.TEXT)
+        .withCancelId('cancelId');
+
+        let options = request.toJSON();
+        const {
+            url,
+            method,
+            headers = {},
+            data,
+            responseType,
+            timeout
+        } = options;
+
+        should(url).be.exactly('http://testrequest');
+        should(method).be.exactly(HttpRequest.Method.GET);
+        should(data).be.exactly('hello world!');
+        should(responseType).be.exactly(HttpRequest.ResponseType.TEXT);
+        should(timeout).be.ok();
+
+        const {
+            header1,
+            header2,
+            header3,
+            uploadHeader
+        } = headers;
+        should(header1).be.exactly('test1');
+        should(header2).be.exactly('test2');
+        should(header3).be.exactly('test3');
+        should(uploadHeader).be.exactly('upload');
+        should(headers['Content-Type']).be.exactly('application/json');
+
+        should(request.getCancelId()).be.exactly('cancelId');
+
+        request.withMethod(HttpRequest.Method.POST);
+        options = request.toJSON();
+        should(options.method).be.exactly(HttpRequest.Method.POST);
+    });
+
+    it('test content length header', function() {
+        const request = new HttpRequest(getTestOptions(),
+            'http://testrequest'
+        )
+        .withData(fs.createReadStream('/testfile.txt'), 10)
+        .withUploadOptions(new DirectBinaryUploadOptions());
+
+        const options = request.toJSON();
+        const { headers = {} } = options;
+        should(headers['Content-Length']).be.exactly(10);
+    });
+
+    it('test progress event', function() {
+        const request = new HttpRequest(getTestOptions(), 'http://myunittestprogress')
+            .withData('testing', 10);
+
+        let totalTransferred = 0;
+        request.on('progress', (transferred) => {
+            totalTransferred += transferred;
+        });
+
+        request.requestOptions.onUploadProgress({ loaded: 100 });
+        request.requestOptions.onUploadProgress({ loaded: 200 });
+        request.requestOptions.onUploadProgress({ loaded: 300 });
+        request.requestOptions.onUploadProgress({ });
+        should(totalTransferred).be.exactly(300);
+    });
+
+    it('test progress event stream', function() {
+        const emitter = new EventEmitter();
+        const request = new HttpRequest(getTestOptions(), 'http://eventtesting')
+            .withData(emitter, 10);
+
+        let totalTransferred = 0;
+        request.on('progress', (transferred) => {
+            totalTransferred += transferred;
+        });
+
+        emitter.emit('data', '12345');
+        emitter.emit('data', '6789');
+        emitter.emit('data', '123');
+
+        should(totalTransferred).be.exactly(12);
+    });
+
+});
