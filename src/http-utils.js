@@ -13,7 +13,6 @@ governing permissions and limitations under the License.
 import axios, { CancelToken } from 'axios';
 import cookie from 'cookie';
 
-import UploadError from './upload-error';
 import { exponentialRetry } from './utils';
 
 /**
@@ -56,15 +55,11 @@ export async function timedRequest(requestOptions, retryOptions, cancelToken) {
 
     let response;
 
-    try {
-        await exponentialRetry(retryOptions, async () => {
-            response = await axios(options);
-            response.elapsedTime = new Date().getTime() - reqStart;
-        });
-        return response;
-    } catch (e) {
-        throw UploadError.fromError(e);
-    }
+    await exponentialRetry(retryOptions, async () => {
+        response = await axios(options);
+        response.elapsedTime = new Date().getTime() - reqStart;
+    });
+    return response;
 }
 
 /**
@@ -73,16 +68,12 @@ export async function timedRequest(requestOptions, retryOptions, cancelToken) {
  * then the cookies will be added to the options.
  *
  * @param {DirectBinaryUploadOptions} options Options to update.
- * @param {object} response A response object from an HTTP request.
- * @returns {DirectBinaryUploadOptions} Options with updated values.
+ * @param {HttpResponse} response A response from an HTTP client request.
  */
 export function updateOptionsWithResponse(options, response) {
-    const { headers = {} } = response;
-    const setCookie = headers['set-cookie'];
+    const setCookie = response.getHeaders()['set-cookie'];
 
     if (setCookie && setCookie.length) {
-        return options.withCookies(cookie.parse(setCookie[0]));
+        options.withCookies(cookie.parse(setCookie[0]));
     }
-
-    return options;
 }

@@ -14,9 +14,11 @@ const should = require('should');
 const querystring = require('querystring');
 const { Readable } = require('stream');
 
-const { importFile } = require('./testutils');
+const { importFile, getTestOptions } = require('./testutils');
 const MockRequest = require('./mock-request');
 const MockBlob = require('./mock-blob');
+
+const UploadResult = importFile('upload-result');
 
 const DirectBinaryUploadProcess = importFile('direct-binary-upload-process');
 
@@ -55,9 +57,9 @@ describe('DirectBinaryUploadProcessTest', () => {
                 .withUrl(MockRequest.getUrl(targetFolder))
                 .withUploadFiles([fileData]);
 
-            const process = new DirectBinaryUploadProcess({}, options);
+            const process = new DirectBinaryUploadProcess(getTestOptions(), options);
 
-            await process.upload();
+            await process.upload(new UploadResult(getTestOptions(), options));
 
             // verify that complete request is correct
             const posts = MockRequest.history.post;
@@ -122,34 +124,32 @@ describe('DirectBinaryUploadProcessTest', () => {
                 .withUploadFiles([fileData])
                 .withHttpRetryDelay(100);
 
-            return { targetFolder, process: new DirectBinaryUploadProcess({}, options) };
+            return { targetFolder, process: new DirectBinaryUploadProcess(getTestOptions(), options), result: new UploadResult(getTestOptions(), options) };
         }
 
         it('init retry recovery', async () => {
-            const { targetFolder, process } = setupRetryTest();
+            const { targetFolder, process, result } = setupRetryTest();
 
             MockRequest.onInit(targetFolder, async () => {
                 MockRequest.removeOnInit(targetFolder);
                 return [500];
             });
 
-            const result = await process.upload();
-            should(result).be.ok();
+            await process.upload(result);
             should(result.getTotalCompletedFiles()).be.exactly(1);
             should(result.getErrors().length).be.exactly(0);
             should(result.getRetryErrors().length).be.exactly(1);
         });
 
         it('part retry recover', async () => {
-            const { targetFolder, process } = setupRetryTest();
+            const { targetFolder, process, result } = setupRetryTest();
 
             MockRequest.onPart(targetFolder, 'myasset.jpg', 0, async () => {
                 MockRequest.removeOnPart(targetFolder, 'myasset.jpg', 0);
                 return [500];
             });
 
-            const result = await process.upload();
-            should(result).be.ok();
+            await process.upload(result);
             should(result.getTotalCompletedFiles()).be.exactly(1);
             should(result.getErrors().length).be.exactly(0);
             should(result.getRetryErrors().length).be.exactly(0);
@@ -163,15 +163,14 @@ describe('DirectBinaryUploadProcessTest', () => {
         });
 
         it('complete retry recover', async () => {
-            const { targetFolder, process } = setupRetryTest();
+            const { targetFolder, process, result } = setupRetryTest();
 
             MockRequest.onComplete(targetFolder, 'myasset.jpg', async () => {
                 MockRequest.removeOnComplete(targetFolder, 'myasset.jpg');
                 return [500];
             });
 
-            const result = await process.upload();
-            should(result).be.ok();
+            await process.upload(result);
             should(result.getTotalCompletedFiles()).be.exactly(1);
             should(result.getErrors().length).be.exactly(0);
 
@@ -191,8 +190,8 @@ describe('DirectBinaryUploadProcessTest', () => {
                     fileSize: 512,
                     blob: new MockBlob(),
                 }]);
-            const process = new DirectBinaryUploadProcess({}, options);
-            await process.upload();
+            const process = new DirectBinaryUploadProcess(getTestOptions(), options);
+            await process.upload(new UploadResult(getTestOptions(), options));
 
             const posts = MockRequest.history.post;
 
@@ -226,7 +225,10 @@ describe('DirectBinaryUploadProcessTest', () => {
                         }
                     }
                 }]);
-            const process = new DirectBinaryUploadProcess({ progressDelay: 0 }, options);
+            const process = new DirectBinaryUploadProcess({ 
+                ...getTestOptions(),
+                progressDelay: 0
+            }, options);
 
             process.on('fileprogress', event => {
                 const { transferred } = event;
@@ -235,7 +237,7 @@ describe('DirectBinaryUploadProcessTest', () => {
                 }
             });
 
-            await process.upload();
+            await process.upload(new UploadResult(getTestOptions(), options));
         });
     });
 });
