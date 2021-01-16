@@ -136,6 +136,8 @@ export default class UploadError extends Error {
             return 401;
         } else if (code === errorCodes.NOT_FOUND) {
             return 404;
+        } else if (code === errorCodes.TOO_LARGE) {
+            return 413;
         } else if (code === errorCodes.NOT_SUPPORTED) {
             return 501;
         } else {
