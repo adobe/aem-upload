@@ -11,21 +11,29 @@ governing permissions and limitations under the License.
 */
 
 const should = require('should');
+const Sinon = require('sinon');
 
 const { importFile } = require('./testutils');
 
 const UploadResult = importFile('upload-result');
-const { setTimeoutPromise } = importFile('utils');
 
 describe('UploadResult Tests', function() {
+    before(function() {
+        this.clock = Sinon.useFakeTimers(10);
+    });
+
+    after(function() {
+        this.clock.restore();
+    });
+
     it('test timer', async function() {
         const uploadResult = new UploadResult();
         uploadResult.startTimer();
-        await setTimeoutPromise(20);
+        this.clock.tick(20);
         uploadResult.stopTimer();
         should(uploadResult.getElapsedTime() >= 20).be.ok();
         uploadResult.startTimer();
-        await setTimeoutPromise(20);
+        this.clock.tick(20);
         uploadResult.stopTimer();
         should(uploadResult.getElapsedTime() >= 40).be.ok();
 

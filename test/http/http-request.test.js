@@ -25,11 +25,13 @@ const HOST = 'http://adobe-aem-upload-unit-test';
 describe('HTTP Request Tests', function() {
 
     beforeEach(function() {
-        MockFs.restore();
-
         MockFs({
             '/testfile.txt': '1234567890'
         });
+    });
+
+    afterEach(function() {
+        MockFs.restore();
     });
 
     it('test empty', function() {

@@ -34,10 +34,13 @@ const FileSystemUpload = importFile('filesystem-upload');
 describe('FileSystemUpload Tests', () => {
     let httpClient;
     beforeEach(() => {
-        MockFs.restore();
         MockRequest.reset();
 
         httpClient = new HttpClient(getTestOptions(), new FileSystemUploadOptions());
+    });
+
+    afterEach(() => {
+        MockFs.restore();
     });
 
     describe('upload', () => {
