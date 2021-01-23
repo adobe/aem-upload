@@ -183,6 +183,11 @@ class DirectBinaryUploadOptions {
      * @returns {DirectBinaryUploadOptions} The current options instance. Allows for chaining.
      */
     withAddContentLengthHeader() {
+        const withAddContentLengthHeaderDeprecated = util.deprecate(
+            () => {},
+            'withAddContentLengthHeader is deprecated and no longer required.'
+        );
+        withAddContentLengthHeaderDeprecated();
         return this;
     }
 
@@ -357,11 +362,5 @@ class DirectBinaryUploadOptions {
         return this.options;
     }
 }
-
-// ensure a warning is reported when using deprecated method
-const originalAddContentLengthHeader = DirectBinaryUploadOptions.withAddContentLengthHeader;
-DirectBinaryUploadOptions.withAddContentLengthHeader = util.deprecate(() => {
-    return originalAddContentLengthHeader();
-});
 
 export default DirectBinaryUploadOptions;
