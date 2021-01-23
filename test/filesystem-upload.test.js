@@ -16,6 +16,7 @@ const MockFs = require('mock-fs');
 const { importFile, getTestOptions } = require('./testutils');
 const MockRequest = require('./mock-request');
 const HttpClient = importFile('http/http-client');
+const FileSystemUploadDirectory = importFile('filesystem-upload-directory');
 
 function MockDirectBinaryUpload() {
 
@@ -156,11 +157,12 @@ describe('FileSystemUpload Tests', () => {
             const uploadOptions = new FileSystemUploadOptions()
                 .withUrl(MockRequest.getUrl('/folder/structure'))
                 .withBasicAuth('testauth');
+            const path1Dir = new FileSystemUploadDirectory(uploadOptions, '/prefix/path1', 'path1');
             const fsUpload = new FileSystemUpload(getTestOptions());
             await fsUpload.createUploadDirectories(uploadOptions, httpClient, [
-                    {remoteUrl: MockRequest.getUrl('/folder/structure/path1'), path: '/prefix/path1'},
-                    {remoteUrl: MockRequest.getUrl('/folder/structure/path1/dir1'), path: '/prefix/path1/dir1/' },
-                    {remoteUrl: MockRequest.getUrl('/folder/structure/path1/dir2'), path: '/prefix/path1/dir2' }
+                    path1Dir,
+                    new FileSystemUploadDirectory(uploadOptions, '/prefix/path1/dir1/', 'dir1', path1Dir),
+                    new FileSystemUploadDirectory(uploadOptions, '/prefix/path1/dir2', 'dir2', path1Dir),
                 ],
             );
 
@@ -200,6 +202,7 @@ describe('FileSystemUpload Tests', () => {
                 '/test/file/1'
             ]);
 
+            // console.log(JSON.stringify(result.toJSON(), null, 2));
             should(result).be.ok();
             should(result.getTotalFiles()).be.exactly(9);
             should(result.getTotalCompletedFiles()).be.exactly(result.getTotalFiles());

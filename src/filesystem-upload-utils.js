@@ -12,8 +12,10 @@ governing permissions and limitations under the License.
 
 import Path from 'path';
 
-import { DefaultValues } from './constants';
+import { DefaultValues, RegularExpressions } from './constants';
 import { normalizePath } from './utils';
+import UploadError from './upload-error';
+import ErrorCodes from './error-codes';
 
 /**
  * Retrieves the option indicating whether or not the upload is deep. Takes
@@ -71,8 +73,7 @@ function aggregateByRemoteDirectory(files) {
     const directoryAggregate = {};
 
     files.forEach(file => {
-        const { remoteUrl } = file;
-        const remoteDirectory = remoteUrl.substr(0, remoteUrl.lastIndexOf('/'));
+        const remoteDirectory = file.getParentRemoteUrl();
 
         if (!directoryAggregate[remoteDirectory]) {
             directoryAggregate[remoteDirectory] = new Set();
@@ -97,9 +98,72 @@ function getMaxFileCount(uploadOptions) {
     return uploadOptions.getMaxUploadFiles();
 }
 
+/**
+ * Uses a processor function to cleanse a node name, then cleanses generally disallowed characters
+ * from the name.
+ * @param {FileSystemUploadOptions} uploadOptions Used to retrieve the value to use when replacing
+ *  invalid characters.
+ * @param {function} processorFunction Will be given the provided node name as a single argument.
+ *  Expected to return a Promise that will be resolved with the cleansed node name value.
+ * @param {string} nodeName Value to be cleansed of invalid characters.
+ * @returns {Promise} Will be resolved with the cleansed node name.
+ */
+async function cleanseNodeName(uploadOptions, processorFunction, nodeName) {
+    const processedName = await processorFunction(nodeName);
+    return processedName.replace(RegularExpressions.INVALID_CHARACTERS_REGEX,
+        uploadOptions.getInvalidCharacterReplaceValue());
+}
+
+/**
+ * Uses the given options to cleanse a folder name, then cleanses generally disallowed characters
+ * from the name.
+ * @param {FileSystemUploadOptions} uploadOptions Used to retrieve the value to use when replacing
+ *  invalid characters, and the function to call to cleanse the folder name.
+ * @param {string} folderName Value to be cleansed of invalid characters.
+ * @returns {Promise} Will be resolved with the cleansed name.
+ */
+async function cleanseFolderName(uploadOptions, folderName) {
+    return cleanseNodeName(uploadOptions, uploadOptions.getFolderNodeNameProcessor(), folderName);
+}
+
+/**
+ * Uses the given options to cleanse an asset name, then cleanses generally disallowed characters
+ * from the name.
+ * @param {FileSystemUploadOptions} uploadOptions Used to retrieve the value to use when replacing
+ *  invalid characters, and the function to call to cleanse the asset name.
+ * @param {string} folderName Value to be cleansed of invalid characters.
+ * @returns {Promise} Will be resolved with the cleansed name.
+ */
+async function cleanseAssetName(uploadOptions, assetName) {
+    const {
+        name: assetNameOnly,
+        ext,
+    } = Path.parse(assetName);
+    const cleansedName = await cleanseNodeName(uploadOptions, uploadOptions.getAssetNodeNameProcessor(), assetNameOnly);
+    return `${cleansedName}${ext}`;
+}
+
+async function getItemManagerParent(itemManager, rootPath, localPath) {
+    const normalizedPath = normalizePath(localPath);
+    let parent;
+
+    if (normalizedPath !== rootPath && !String(normalizedPath).startsWith(`${rootPath}/`)) {
+        throw new UploadError('directory to upload is outside expected root', ErrorCodes.INVALID_OPTIONS);
+    }
+
+    if (normalizedPath !== rootPath) {
+        parent = await itemManager.getDirectory(normalizedPath.substr(0, normalizedPath.lastIndexOf('/')));
+    }
+
+    return parent;
+}
+
 module.exports = {
     getItemRemoteUrl,
     aggregateByRemoteDirectory,
     isDeepUpload,
     getMaxFileCount,
+    cleanseFolderName,
+    cleanseAssetName,
+    getItemManagerParent,
 }
