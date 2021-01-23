@@ -12,6 +12,7 @@ governing permissions and limitations under the License.
 
 import URL from 'url';
 import cookie from 'cookie';
+import util from 'util';
 
 import DirectBinaryUploadController from './direct-binary-upload-controller';
 import { trimRight } from './utils';
@@ -29,7 +30,7 @@ import { DefaultValues } from './constants';
  *
  * All other options are optional.
  */
-export default class DirectBinaryUploadOptions {
+class DirectBinaryUploadOptions {
     constructor() {
         this.options = {
             maxConcurrent: DefaultValues.MAX_CONCURRENT,
@@ -356,3 +357,11 @@ export default class DirectBinaryUploadOptions {
         return this.options;
     }
 }
+
+// ensure a warning is reported when using deprecated method
+const originalAddContentLengthHeader = DirectBinaryUploadOptions.withAddContentLengthHeader;
+DirectBinaryUploadOptions.withAddContentLengthHeader = util.deprecate(() => {
+    return originalAddContentLengthHeader();
+});
+
+export default DirectBinaryUploadOptions;

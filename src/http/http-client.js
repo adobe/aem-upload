@@ -10,7 +10,7 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import { timedRequest, createCancelToken } from '../http-utils';
+import { timedRequest, createCancelToken, isRetryableError } from '../http-utils';
 import ErrorCodes from '../error-codes';
 import UploadOptionsBase from '../upload-options-base';
 import UploadError from '../upload-error';
@@ -27,15 +27,8 @@ function handleRetryError(e, httpResult) {
     if (e && e.message && e.message === ErrorCodes.USER_CANCELLED) {
         throw new UploadError('user cancelled the operation', ErrorCodes.USER_CANCELLED);
     }
-    if (e && e.isAxiosError) {
-        const { response = {} } = e;
-        const { status } = response;
-
-        // only retry 5xx errors and errors that don't have a status code (which
-        // indicates some kind of network or I/O error)
-        if (status && (status < 500 || status > 599)) {
-            throw e;
-        }
+    if (!isRetryableError(e)) {
+        throw e;
     }
     if (httpResult) {
         httpResult.addRetryError(e);

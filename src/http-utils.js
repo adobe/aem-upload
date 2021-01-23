@@ -63,6 +63,26 @@ export async function timedRequest(requestOptions, retryOptions, cancelToken) {
 }
 
 /**
+ * Determines whether a given error qualifies to be retried. Retryable errors include
+ * network errors and 5xx level errors.
+ * @param {*} e Error to check.
+ * @returns {boolean} True if the error should be retried, false otherwise.
+ */
+export function isRetryableError(e) {
+    if (e && e.isAxiosError) {
+        const { response = {} } = e;
+        const { status } = response;
+
+        // only retry 5xx errors and errors that don't have a status code (which
+        // indicates some kind of network or I/O error)
+        if (status && (status < 500 || status > 599)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
  * Does any necessary work to update an existing options object with the results
  * of an HTTP response. For example, if the response contains a set-cookie header
  * then the cookies will be added to the options.
