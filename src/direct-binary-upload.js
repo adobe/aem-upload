@@ -12,6 +12,7 @@ governing permissions and limitations under the License.
 
 import UploadBase from './upload-base';
 import DirectBinaryUploadProcess from './direct-binary-upload-process';
+import UploadResult from './upload-result';
 
 /**
  * Provides capabilities for uploading assets to an AEM instance configured with
@@ -30,6 +31,7 @@ export default class DirectBinaryUpload extends UploadBase {
      */
     async uploadFiles(options) {
         const uploadProcess = new DirectBinaryUploadProcess(this.getOptions(), options);
+        const uploadResult = new UploadResult(this.getOptions(), options);
 
         uploadProcess.on('filestart', data => this.sendEvent('filestart', data));
         uploadProcess.on('fileprogress', data => this.sendEvent('fileprogress', data));
@@ -37,6 +39,25 @@ export default class DirectBinaryUpload extends UploadBase {
         uploadProcess.on('fileerror', data => this.sendEvent('fileerror', data));
         uploadProcess.on('filecancelled', data => this.sendEvent('filecancelled', data));
 
-        return await uploadProcess.upload();
+        await uploadProcess.upload(uploadResult);
+
+        return uploadResult;
+    }
+
+    /**
+     * Determines whether a given upload can be performed. If the upload is not possible then
+     * the method will throw an UploadError whose code specifies the reason why the upload
+     * cannot happen.
+     * @param {DirectBinaryUploadOptions} options Options for the proposed upload. See module
+     *  documentation for details.
+     */
+    async canUpload(options) {
+        const uploadProcess = new DirectBinaryUploadProcess(this.getOptions(), options);
+
+        await uploadProcess.initiateUpload(new UploadResult(this.getOptions(), options), [{
+            fileName: `${new Date().getTime()}_canUploadTest.jpg`,
+            fileSize: 1,
+            blob: [1]
+        }]);
     }
 }

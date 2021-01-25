@@ -46,14 +46,32 @@ module.exports.importFile = (file, fileMocks) => {
     return required;
 }
 
-/**
- * Retrieves a test logger that will print messages to console.log.
- */
-module.exports.getConsoleLogger = () => {
+function getConsoleLogger() {
     return {
         info: console.log,
         debug: console.log,
         warn: console.log,
         error: console.log
+    }
+}
+
+/**
+ * Retrieves a test logger that will print messages to console.log.
+ */
+module.exports.getConsoleLogger = getConsoleLogger;
+
+/**
+ * Retrieves high level direct binary options that provide the ability
+ * to output logs based on the state of the AEM_UPLOAD_TEST_LOGGING
+ * environment variable.
+ * @returns {object} Options for a direct binary operation.
+ */
+module.exports.getTestOptions = () => {
+    if (process.env.AEM_UPLOAD_TEST_LOGGING) {
+        return {
+            log: getConsoleLogger()
+        }
+    } else {
+        return {};
     }
 }

@@ -15,9 +15,10 @@ const cookie = require('cookie');
 
 const { importFile } = require('./testutils');
 const MockRequest = require('./mock-request');
+const { default: HttpResponse } = require('../src/http/http-response');
 const DirectBinaryUploadOptions = importFile('direct-binary-upload-options');
 
-const { timedRequest, updateOptionsWithResponse } = importFile('http-utils');
+const { timedRequest, updateOptionsWithResponse, isRetryableError } = importFile('http-utils');
 
 describe('HttpUtilsTest', () => {
     beforeEach(() => {
@@ -46,14 +47,41 @@ describe('HttpUtilsTest', () => {
         });
     });
 
+    function createResponse(headers = {}) {
+        return new HttpResponse({}, { headers });
+    }
+
     it('test update options', () => {
-        let options = new DirectBinaryUploadOptions();
-        options = updateOptionsWithResponse(options, {});
+        const options = new DirectBinaryUploadOptions();
+        updateOptionsWithResponse(options, createResponse());
         should(options.getHeaders().Cookie).not.be.ok();
-        options = updateOptionsWithResponse(options, { headers: { 'set-cookie': [] } });
+        updateOptionsWithResponse(options, createResponse({ 'set-cookie': [] }));
         should(options.getHeaders().Cookie).not.be.ok();
-        options = updateOptionsWithResponse(options, { headers: { 'set-cookie': [cookie.serialize('cookie', 'value')]} });
+        updateOptionsWithResponse(options, createResponse({ 'set-cookie': [cookie.serialize('cookie', 'value')]}));
         should(options.getHeaders().Cookie).be.ok();
         should(cookie.parse(options.getHeaders().Cookie).cookie).be.exactly('value');
+    });
+
+    it('test is retryable error', () => {
+        should(isRetryableError(false)).be.ok();
+        should(isRetryableError(true)).be.ok();
+        should(isRetryableError({ isAxiosError: true })).be.ok();
+        should(isRetryableError({
+            isAxiosError: true,
+            response: {
+                status: 404
+            }
+        })).not.be.ok();
+        should(isRetryableError({
+            isAxiosError: true,
+            response: {
+            }
+        })).be.ok();
+        should(isRetryableError({
+            isAxiosError: true,
+            response: {
+                status: 500
+            }
+        })).be.ok();
     });
 });

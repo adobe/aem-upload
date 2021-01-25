@@ -41,4 +41,10 @@ describe('DirectBinaryUploadOptionsTest', () => {
         should(cookies.cookie).be.exactly('value2');
         should(cookies.anotherCookie).be.exactly('another');
     });
+
+    it('test withAddContentLengthHeader', () => {
+        let options = new DirectBinaryUploadOptions()
+            .withAddContentLengthHeader(true);
+        should(options).be.ok();
+    });
 });

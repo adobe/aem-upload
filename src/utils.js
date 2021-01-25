@@ -10,9 +10,32 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
+import { promises as fs } from 'fs';
 import Async from 'async';
+import Path from 'path';
 
 import { DefaultValues } from './constants';
+import UploadError from './upload-error';
+import ErrorCodes from './error-codes';
+
+const TEMP_PATTERNS = [
+    /^\/~(.*)/, // catch all paths starting with ~
+    /^\/\.(.*)/, // catch all paths starting with .
+];
+
+const TEMP_NAME_PATTERNS = [
+    /^[.~]/i,
+    /^TestFile/, // InDesign: on file open, InDesign creates .dat.nosync* file, renames it TestFile, and deletes it
+    /\.tmp$/i, // Illustrator: on save, creates one or more *.tmp files, renames them to original file name
+    /\.~tmp$/i, // some default Windows applications use this file format
+    // OS X
+    /^DCIM/,
+    // Windows
+    /^desktop\.ini/i,
+    /^Thumbs\.db/i,
+    /^Adobe Bridge Cache\.bc$/i,
+    /^Adobe Bridge Cache\.bct$/i,
+];
 
 /**
  * Loops through a given array, concurrently invoking the given callback. The loop will have a maximum
@@ -233,4 +256,155 @@ export function trimContentDam(path) {
     }
 
     return trimRight(trimmed, ['/']);
+}
+
+/**
+ * Normalizes a path by ensuring it only contains forward slashes and does not end with a
+ * slash. If the given path is falsy then the method will return an empty string.
+ * @param {string} path An item's full path.
+ * @returns {string} Normalized version of a path.
+ */
+export function normalizePath(path) {
+    let normPath = path;
+    if (normPath) {
+        normPath = normPath.replace(/\\/g, '/');
+        if (normPath.charAt(normPath.length - 1) === '/') {
+            normPath = normPath.substr(0, normPath.length - 1);
+        }
+    }
+    return normPath || '';
+}
+
+/**
+ * Determines whether or not a given path is either a temp file, or in a temp directory.
+ * @param {string} path A file system-like path.
+ * @returns {boolean} True if the path is a temp file, false otherwise.
+ */
+export function isTempPath(path) {
+    const tempPath = normalizePath(path);
+
+    if (tempPath === '/') {
+        return false;
+    }
+
+    let isTemp = TEMP_PATTERNS.some(pattern => pattern.test(tempPath));
+
+    if (!isTemp) {
+        const pathName = Path.basename(tempPath);
+        isTemp = TEMP_NAME_PATTERNS.some(pattern => pattern.test(pathName));
+    }
+
+    return isTemp;
+}
+
+/**
+ * Concurrently loops through all items in a directory, doing a stat
+ * on each to determine if it's a directory or file. The method will
+ * skip temp files and directories.
+ * @param {string} directoryPath Full path to the directory to iterate.
+ * @param {Array} directories All of the target directory's valid sub-directories
+ *  will be added to this array.
+ * @param {Array} files All of the target directory's valid sub-files will be
+ *  added to this array.
+ * @param {Array} errors Any errors encountered while processing the directory will
+ *  be added to this array.
+ * @returns {number} Total size, in bytes, of all files in the directory.
+ */
+async function processDirectory(directoryPath, directories, files, errors) {
+    let contents = false;
+    
+    let totalSize = 0;
+
+    try {
+        contents = await fs.readdir(directoryPath);
+    } catch (e) {
+        errors.push(e);
+    }
+
+    if (contents) {
+        await concurrentLoop(contents, async (childPath) => {
+            const fullChildPath = Path.join(directoryPath, childPath);
+            if (!isTempPath(fullChildPath)) {
+                let childStat;
+                try {
+                    childStat = await fs.stat(fullChildPath);
+                } catch (e) {
+                    errors.push(e);
+                    return;
+                }
+
+                if (childStat.isDirectory()) {
+                    directories.push({ path: fullChildPath });
+                } else if (childStat.isFile()) {
+                    files.push({ path: fullChildPath, size: childStat.size });
+                    totalSize += childStat.size;
+                }
+            }
+        });
+    }
+
+    return totalSize;
+}
+
+function removeEmptyDirectories(directories, files) {
+    const validDirectories = [];
+    for (let d = 0; d < directories.length; d++) {
+        const directory = directories[d];
+        const directoryPrefix = Path.join(directory.path, '/');
+        for (let f = 0; f < files.length; f++) {
+            const file = files[f];
+            if (file.path.startsWith(directoryPrefix)) {
+                validDirectories.push(directory);
+                break;
+            }
+        }
+    }
+    
+    return validDirectories;
+}
+
+/**
+ * Walks a directory by retrieving all the directories and files
+ * in the given path, then walking all those sub directories, then
+ * all sub directories of those sub directories, etc. The end result
+ * will be the entire tree, including all descendents, for the
+ * target directory.
+ * @param {string} directoryPath Directory to traverse.
+ * @param {number} [maximumPaths] The maximum number of paths to
+ *  process before the method gives up and throws an exception.
+ *  Default value is 5000.
+ * @param {boolean} [includeDescendents] If true, the method will walk
+ *  descendent directories. If false, the method will only include files
+ *  immediately below the given directory. Default value is true.
+ */
+export async function walkDirectory(directoryPath, maximumPaths = 5000, includeDescendents = true) {
+    let processDirectories = [{ path: directoryPath }];
+    let allDirectories = [];
+    let allFiles = [];
+    let allErrors = [];
+    let walkedTotalSize = 0;
+
+    // this algorithm avoids recursion to prevent overflows. Instead,
+    // use a stack to keep track of directories to process.
+    while (processDirectories.length > 0) {
+        const { path: toProcess } = processDirectories.shift();
+        const directories = [];
+        walkedTotalSize += await processDirectory(toProcess, directories, allFiles, allErrors);
+        allDirectories = allDirectories.concat(directories);
+
+        if (includeDescendents) {
+            processDirectories = processDirectories.concat(directories);
+        }
+
+        if (allDirectories.length + allFiles.length > maximumPaths) {
+            throw new UploadError(`Walked directory exceeded the maximum number of ${maximumPaths} paths`, ErrorCodes.TOO_LARGE);
+        }
+    }
+
+    return {
+        directories: removeEmptyDirectories(allDirectories, allFiles),
+        files: allFiles,
+        errors: allErrors,
+        totalSize: walkedTotalSize
+    }
 }

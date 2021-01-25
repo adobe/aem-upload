@@ -91,6 +91,15 @@ mock.getPartUrl = function(targetFolder, file, partNumber) {
 }
 
 /**
+ * Creates an upload token to use with a given file.
+ * @param {string} file The name of the file.
+ * @returns {string} An upload token.
+ */
+mock.getUploadToken = function(file) {
+    return `token_${file}`;
+}
+
+/**
  * Retrieves the full URL to a path in the mocked request framework.
  *
  * @param {string} targetFolder The folder to include in the URL.
@@ -164,7 +173,7 @@ function processInit(targetFolder, config) {
                         return {
                             fileName: file,
                             mimeType: mime.getType(file),
-                            uploadToken: `token_${file}`,
+                            uploadToken: mock.getUploadToken(file),
                             uploadURIs: uploadUris,
                             minPartSize: 256,
                             maxPartSize: 1024,
@@ -311,5 +320,20 @@ mock.getDirectFiles = function () {
 
     return files;
 }
+
+/**
+ * Specifies that a response should be sent after a given delay.
+ * Example: mock.onGet('http://localhost:4502').reply(mock.withDelay(1000, [200, 'response body']));
+ * @param {number} delay The amount of time to wait, in milliseconds, before responding to a request.
+ * @param {Array} response The response to provide, where the first element is the status code and
+ *  the second element is the response body.
+ */
+mock.withDelay = (delay, response) => config => {
+    return new Promise(resolve => {
+        setTimeout(() => {
+            resolve(response);
+        }, delay);
+    });
+};
 
 module.exports = mock;

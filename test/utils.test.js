@@ -11,8 +11,12 @@ governing permissions and limitations under the License.
 */
 
 const should = require('should');
+const Path = require('path');
 
 const { importFile } = require('./testutils');
+
+let dirs = {};
+let stats = {};
 
 const {
     concurrentLoop,
@@ -20,11 +24,48 @@ const {
     trimRight,
     trimLeft,
     joinUrlPath,
-    trimContentDam
-} = importFile('utils');
+    trimContentDam,
+    walkDirectory
+} = importFile('utils', {
+    'fs': {
+        promises: {
+            stat: async function(path) {
+                if (Path.basename(path) === 'error.jpg') {
+                    throw new Error('unit test stat error');
+                }
+                return stats[path];
+            },
+            readdir: async function(path) {
+                if (Path.basename(path) === 'error') {
+                    throw new Error('unit test readdir error');
+                }
+                return dirs[path];
+            }
+        }
+    }
+});
 const { DefaultValues } = importFile('constants');
 
-describe('UtilsTest', () => {
+describe('UtilsTest', function () {
+    function addFileSystem(fullPath, isDir, size = 0) {
+        stats[fullPath] = {
+            isDirectory: () => isDir,
+            isFile: () => !isDir,
+            size
+        };
+
+        const parent = Path.dirname(fullPath);
+        if (!dirs[parent]) {
+            dirs[parent] = [];
+        }
+        dirs[parent].push(Path.basename(fullPath));
+    }
+
+    beforeEach(() => {
+        dirs = {};
+        stats = {};
+    });
+
     describe('concurrentLoop tests', () => {
         async function runMaxConcurrentTest(maxValue) {
             let currCount = 0;
@@ -141,5 +182,82 @@ describe('UtilsTest', () => {
         should(trimContentDam('/content/dame/test')).be.exactly('/content/dame/test');
         should(trimContentDam('/test')).be.exactly('/test');
         should(trimContentDam('/test/')).be.exactly('/test');
+    });
+
+    function getPathIndex(itemList, path) {
+        for (let i = 0; i < itemList.length; i++) {
+            const { path: comparePath } = itemList[i];
+            if (path === comparePath) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    function createDirectoryStructure() {
+        addFileSystem('/root', true);
+        addFileSystem('/root/file1.jpg', false, 1024);
+        addFileSystem('/root/file2.jpg', false, 1024);
+        addFileSystem('/root/dir1', true);
+        addFileSystem('/root/dir1/file3.jpg', false, 1024);
+        addFileSystem('/root/dir1/file4.jpg', false, 1024);
+        addFileSystem('/root/dir1/dir2', true);
+        addFileSystem('/root/dir1/dir2/dir3', true);
+        addFileSystem('/root/dir1/dir2/dir3/file5.jpg', false, 1024);
+        addFileSystem('/root/dir1/dir2/dir3/file6.jpg', false, 1024);
+        addFileSystem('/root/.tempdir', true);
+        addFileSystem('/root/.tempfile.jpg', false, 1024);
+        addFileSystem('/root/error', true);
+        addFileSystem('/root/error.jpg', false, 1024);
+        addFileSystem('/root/emptydir', true);
+        addFileSystem('/root/emptydir/emptysubdir', true);
+    }
+
+    it('test walk directory', async function () {
+        createDirectoryStructure();
+
+        const { directories, files, totalSize, errors } = await walkDirectory('/root');
+        should(directories.length).be.exactly(3);
+        should(files.length).be.exactly(6);
+        should(totalSize).be.exactly(files.length * 1024);
+        should(errors.length).be.exactly(2);
+
+        const dir1 = getPathIndex(directories, '/root/dir1');
+        const dir2 = getPathIndex(directories, '/root/dir1/dir2');
+        const dir3 = getPathIndex(directories, '/root/dir1/dir2/dir3');
+
+        should(dir1 >= 0 && dir1 > dir2 && dir1 > dir3);
+        should(dir2 >= 0 && dir2 > dir3);
+        should(dir3 >= 0);
+
+        const file1 = getPathIndex(files, '/root/file1.jpg');
+        const file2 = getPathIndex(files, '/root/file2.jpg');
+        const file3 = getPathIndex(files, '/root/dir1/file3.jpg');
+        const file4 = getPathIndex(files, '/root/dir1/file4.jpg');
+        const file5 = getPathIndex(files, '/root/dir1/dir2/dir3/file5.jpg');
+        const file6 = getPathIndex(files, '/root/dir1/dir2/dir3/file6.jpg');
+
+        should(file1 >= 0 && file1 < file3 && file1 < file4 && file1 < file5 && file1 < file6).be.ok();
+        should(file2 >= 0 && file2 < file3 && file2 < file4 && file2 < file5 && file2 < file6).be.ok();
+        should(file3 >= 0 && file3 < file5 && file3 < file6).be.ok();
+        should(file4 >= 0 && file4 < file5 && file4 < file6).be.ok();
+        should(file5 >= 0).be.ok();
+        should(file6 >= 0).be.ok();
+    });
+
+    it('test walk directory no descendents', async function () {
+        createDirectoryStructure();
+
+        const { directories, files, totalSize, errors } = await walkDirectory('/root', 1000, false);
+        should(directories.length).be.exactly(0);
+        should(files.length).be.exactly(2);
+        should(totalSize).be.exactly(files.length * 1024);
+        should(errors.length).be.exactly(1);
+
+        const file1 = getPathIndex(files, '/root/file1.jpg');
+        const file2 = getPathIndex(files, '/root/file2.jpg');
+
+        should(file1 >= 0 && file1 < file2).be.ok();
+        should(file2 >= 0).be.ok();
     });
 });

@@ -101,6 +101,16 @@ export default class FileUploadResult extends HttpResult {
     }
 
     /**
+     * Directly sets the total amount of time it took, in milliseconds, for
+     * the file to upload.
+     *
+     * @param {number} elapsedTime Time span in milliseconds.
+     */
+    setTotalUploadTime(elapsedTime) {
+        this.totalTime = elapsedTime;
+    }
+
+    /**
      * Retrieves the amount of time, in milliseconds, that it took the part that completed the fastest to transfer.
      *
      * @returns {number} A time span in milliseconds.

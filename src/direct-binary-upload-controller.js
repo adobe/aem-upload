@@ -27,7 +27,7 @@ export default class DirectBinaryUploadController extends UploadBase {
     /**
      * Instructs the upload to cancel a specific file upload.
      */
-    cancelFile(fileName) {
-        this.sendEvent('cancel', { fileName });
+    cancelFile(targetFilePath) {
+        this.sendEvent('cancel', { fileName: targetFilePath });
     }
 }
