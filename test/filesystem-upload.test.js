@@ -13,7 +13,12 @@ governing permissions and limitations under the License.
 const should = require('should');
 const MockFs = require('mock-fs');
 
-const { importFile, getTestOptions } = require('./testutils');
+const {
+    importFile,
+    getTestOptions,
+    monitorEvents,
+    getEvent,
+} = require('./testutils');
 const MockRequest = require('./mock-request');
 const HttpClient = importFile('http/http-client');
 const FileSystemUploadDirectory = importFile('filesystem-upload-directory');
@@ -32,8 +37,15 @@ const FileSystemUploadOptions = importFile('filesystem-upload-options');
 
 const FileSystemUpload = importFile('filesystem-upload');
 
+const SUBDIR = 'sub吏dir';
+const SUBDIR_ENCODED = encodeURI(SUBDIR);
+
+const ASSET1 = '吏';
+const ASSET1_ENCODED = encodeURI(ASSET1);
+
 describe('FileSystemUpload Tests', () => {
     let httpClient;
+
     beforeEach(() => {
         MockRequest.reset();
 
@@ -51,24 +63,25 @@ describe('FileSystemUpload Tests', () => {
         }
 
         function createFsStructure() {
-            MockFs({
+            const structure = {
                 '/test/dir': {
                     '3': '12345678',
                     '4': '1234567',
-                    'subdir': {
-                        'subsubdir': {
-                            '7': '123',
-                            '8': '12'
-                        },
-                        '5': '12345',
-                        '6': '123456'
-                    }
                 },
                 '/test/file': {
-                    '1': '123456789',
                     '2': '1234567890'
                 }
-            });
+            };
+            structure['/test/dir'][SUBDIR] = {
+                'subsubdir': {
+                    '7': '123',
+                    '8': '12'
+                },
+                '5': '12345',
+                '6': '123456'
+            };
+            structure['/test/file'][ASSET1] = '123456789';
+            MockFs(structure);
         }
 
         it('filesystem upload smoke test', async () => {
@@ -84,7 +97,7 @@ describe('FileSystemUpload Tests', () => {
 
             const fileSystemUpload = new FileSystemUpload(getTestOptions());
             const result = await fileSystemUpload.upload(uploadOptions, [
-                '/test/file/1',
+                `/test/file/${ASSET1}`,
                 '/test/file/2',
                 '/test/dir',
             ]);
@@ -100,7 +113,7 @@ describe('FileSystemUpload Tests', () => {
                 fileLookup[uploadFile.getFileName()] = uploadFile;
             });
 
-            validateUploadFile(fileLookup['1'], 9);
+            validateUploadFile(fileLookup[ASSET1], 9);
             validateUploadFile(fileLookup['2'], 10);
             validateUploadFile(fileLookup['3'], 8);
             validateUploadFile(fileLookup['4'], 7);
@@ -179,14 +192,14 @@ describe('FileSystemUpload Tests', () => {
             MockRequest.onPost(MockRequest.getApiUrl('/target')).reply(201);
             MockRequest.onPost(MockRequest.getApiUrl('/target/test')).reply(201);
             MockRequest.onPost(MockRequest.getApiUrl('/target/test/dir')).reply(201);
-            MockRequest.onPost(MockRequest.getApiUrl('/target/test/dir/subdir')).reply(201);
-            MockRequest.onPost(MockRequest.getApiUrl('/target/test/dir/subdir/subsubdir')).reply(201);
+            MockRequest.onPost(MockRequest.getApiUrl(`/target/test/dir/${SUBDIR_ENCODED}`)).reply(201);
+            MockRequest.onPost(MockRequest.getApiUrl(`/target/test/dir/${SUBDIR_ENCODED}/subsubdir`)).reply(201);
             MockRequest.onPost(MockRequest.getApiUrl('/target/test/file')).reply(201);
 
             MockRequest.addDirectUpload('/target');
             MockRequest.addDirectUpload('/target/test/dir');
-            MockRequest.addDirectUpload('/target/test/dir/subdir');
-            MockRequest.addDirectUpload('/target/test/dir/subdir/subsubdir');
+            MockRequest.addDirectUpload(`/target/test/dir/${SUBDIR_ENCODED}`);
+            MockRequest.addDirectUpload(`/target/test/dir/${SUBDIR_ENCODED}/subsubdir`);
             MockRequest.addDirectUpload('/target/test/file');
 
             const uploadOptions = new FileSystemUploadOptions()
@@ -197,9 +210,10 @@ describe('FileSystemUpload Tests', () => {
                 .withDeepUpload(true);
 
             const fileSystemUpload = new FileSystemUpload(getTestOptions());
+            monitorEvents(fileSystemUpload);
             const result = await fileSystemUpload.upload(uploadOptions, [
                 '/test',
-                '/test/file/1'
+                `/test/file/${ASSET1}`
             ]);
 
             // console.log(JSON.stringify(result.toJSON(), null, 2));
@@ -224,20 +238,26 @@ describe('FileSystemUpload Tests', () => {
             should(postedUrls[MockRequest.getApiUrl('/target/test')]).be.exactly(1);
             should(postedUrls[MockRequest.getApiUrl('/target/test/dir')]).be.exactly(1);
             should(postedUrls[MockRequest.getApiUrl('/target/test/file')]).be.exactly(1);
-            should(postedUrls[MockRequest.getApiUrl('/target/test/dir/subdir')]).be.exactly(1);
-            should(postedUrls[MockRequest.getApiUrl('/target/test/dir/subdir/subsubdir')]).be.exactly(1);
+            should(postedUrls[MockRequest.getApiUrl(`/target/test/dir/${SUBDIR_ENCODED}`)]).be.exactly(1);
+            should(postedUrls[MockRequest.getApiUrl(`/target/test/dir/${SUBDIR_ENCODED}/subsubdir`)]).be.exactly(1);
 
             should(postedUrls[MockRequest.getUrl('/target.initiateUpload.json')]).be.exactly(1);
             should(postedUrls[MockRequest.getUrl('/target/test/dir.initiateUpload.json')]).be.exactly(1);
             should(postedUrls[MockRequest.getUrl('/target/test/file.initiateUpload.json')]).be.exactly(1);
-            should(postedUrls[MockRequest.getUrl('/target/test/dir/subdir.initiateUpload.json')]).be.exactly(1);
-            should(postedUrls[MockRequest.getUrl('/target/test/dir/subdir/subsubdir.initiateUpload.json')]).be.exactly(1);
+            should(postedUrls[MockRequest.getUrl(`/target/test/dir/${SUBDIR_ENCODED}.initiateUpload.json`)]).be.exactly(1);
+            should(postedUrls[MockRequest.getUrl(`/target/test/dir/${SUBDIR_ENCODED}/subsubdir.initiateUpload.json`)]).be.exactly(1);
 
             should(postedUrls[MockRequest.getUrl('/target.completeUpload.json')]).be.exactly(1);
             should(postedUrls[MockRequest.getUrl('/target/test/dir.completeUpload.json')]).be.exactly(2);
             should(postedUrls[MockRequest.getUrl('/target/test/file.completeUpload.json')]).be.exactly(2);
-            should(postedUrls[MockRequest.getUrl('/target/test/dir/subdir.completeUpload.json')]).be.exactly(2);
-            should(postedUrls[MockRequest.getUrl('/target/test/dir/subdir/subsubdir.completeUpload.json')]).be.exactly(2);
+            should(postedUrls[MockRequest.getUrl(`/target/test/dir/${SUBDIR_ENCODED}.completeUpload.json`)]).be.exactly(2);
+            should(postedUrls[MockRequest.getUrl(`/target/test/dir/${SUBDIR_ENCODED}/subsubdir.completeUpload.json`)]).be.exactly(2);
+
+            should(getEvent('filestart', `/content/dam/target/${ASSET1}`)).be.ok();
+            should(getEvent('fileend', `/content/dam/target/${ASSET1}`)).be.ok();
+
+            should(getEvent('filestart', `/content/dam/target/test/dir/${SUBDIR}/5`)).be.ok();
+            should(getEvent('fileend', `/content/dam/target/test/dir/${SUBDIR}/5`)).be.ok();
         });
 
         it('test directory descendent upload error', async function() {
@@ -246,8 +266,8 @@ describe('FileSystemUpload Tests', () => {
             MockRequest.onPost(MockRequest.getApiUrl('/target')).reply(201);
             MockRequest.onPost(MockRequest.getApiUrl('/target/test')).reply(201);
             MockRequest.onPost(MockRequest.getApiUrl('/target/test/dir')).reply(201);
-            MockRequest.onPost(MockRequest.getApiUrl('/target/test/dir/subdir')).reply(201);
-            MockRequest.onPost(MockRequest.getApiUrl('/target/test/dir/subdir/subsubdir')).reply(201);
+            MockRequest.onPost(MockRequest.getApiUrl(`/target/test/dir/${SUBDIR_ENCODED}`)).reply(201);
+            MockRequest.onPost(MockRequest.getApiUrl(`/target/test/dir/${SUBDIR_ENCODED}/subsubdir`)).reply(201);
             MockRequest.onPost(MockRequest.getApiUrl('/target/test/file')).reply(201);
 
             MockRequest.addDirectUpload('/target/test/dir');

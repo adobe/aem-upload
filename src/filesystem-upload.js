@@ -99,7 +99,7 @@ export default class FileSystemUpload extends DirectBinaryUpload {
 
             // start initiate uploading, single for all files in the current directory
             const uploadOptions = FileSystemUploadOptions.fromOptions(fileSystemUploadOptions)
-                .withUrl(directoryUrl)
+                .withUrl(encodeURI(directoryUrl))
                 .withUploadFiles(uploadFiles);
 
             const uploadProcess = new DirectBinaryUploadProcess(this.getOptions(), uploadOptions, httpClient, partUploader);
@@ -302,7 +302,8 @@ export default class FileSystemUpload extends DirectBinaryUpload {
             const folderName = folderTitle ? folderTitle : Path.basename(trimmedFolder);
             try {
                 this.logInfo(`Creating AEM directory ${folderPath}`);
-                const createFolderRequest = new HttpRequest(this.getOptions(), `${options.getUrlPrefix()}/api/assets${trimmedFolder}`)
+                const createFolderRequest = new HttpRequest(this.getOptions(),
+                    `${options.getUrlPrefix()}/api/assets${encodeURI(trimmedFolder)}`)
                     .withMethod(HttpRequest.Method.POST)
                     .withData({
                         class: 'assetFolder',

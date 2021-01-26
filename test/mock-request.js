@@ -156,7 +156,7 @@ function processInit(targetFolder, config) {
             resolve([
                 201,
                 {
-                    completeURI: `/content/dam${targetFolder}.completeUpload.json`,
+                    completeURI: `/content/dam${decodeURI(targetFolder)}.completeUpload.json`,
                     folderPath: URL.parse(config.url).pathname,
                     files: fileNames.map((file, index) => {
                         const fileSize = fileSizes[index];
