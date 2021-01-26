@@ -34,31 +34,6 @@ function isDeepUpload(uploadOptions) {
 }
 
 /**
- * Retrieves the remote path for an item to upload. Removes a local
- * prefix from its path, then appends the result to the target
- * path from the given options.
- *
- * @param {DirectBinaryUploadOptions} uploadOptions Will be used to determine
- *  the behavior of the method.
- * @param {string} removePathPrefix Will be removed from the given local path
- *  if present.
- * @param {string} localPath Full path to a local item.
- * @returns {string} Remote path to the item.
- */
-function getItemRemoteUrl(uploadOptions, removePathPrefix, localPath) {
-    const normalizedRemovePathPrefix = normalizePath(removePathPrefix);
-    const normalizedLocalPath = normalizePath(localPath);
-    const targetRoot = uploadOptions.getUrl();
-    const isDeep = isDeepUpload(uploadOptions);
-
-    if (isDeep && removePathPrefix && String(normalizedLocalPath).startsWith(`${normalizedRemovePathPrefix}/`)) {
-        return `${targetRoot}${normalizedLocalPath.substr(normalizedRemovePathPrefix.length)}`;
-    }
-
-    return `${targetRoot}/${Path.basename(localPath)}`;
-}
-
-/**
  * Separates a list of files into a lookup based on its target remote path.
  *
  * @param {Array} files List of simple objects representing files. Is
@@ -159,7 +134,6 @@ async function getItemManagerParent(itemManager, rootPath, localPath) {
 }
 
 module.exports = {
-    getItemRemoteUrl,
     aggregateByRemoteDirectory,
     isDeepUpload,
     getMaxFileCount,
