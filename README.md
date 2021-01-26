@@ -650,7 +650,7 @@ controller.cancel();
 ## Uploading Local Files
 
 The library supports uploading local files and folders. For folders, the tool
-will include all immediate child files in the folder. It will not process sub-folders unless the "deep upload" option is specified.
+will include all immediate children files in the folder. It will not process sub-folders unless the "deep upload" option is specified.
 
 The following example illustrates how to upload local files.
 
