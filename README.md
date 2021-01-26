@@ -67,7 +67,7 @@ Following is the minimum amount of code required to upload files to a target AEM
 ```javascript
 const DirectBinary = require('@adobe/aem-upload');
 
-// URL to the directory in AEM where assets will be uploaded. Directory
+// URL to the folder in AEM where assets will be uploaded. Folder
 // must already exist.
 const targetUrl = 'http://localhost:4502/content/dam/target';
 
@@ -127,7 +127,7 @@ The `DirectBinaryUploadOptions` class supports the following options. Items with
             <td>* URL</td>
             <td>string</td>
             <td>
-                Full, absolute URL to the Directory in the target instance where the specified files will be uploaded.
+                Full, absolute URL to the Folder in the target instance where the specified files will be uploaded. This value is expected to be URI encoded.
                 <br/>
                 <br/>
                 <b>Example</b>
@@ -156,7 +156,7 @@ The `DirectBinaryUploadOptions` class supports the following options. Items with
                             <td><b>fileName<b></td>
                             <td>string</td>
                             <td>
-                                The name of the file as it will appear in AEM.
+                                The name of the file as it will appear in AEM. This value does <i>not</i> need to be URI encoded.
                             </td>
                         </tr>
                         <tr>
@@ -178,12 +178,14 @@ The `DirectBinaryUploadOptions` class supports the following options. Items with
                         </tr>
                         <tr>
                             <td>blob</td>
-                            <td>Array</td>
+                            <td>Array-like</td>
                             <td>
-                                Array containing all the bytes that make up the file. Note that either
-                                this value <i>or</i> <code>filePath</code> must be specified. This
-                                option is typically most useful when running the upload tool from a
-                                browser.
+                                Value containing the data for a file. This can potentially be multiple
+                                types of values, as long as the value supports the <code>slice()</code> method (like
+                                an array). Note that either this value <i>or</i> <code>filePath</code>
+                                must be specified. This option is typically most useful when running the
+                                upload tool from a browser; the <code>value</code> of a <code>&lt;input type='file' /></code>
+                                can be used as the <code>blob</code> value.
                             </td>
                         </tr>
                         <tr>
@@ -472,7 +474,7 @@ through the stages of uploading a file. These events are listed below.
                             <td>fileName</td>
                             <td>string</td>
                             <td>
-                                The name of the file, as it was specified in the upload options.
+                                The name of the file, as it was specified in the upload options. This will <i>not</i> be a URI encoded value.
                             </td>
                         </tr>
                         <tr>
@@ -487,13 +489,13 @@ through the stages of uploading a file. These events are listed below.
                             <td>targetFolder</td>
                             <td>string</td>
                             <td>
-                                Full path to the AEM folder where the file is being uploaded.
+                                Full path to the AEM folder where the file is being uploaded. This will <i>not</i> be a URI encoded value.
                             </td>
                         </tr>
                         <tr>
                             <td>targetFile</td>
                             <td>string</td>
-                            <td>Full path to the asset in AEM.</td>
+                            <td>Full path to the asset in AEM. This will <i>not</i> be a URI encoded value.</td>
                         </tr>
                         <tr>
                             <td>mimeType</td>
@@ -647,8 +649,8 @@ controller.cancel();
 
 ## Uploading Local Files
 
-The library supports uploading local files and directories. For directories, the tool
-will include all immediate child files in the directory. It will not process sub-directories.
+The library supports uploading local files and folders. For folders, the tool
+will include all immediate child files in the folder. It will not process sub-folders unless the "deep upload" option is specified.
 
 The following example illustrates how to upload local files.
 
@@ -663,11 +665,11 @@ const options = new FileSystemUploadOptions()
     .withUrl('http://localhost:4502/content/dam/target-folder')
     .withBasicAuth('admin:admin');
 
-// upload a single asset and all assets in a given directory
+// upload a single asset and all assets in a given folder
 const fileUpload = new FileSystemUpload();
 await fileUpload.upload(options, [
     '/Users/me/myasset.jpg',
-    '/Users/me/mydirectory'
+    '/Users/me/myfolder'
 ]);
 ```
 
@@ -702,7 +704,7 @@ There is a set of options, `FileSystemUploadOptions`, that are specific to uploa
             <td>Perform deep upload</td>
             <td>boolean</td>
             <td>
-                If true, the process will include all descendent directories and files when given a directory to upload. If false, the process will only upload those files immediately inside the directory to upload. Default: false.
+                If true, the process will include all descendent folders and files when given a folder to upload. If false, the process will only upload those files immediately inside the folder to upload. Default: false.
                 <br/>
                 <br/>
                 <b>Example</b>
@@ -712,14 +714,106 @@ There is a set of options, `FileSystemUploadOptions`, that are specific to uploa
                 </code>
             </td>
         </tr>
+        <tr>
+            <td>Function for processing folder node names</td>
+            <td>function</td>
+            <td>
+                When performing a deep upload, the tool will create folders in AEM that match local folders
+                being uploaded. The tool will "cleanse" the folder names of certain characters when creating node names
+                for each folder. The unmodified folder name will become the node's title.
+                <br/>
+                <br/>
+                This option allows customization of the functionality that cleanses the folder's name. The
+                option should be a <code>function</code>. It will receive a single argument value: the name of the 
+                folder to be cleansed. The return value of the function should be a <code>Promise</code>, which
+                should resolve with the cleansed folder name.
+                <br/>
+                <br/>
+                The default functionality will convert the folder name to lower case and replace whitespace and any of
+                the characters <code>%;#,+?^{}</code> with the replacement value specified in the options.
+                <br/>
+                <br/>
+                Regardless of this function, the library will <i>always</i> replace any of the characters
+                <code>./:[]|*\</code> with the replacement value specified in the options.
+                <br/>
+                <br/>
+                <b>Example</b>
+                <br/>
+                <code>
+                // This example will skip any special processing
+                <br/>
+                options.withFolderNodeNameProcessor((folderName) => {
+                <br/>
+                    &nbsp;&nbsp;return new Promise((resolve) => resolve(folderName));
+                <br/>
+                });
+                </code>
+            </td>
+        </tr>
+        <tr>
+            <td>Function for processing asset node names</td>
+            <td>function</td>
+            <td>
+                When performing a deep upload, the tool will create assets in AEM that match local files
+                being uploaded. The tool will "cleanse" the file names of certain characters when creating node names
+                for each asset.
+                <br/>
+                <br/>
+                This option allows customization of the functionality that cleanses the file's name. The
+                option should be a <code>function</code>. It will receive a single argument value: the name of the 
+                file to be cleansed. The return value of the function should be a <code>Promise</code>, which
+                should resolve with the cleansed asset name.
+                <br/>
+                <br/>
+                The default functionality will replace any of
+                the characters <code>#%{}?&</code> with the replacement value specified in the options.
+                <br/>
+                <br/>
+                Regardless of this function, the library will <i>always</i> replace any of the characters
+                <code>./:[]|*\</code> with the replacement value specified in the options.
+                <br/>
+                <br/>
+                <b>Example</b>
+                <br/>
+                <code>
+                // This example will skip any special processing
+                <br/>
+                options.withAssetNodeNameProcessor((fileName) => {
+                <br/>
+                    &nbsp;&nbsp;return new Promise((resolve) => resolve(fileName));
+                <br/>
+                });
+                </code>
+            </td>
+        </tr>
+        <tr>
+            <td>Replacement value for invalid node characters</td>
+            <td>string</td>
+            <td>
+                Specifies the value to use when replacing invalid characters in folder and asset node names. This value is used in the default functions that cleanse
+                folder/asset names, and is <i>always</i> used when replacing any of the characters <code>#%{}?&</code>; the value of this option <i>cannot</i> 
+                contain any of those characters. Default: <code>-</code>
+                <br/>
+                <br/>
+                For example, assume the folder name <code>My Test Folder #2</code>. With the default settings, the folder's node would be <code>my-test-folder--2</code>.
+                <br/>
+                <br/>
+                <b>Example</b>
+                <br/>
+                <code>
+                options.withInvalidCharacterReplaceValue('_');
+                </code>
+            </td>
+        </tr>
     </tbody>
 </table>
 
 # Features
-* Well tunning for take advantage of nodejs for best uploading performance
+* Well tuning to take advantage of nodejs for best uploading performance
 * Track transfer progress of files
 * Cancel in-progress transfers
 * Transfer multiple files "in batch"
+* Upload local folder/file structures
 
 # Releasing
 
@@ -730,10 +824,7 @@ To publish a new version of the tool, use the following steps:
 1. Commit changes to `package.json`.
 
 # Todo
-* Recursive asset uploading for sub folders
 * Pause/resume uploads
-* Use a "thread pool" to limit the number of concurrent operations
-* Automatically retry failed requests
 
 # Contributing
 
