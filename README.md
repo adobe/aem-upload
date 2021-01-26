@@ -791,7 +791,7 @@ There is a set of options, `FileSystemUploadOptions`, that are specific to uploa
             <td>string</td>
             <td>
                 Specifies the value to use when replacing invalid characters in folder and asset node names. This value is used in the default functions that cleanse
-                folder/asset names, and is <i>always</i> used when replacing any of the characters <code>#%{}?&</code>; the value of this option <i>cannot</i> 
+                folder/asset names, and is <i>always</i> used when replacing any of the characters <code>./:[]|*\</code>; the value of this option <i>cannot</i> 
                 contain any of those characters. Default: <code>-</code>
                 <br/>
                 <br/>
