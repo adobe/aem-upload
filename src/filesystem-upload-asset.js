@@ -1,5 +1,5 @@
 /*
-Copyright 2020 Adobe. All rights reserved.
+Copyright 2021 Adobe. All rights reserved.
 This file is licensed to you under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License. You may obtain a copy
 of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -16,7 +16,10 @@ governing permissions and limitations under the License.
  * remote path of the asset is consistent with the configuration
  * of the upload.
  */
-export default class FileSystemUploadAsset {
+
+import FileSystemUploadDirectory from './filesystem-upload-directory';
+
+export default class FileSystemUploadAsset extends FileSystemUploadDirectory {
     /**
      * Constructs a new instance of the class using the given values.
      * @param {FileSystemUploadOptions} uploadOptions URL of the options
@@ -30,48 +33,8 @@ export default class FileSystemUploadAsset {
      *  asset will be treated as the root.
      */
     constructor(uploadOptions, localPath, remoteNodeName, size, directory) {
-        this.uploadOptions = uploadOptions;
-        this.localPath = localPath;
-        this.remoteName = remoteNodeName;
+        super(uploadOptions, localPath, remoteNodeName, directory);
         this.size = size;
-        this.directory = directory;
-    }
-
-    /**
-     * Retrieves the full, local path of the asset, as provided in
-     * the constructor.
-     * @returns {string} Local asset path.
-     */
-    getLocalPath() {
-        return this.localPath;
-    }
-
-    /**
-     * Retrieves the full, remote path (only) of the asset. Will be built
-     * using the remote node name provided in the constructor.
-     * @returns {string} Path ready for use in a URL.
-     */
-    getRemotePath() {
-        let prefix = this.directory ? this.directory.getRemotePath() : this.uploadOptions.getTargetFolderPath();
-        return `${prefix}/${this.getRemoteNodeName()}`;
-    }
-
-    /**
-     * Retrieves the remote URL of the asset's parent.
-     * @returns {string} The asset parent's URL.
-     */
-    getParentRemoteUrl() {
-        const path = this.directory ? this.directory.getRemotePath() : this.uploadOptions.getTargetFolderPath();
-        return `${this.uploadOptions.getUrlPrefix()}${path}`;
-    }
-
-    /**
-     * Retrieves the remote node name of the asset, as provided in the
-     * constructor.
-     * @returns {string} A node name.
-     */
-    getRemoteNodeName() {
-        return this.remoteName;
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
-Copyright 2020 Adobe. All rights reserved.
+Copyright 2021 Adobe. All rights reserved.
 This file is licensed to you under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License. You may obtain a copy
 of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -48,7 +48,7 @@ export default class FileSystemUploadDirectory {
     }
 
     /**
-     * Retrieves the full, remote path (only) of the directory. Will be built
+     * Retrieves the full, remote path (only) of the item. Will be built
      * using the remote node name provided in the constructor.
      * @returns {string} Path ready for use in a URL.
      */
@@ -58,7 +58,19 @@ export default class FileSystemUploadDirectory {
     }
 
     /**
-     * Retrieves the remote node name of the folder, as provided in the
+     * Retrieves the remote URL of the item's parent.
+     * @returns {string} The item parent's URL.
+     */
+    getParentRemoteUrl() {
+        if (!this.parentRemoteUrl) {
+            const path = this.parent ? this.parent.getRemotePath() : this.uploadOptions.getTargetFolderPath();
+            this.parentRemoteUrl = `${this.uploadOptions.getUrlPrefix()}${path}`;
+        }
+        return this.parentRemoteUrl;
+    }
+
+    /**
+     * Retrieves the remote node name of the item, as provided in the
      * constructor.
      * @returns {string} A node name.
      */
@@ -67,9 +79,9 @@ export default class FileSystemUploadDirectory {
     }
 
     /**
-     * The name of the folder as it was originally provided in the local
+     * The name of the item as it was originally provided in the local
      * path.
-     * @returns {string} Folder name.
+     * @returns {string} Item name.
      */
     getName() {
         return Path.basename(this.localPath);

@@ -1,5 +1,5 @@
 /*
-Copyright 2020 Adobe. All rights reserved.
+Copyright 2021 Adobe. All rights reserved.
 This file is licensed to you under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License. You may obtain a copy
 of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -22,8 +22,35 @@ describe('FileSystemUploadOptions Tests', function() {
         options = new FileSystemUploadOptions();
     });
 
+    it('test from options', async function() {
+        let options = new FileSystemUploadOptions()
+            .withMaxUploadFiles(20)
+            .withDeepUpload(true)
+            .withFolderNodeNameProcessor(async (name) => name)
+            .withAssetNodeNameProcessor(async (name) => name)
+            .withInvalidCharacterReplaceValue('_');
+        let copiedOptions = FileSystemUploadOptions.fromOptions(options);
+        should(copiedOptions).be.ok();
+        should(copiedOptions.getInvalidCharacterReplaceValue()).be.exactly('_');
+        should(copiedOptions.getMaxUploadFiles()).be.exactly(20);
+        should(copiedOptions.getDeepUpload()).be.ok();
+        should(await copiedOptions.getFolderNodeNameProcessor()('folder name')).be.exactly('folder name');
+        should(await copiedOptions.getAssetNodeNameProcessor()('asset#name')).be.exactly('asset#name');
+
+        options = new FileSystemUploadOptions()
+            .withFolderNodeNameProcessor('invalid')
+            .withAssetNodeNameProcessor('invalid')
+            .withInvalidCharacterReplaceValue(() => {});
+        copiedOptions = FileSystemUploadOptions.fromOptions(options);
+        should(copiedOptions).be.ok();
+        should(copiedOptions.getInvalidCharacterReplaceValue()).be.exactly('-');
+        should(await copiedOptions.getFolderNodeNameProcessor()('folder name')).be.exactly('folder-name');
+        should(await copiedOptions.getAssetNodeNameProcessor()('asset#name')).be.exactly('asset-name');
+    });
+
     it('test folder node name processor', async function () {
         should(await options.getFolderNodeNameProcessor()('A#b')).be.exactly('a-b');
+        should(await options.getFolderNodeNameProcessor()('###')).be.exactly('---');
         options.withInvalidCharacterReplaceValue('_');
         should(await options.getFolderNodeNameProcessor()('A#b')).be.exactly('a_b');
 

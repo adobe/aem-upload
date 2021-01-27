@@ -58,10 +58,11 @@ export default class FileSystemUpload extends DirectBinaryUpload {
      */
     async upload(options, localPaths) {
         const fileSystemUploadOptions = FileSystemUploadOptions.fromOptions(options);
-        const httpClient = new HttpClient(this.getOptions(), fileSystemUploadOptions);
-        const concurrentQueue = new ConcurrentQueue(this.getOptions(), fileSystemUploadOptions);
-        const partUploader = new PartUploader(this.getOptions(), fileSystemUploadOptions, httpClient, concurrentQueue);
-        const uploadResult = new UploadResult(this.getOptions(), fileSystemUploadOptions);
+        const uploadOptions = this.getOptions();
+        const httpClient = new HttpClient(uploadOptions, fileSystemUploadOptions);
+        const concurrentQueue = new ConcurrentQueue(uploadOptions, fileSystemUploadOptions);
+        const partUploader = new PartUploader(uploadOptions, fileSystemUploadOptions, httpClient, concurrentQueue);
+        const uploadResult = new UploadResult(uploadOptions, fileSystemUploadOptions);
         await this.createTargetFolder(fileSystemUploadOptions, httpClient);
         const {
             directories,
@@ -195,15 +196,15 @@ export default class FileSystemUpload extends DirectBinaryUpload {
                         // directories only need to be included for deep uploads
                         allDirectories.push(await itemManager.getDirectory(currPath));
                         const subDirectories = [];
-                        for (let d = 0; d < directories.length; d += 1) {
-                            const { path: dirPath } = directories[d];
+                        for (let directoryIndex = 0; directoryIndex < directories.length; directoryIndex++) {
+                            const { path: dirPath } = directories[directoryIndex];
                             subDirectories.push(await itemManager.getDirectory(dirPath));
                         }
                         allDirectories = allDirectories.concat(subDirectories);
                     }
                     const subAssets = [];
-                    for (let a = 0; a < files.length; a += 1) {
-                        const { path: filePath, size: fileSize } = files[a];
+                    for (let assetIndex = 0; assetIndex < files.length; assetIndex++) {
+                        const { path: filePath, size: fileSize } = files[assetIndex];
                         subAssets.push(await itemManager.getAsset(filePath, fileSize));
                     }
                     allFiles = allFiles.concat(subAssets);

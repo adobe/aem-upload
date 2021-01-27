@@ -1,5 +1,5 @@
 /*
-Copyright 2020 Adobe. All rights reserved.
+Copyright 2021 Adobe. All rights reserved.
 This file is licensed to you under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License. You may obtain a copy
 of the License at http://www.apache.org/licenses/LICENSE-2.0
@@ -37,6 +37,9 @@ export default class FileSystemUploadItemManager {
      *  each FileSystemUploadDirectory instance that is created.
      * @param {string} rootPath The top-most path that the manager
      *  will track.
+     * @param {boolean} [keepFlat] If true, assets retrieved through
+     *  the item manager will be kept at the root of the upload instead
+     *  of inside its parent directory. Default: false.
      */
     constructor(uploadOptions, rootPath, keepFlat = false) {
         this.uploadOptions = uploadOptions;
@@ -60,11 +63,12 @@ export default class FileSystemUploadItemManager {
         let parent = await getItemManagerParent(this, this.rootPath, localPath);
 
         if (!this.directories.has(normalizedPath)) {
+            const nodeName = await cleanseFolderName(this.uploadOptions, Path.basename(normalizedPath));
             this.directories.set(normalizedPath,
                 new FileSystemUploadDirectory(
                     this.uploadOptions,
                     normalizedPath,
-                    await cleanseFolderName(this.uploadOptions, Path.basename(normalizedPath)),
+                    nodeName,
                     parent,
                 ),
             );
@@ -88,11 +92,12 @@ export default class FileSystemUploadItemManager {
         let parent = !this.keepFlat ? await getItemManagerParent(this, this.rootPath, localPath) : undefined;
 
         if (!this.assets.has(normalizedPath)) {
+            const nodeName = await cleanseAssetName(this.uploadOptions, Path.basename(normalizedPath));
             this.assets.set(normalizedPath,
                 new FileSystemUploadAsset(
                     this.uploadOptions,
                     normalizedPath,
-                    await cleanseAssetName(this.uploadOptions, Path.basename(normalizedPath)),
+                    nodeName,
                     size,
                     parent,
                 ),
