@@ -43,3 +43,23 @@ export const DefaultValues = {
      */
     MAX_FILE_UPLOAD: 1000
 }
+
+export const RegularExpressions = {
+    /**
+     * Will match values that contain characters that are invalid in AEM node
+     * names.
+     */
+    INVALID_CHARACTERS_REGEX: /[./:[\]|*\\]/g,
+
+    /**
+     * Will match values that contain characters that are invalid in AEM folder node
+     * names.
+     */
+    INVALID_FOLDER_CHARACTERS_REGEX: /[%;#,+?^{}\s"]/g,
+
+    /**
+     * Will match values that contain characters that are invalid in AEM asset node
+     * names.
+     */
+    INVALID_ASSET_CHARACTERS_REGEX: /[#%{}?&]/g,
+}

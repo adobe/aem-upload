@@ -34,11 +34,11 @@ import ConcurrentQueue from './concurrent-queue';
 import PartUploader from './part-uploader';
 import HttpRequest from './http/http-request';
 import {
-    getItemRemoteUrl,
     aggregateByRemoteDirectory,
     isDeepUpload,
     getMaxFileCount,
 } from './filesystem-upload-utils';
+import FileSystemUploadItemManager from './filesystem-upload-item-manager';
 
 const MAX_CONCURRENT_DIRS = 10;
 
@@ -57,17 +57,19 @@ export default class FileSystemUpload extends DirectBinaryUpload {
      *  passed in successful resolution will be an instance of UploadResult.
      */
     async upload(options, localPaths) {
-        const httpClient = new HttpClient(this.getOptions(), options);
-        const concurrentQueue = new ConcurrentQueue(this.getOptions(), options);
-        const partUploader = new PartUploader(this.getOptions(), options, httpClient, concurrentQueue);
-        const uploadResult = new UploadResult(this.getOptions(), options);
-        await this.createTargetFolder(options, httpClient);
+        const fileSystemUploadOptions = FileSystemUploadOptions.fromOptions(options);
+        const uploadOptions = this.getOptions();
+        const httpClient = new HttpClient(uploadOptions, fileSystemUploadOptions);
+        const concurrentQueue = new ConcurrentQueue(uploadOptions, fileSystemUploadOptions);
+        const partUploader = new PartUploader(uploadOptions, fileSystemUploadOptions, httpClient, concurrentQueue);
+        const uploadResult = new UploadResult(uploadOptions, fileSystemUploadOptions);
+        await this.createTargetFolder(fileSystemUploadOptions, httpClient);
         const {
             directories,
             files,
             errors,
             totalSize
-        } = await this.getUploadInformation(options, localPaths);
+        } = await this.getUploadInformation(fileSystemUploadOptions, localPaths);
     
         this.logInfo(`From ${localPaths.length} paths, filesystem upload compiled upload of ${directories.length} directories, ${files.length} files, with a total size of ${totalSize}. Encountered ${errors.length} filesystem-related errors.`);
 
@@ -80,7 +82,7 @@ export default class FileSystemUpload extends DirectBinaryUpload {
         };
         this.sendEvent('fileuploadstart', uploadEventData);
 
-        await this.createUploadDirectories(options, httpClient, directories);
+        await this.createUploadDirectories(fileSystemUploadOptions, httpClient, directories);
 
         // the algorithm will "init" an upload for each directory (since the initialization process
         // is directory based). Group the full list of files by their target directory so that all files
@@ -97,8 +99,8 @@ export default class FileSystemUpload extends DirectBinaryUpload {
             this.logInfo(`Uploading ${uploadFiles.length} files to directory ${directoryUrl}`);
 
             // start initiate uploading, single for all files in the current directory
-            const uploadOptions = FileSystemUploadOptions.fromOptions(options)
-                .withUrl(directoryUrl)
+            const uploadOptions = FileSystemUploadOptions.fromOptions(fileSystemUploadOptions)
+                .withUrl(encodeURI(directoryUrl))
                 .withUploadFiles(uploadFiles);
 
             const uploadProcess = new DirectBinaryUploadProcess(this.getOptions(), uploadOptions, httpClient, partUploader);
@@ -128,20 +130,19 @@ export default class FileSystemUpload extends DirectBinaryUpload {
     }
 
     /**
-     * Converts a list of files, as retrieved by getUploadInformation(), to a list
-     * of UploadFile items, ready for use in upload options.
-     * @param {Array} files List of files as retrieved by getUploadInformation().
+     * Converts a list of FileSystemUploadAsset instances to a list of UploadFile items, ready
+     * for use in upload options.
+     * @param {Array} files List of FileSystemUploadAsset instances.
      * @returns {Array} List of files ready for use with DirectBinaryUploadOptions.withUploadFiles().
      */
     convertToUploadFiles(files) {
         const fileList = [];
 
         files.forEach(file => {
-            const { path, size } = file;
             fileList.push({
-                fileName: Path.basename(path),
-                filePath: path,
-                fileSize: size
+                fileName: file.getRemoteNodeName(),
+                filePath: file.getLocalPath(),
+                fileSize: file.getSize()
             })
         });
 
@@ -190,25 +191,28 @@ export default class FileSystemUpload extends DirectBinaryUpload {
                         errors,
                         totalSize
                     } = await walkDirectory(currPath, getMaxFileCount(options), isDeep);
-                    // base sub-item remote paths on current path's parent so that they end up in
-                    // the correct directory
-                    const currPathParent = Path.dirname(currPath);
+                    const itemManager = new FileSystemUploadItemManager(options, currPath, !isDeep);
                     if (isDeep) {
                         // directories only need to be included for deep uploads
-                        allDirectories.push({ remoteUrl: getItemRemoteUrl(options, '', currPath), path: currPath });
-                        allDirectories = allDirectories.concat(directories.map(dirItem => {
-                            const { path: dirPath } = dirItem;
-                            return { remoteUrl: getItemRemoteUrl(options, currPathParent, dirPath), path: dirPath };
-                        }));
+                        allDirectories.push(await itemManager.getDirectory(currPath));
+                        const subDirectories = [];
+                        for (let directoryIndex = 0; directoryIndex < directories.length; directoryIndex++) {
+                            const { path: dirPath } = directories[directoryIndex];
+                            subDirectories.push(await itemManager.getDirectory(dirPath));
+                        }
+                        allDirectories = allDirectories.concat(subDirectories);
                     }
-                    allFiles = allFiles.concat(files.map(fileItem => {
-                        const { path: filePath, size: fileSize } = fileItem;
-                        return { remoteUrl: getItemRemoteUrl(options, currPathParent, filePath), path: filePath, size: fileSize };
-                    }));
+                    const subAssets = [];
+                    for (let assetIndex = 0; assetIndex < files.length; assetIndex++) {
+                        const { path: filePath, size: fileSize } = files[assetIndex];
+                        subAssets.push(await itemManager.getAsset(filePath, fileSize));
+                    }
+                    allFiles = allFiles.concat(subAssets);
                     allErrors = allErrors.concat(errors);
                     allTotalSize += totalSize;
                 } else if (stat.isFile()) {
-                    allFiles.push({ remoteUrl: getItemRemoteUrl(options, '', currPath), path: currPath, size: stat.size });
+                    const itemManager = new FileSystemUploadItemManager(options, currPath);
+                    allFiles.push(await itemManager.getAsset(currPath, stat.size));
                     allTotalSize += stat.size;
                 }
             }
@@ -234,15 +238,12 @@ export default class FileSystemUpload extends DirectBinaryUpload {
      * @param {DirectBinaryUploadOptions} options Target folder information used to determine
      *  location where directories should be created.
      * @param {HttpClient} httpClient Client to use to submit HTTP requests.
-     * @param {Array} directories An array of simple objects containing a "remoteUrl" and "path"
-     *  element.
+     * @param {Array} directories An array of FileSystemUploadDirectory instances for the
+     *  directories to be created.
      */
     async createUploadDirectories(options, httpClient, directories) {
         for (let i = 0; i < directories.length; i++) {
-            const { remoteUrl, path } = directories[i];
-
-            this.logInfo(`Creating AEM directory ${remoteUrl} for directory ${path}`);
-            await this.createAemFolder(options, httpClient, new URL(remoteUrl).pathname);
+            await this.createAemFolderFromFileSystemInfo(options, httpClient, directories[i]);
         }
     }
 
@@ -273,19 +274,37 @@ export default class FileSystemUpload extends DirectBinaryUpload {
      *
      * @param {DirectBinaryUploadOptions} options Options controlling how the upload process behaves.
      * @param {HttpClient} httpClient Client to use to submit HTTP requests.
-     * @param {string} [folderPath] If specified, the path of the folder to create. If not specified, the
-     *  target folder in the provided options will be used.
+     * @param {FileSystemUploadDirectory} uploadDirectory Information about the directory
+     *  to be created. The instance's remote URL will be used for creation.
      * @returns {Promise} Will be resolved if the folder is created successfully, otherwise will be rejected
      *  with an error.
      */
-    async createAemFolder(options, httpClient, folderPath = '') {
+    async createAemFolderFromFileSystemInfo(options, httpClient, uploadDirectory) {
+        return this.createAemFolder(options, httpClient, uploadDirectory.getRemotePath());
+    }
+
+    /**
+     * Creates a folder in AEM if it does not already exist.
+     *
+     * @param {DirectBinaryUploadOptions} options Options controlling how the upload process behaves.
+     * @param {HttpClient} httpClient Client to use to submit HTTP requests.
+     * @param {string} [folderPath] If specified, the path of the folder to create. If not specified, the
+     *  target folder in the provided options will be used.
+     * @param {string} [folderTitle] If specified, the value to use as the title of the folder. If not
+     *  specified then the value will be derived from the folder's path.
+     * @returns {Promise} Will be resolved if the folder is created successfully, otherwise will be rejected
+     *  with an error.
+     */
+    async createAemFolder(options, httpClient, folderPath = '', folderTitle = '') {
         const targetFolder = folderPath ? folderPath : options.getTargetFolderPath();
         const trimmedFolder = trimContentDam(targetFolder);
 
         if (trimmedFolder) {
-            const folderName = Path.basename(trimmedFolder);
+            const folderName = folderTitle ? folderTitle : Path.basename(trimmedFolder);
             try {
-                const createFolderRequest = new HttpRequest(this.getOptions(), `${options.getUrlPrefix()}/api/assets${trimmedFolder}`)
+                this.logInfo(`Creating AEM directory ${folderPath}`);
+                const createFolderRequest = new HttpRequest(this.getOptions(),
+                    `${options.getUrlPrefix()}/api/assets${encodeURI(trimmedFolder)}`)
                     .withMethod(HttpRequest.Method.POST)
                     .withData({
                         class: 'assetFolder',

@@ -14,6 +14,7 @@ require('core-js');
 require('regenerator-runtime');
 
 const proxyquire = require('proxyquire').noCallThru();
+const should = require('should');
 
 function getImportPath(file) {
     return `../src/${file}`;
@@ -74,4 +75,48 @@ module.exports.getTestOptions = () => {
     } else {
         return {};
     }
+}
+
+// stores events for monitorEvents().
+let events = [];
+
+/**
+ * Monitors all file-related events for the given upload process. This includes
+ * "filestart", "fileprogress", "fileend", "fileerror", and "filecancelled".
+ * @param {EventEmitter} toMonitor Emitter to monitor.
+ */
+module.exports.monitorEvents = (toMonitor) => {
+    events = [];
+    toMonitor.on('filestart', data => events.push({ event: 'filestart', data }));
+    toMonitor.on('fileprogress', data => events.push({ event: 'fileprogress', data }));
+    toMonitor.on('fileend', data => events.push({ event: 'fileend', data }));
+    toMonitor.on('fileerror', data => events.push({ event: 'fileerror', data }));
+    toMonitor.on('filecancelled', data => events.push({ event: 'filecancelled', data }));
+}
+
+/**
+ * Determines if an event with a matching "targetFile" value was emitted since the
+ * last invocation of monitorEvents(). If found, the event's other data values will
+ * be validated.
+ * @param {string} eventName Name of the expected event.
+ * @param {string} targetFile Value of the "targetFile" event data property for the
+ *  expected event.
+ * @returns {object|boolean} The event's data if found, otherwise false.
+ */
+module.exports.getEvent = (eventName, targetFile) => {
+    for (let i = 0; i < events.length; i++) {
+        const { event, data } = events[i];
+
+        if (event === eventName && data.targetFile === targetFile) {
+            const { fileName, targetFolder } = data;
+            const lastSlash = targetFile.lastIndexOf('/');
+            const expectedFileName = targetFile.substr(lastSlash + 1);
+            const expectedTargetFolder = targetFile.substr(0, lastSlash);
+            should(fileName).be.exactly(expectedFileName);
+            should(targetFolder).be.exactly(expectedTargetFolder);
+
+            return data;
+        }
+    }
+    return false;
 }

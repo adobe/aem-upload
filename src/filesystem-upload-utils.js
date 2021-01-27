@@ -12,8 +12,10 @@ governing permissions and limitations under the License.
 
 import Path from 'path';
 
-import { DefaultValues } from './constants';
+import { DefaultValues, RegularExpressions } from './constants';
 import { normalizePath } from './utils';
+import UploadError from './upload-error';
+import ErrorCodes from './error-codes';
 
 /**
  * Retrieves the option indicating whether or not the upload is deep. Takes
@@ -32,31 +34,6 @@ function isDeepUpload(uploadOptions) {
 }
 
 /**
- * Retrieves the remote path for an item to upload. Removes a local
- * prefix from its path, then appends the result to the target
- * path from the given options.
- *
- * @param {DirectBinaryUploadOptions} uploadOptions Will be used to determine
- *  the behavior of the method.
- * @param {string} removePathPrefix Will be removed from the given local path
- *  if present.
- * @param {string} localPath Full path to a local item.
- * @returns {string} Remote path to the item.
- */
-function getItemRemoteUrl(uploadOptions, removePathPrefix, localPath) {
-    const normalizedRemovePathPrefix = normalizePath(removePathPrefix);
-    const normalizedLocalPath = normalizePath(localPath);
-    const targetRoot = uploadOptions.getUrl();
-    const isDeep = isDeepUpload(uploadOptions);
-
-    if (isDeep && removePathPrefix && String(normalizedLocalPath).startsWith(`${normalizedRemovePathPrefix}/`)) {
-        return `${targetRoot}${normalizedLocalPath.substr(normalizedRemovePathPrefix.length)}`;
-    }
-
-    return `${targetRoot}/${Path.basename(localPath)}`;
-}
-
-/**
  * Separates a list of files into a lookup based on its target remote path.
  *
  * @param {Array} files List of simple objects representing files. Is
@@ -71,8 +48,7 @@ function aggregateByRemoteDirectory(files) {
     const directoryAggregate = {};
 
     files.forEach(file => {
-        const { remoteUrl } = file;
-        const remoteDirectory = remoteUrl.substr(0, remoteUrl.lastIndexOf('/'));
+        const remoteDirectory = file.getParentRemoteUrl();
 
         if (!directoryAggregate[remoteDirectory]) {
             directoryAggregate[remoteDirectory] = new Set();
@@ -97,9 +73,71 @@ function getMaxFileCount(uploadOptions) {
     return uploadOptions.getMaxUploadFiles();
 }
 
+/**
+ * Uses a processor function to clean a node name, then cleans generally disallowed characters
+ * from the name.
+ * @param {FileSystemUploadOptions} uploadOptions Used to retrieve the value to use when replacing
+ *  invalid characters.
+ * @param {function} processorFunction Will be given the provided node name as a single argument.
+ *  Expected to return a Promise that will be resolved with the clean node name value.
+ * @param {string} nodeName Value to be cleaned of invalid characters.
+ * @returns {Promise} Will be resolved with the cleaned node name.
+ */
+async function cleanNodeName(uploadOptions, processorFunction, nodeName) {
+    const processedName = await processorFunction(nodeName);
+    return processedName.replace(RegularExpressions.INVALID_CHARACTERS_REGEX,
+        uploadOptions.getInvalidCharacterReplaceValue());
+}
+
+/**
+ * Uses the given options to clean a folder name, then cleans generally disallowed characters
+ * from the name.
+ * @param {FileSystemUploadOptions} uploadOptions Used to retrieve the value to use when replacing
+ *  invalid characters, and the function to call to clean the folder name.
+ * @param {string} folderName Value to be cleaned of invalid characters.
+ * @returns {Promise} Will be resolved with the clean name.
+ */
+async function cleanFolderName(uploadOptions, folderName) {
+    return cleanNodeName(uploadOptions, uploadOptions.getFolderNodeNameProcessor(), folderName);
+}
+
+/**
+ * Uses the given options to clean an asset name, then cleans generally disallowed characters
+ * from the name.
+ * @param {FileSystemUploadOptions} uploadOptions Used to retrieve the value to use when replacing
+ *  invalid characters, and the function to call to clean the asset name.
+ * @param {string} folderName Value to be cleaned of invalid characters.
+ * @returns {Promise} Will be resolved with the clean name.
+ */
+async function cleanAssetName(uploadOptions, assetName) {
+    const {
+        name: assetNameOnly,
+        ext,
+    } = Path.parse(assetName);
+    const cleanName = await cleanNodeName(uploadOptions, uploadOptions.getAssetNodeNameProcessor(), assetNameOnly);
+    return `${cleanName}${ext}`;
+}
+
+async function getItemManagerParent(itemManager, rootPath, localPath) {
+    const normalizedPath = normalizePath(localPath);
+    let parent;
+
+    if (normalizedPath !== rootPath && !String(normalizedPath).startsWith(`${rootPath}/`)) {
+        throw new UploadError('directory to upload is outside expected root', ErrorCodes.INVALID_OPTIONS);
+    }
+
+    if (normalizedPath !== rootPath) {
+        parent = await itemManager.getDirectory(normalizedPath.substr(0, normalizedPath.lastIndexOf('/')));
+    }
+
+    return parent;
+}
+
 module.exports = {
-    getItemRemoteUrl,
     aggregateByRemoteDirectory,
     isDeepUpload,
     getMaxFileCount,
+    cleanFolderName,
+    cleanAssetName,
+    getItemManagerParent,
 }

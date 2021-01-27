@@ -168,11 +168,12 @@ export default class InitResponseFileInfo extends UploadOptionsBase {
      * @returns {object} Event information for the file.
      */
     getFileEventData() {
+        const targetFolder = decodeURI(this.getUploadOptions().getTargetFolderPath());
         return {
             fileName: this.getFileName(),
             fileSize: this.getFileSize(),
-            targetFolder: this.getUploadOptions().getTargetFolderPath(),
-            targetFile: this.getTargetFilePath(),
+            targetFolder,
+            targetFile: `${targetFolder}/${this.getFileName()}`,
             mimeType: this.getMimeType(),
         };
     }

@@ -86,7 +86,7 @@ module.exports.getHttpClient = function (uploadOptions) {
  * @returns {boolean} True if the path exists, false otherwise.
  */
 module.exports.doesAemPathExist = async function(httpClient, uploadOptions, relativePath) {
-    const headUrl = `${uploadOptions.getUrl().replace('/content/dam', '/api/assets')}${relativePath}.json`;
+    const headUrl = `${uploadOptions.getUrl().replace('/content/dam', '/api/assets')}${encodeURI(relativePath)}.json`;
 
     const request = new HttpRequest(getTestOptions(), headUrl)
         .withUploadOptions(uploadOptions)
