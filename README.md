@@ -719,14 +719,14 @@ There is a set of options, `FileSystemUploadOptions`, that are specific to uploa
             <td>function</td>
             <td>
                 When performing a deep upload, the tool will create folders in AEM that match local folders
-                being uploaded. The tool will "cleanse" the folder names of certain characters when creating node names
+                being uploaded. The tool will "clean" the folder names of certain characters when creating node names
                 for each folder. The unmodified folder name will become the node's title.
                 <br/>
                 <br/>
-                This option allows customization of the functionality that cleanses the folder's name. The
+                This option allows customization of the functionality that cleans the folder's name. The
                 option should be a <code>function</code>. It will receive a single argument value: the name of the 
-                folder to be cleansed. The return value of the function should be a <code>Promise</code>, which
-                should resolve with the cleansed folder name.
+                folder to be cleaned. The return value of the function should be a <code>Promise</code>, which
+                should resolve with the clean folder name.
                 <br/>
                 <br/>
                 The default functionality will convert the folder name to lower case and replace whitespace and any of
@@ -755,14 +755,14 @@ There is a set of options, `FileSystemUploadOptions`, that are specific to uploa
             <td>function</td>
             <td>
                 When performing a deep upload, the tool will create assets in AEM that match local files
-                being uploaded. The tool will "cleanse" the file names of certain characters when creating node names
+                being uploaded. The tool will "clean" the file names of certain characters when creating node names
                 for each asset.
                 <br/>
                 <br/>
-                This option allows customization of the functionality that cleanses the file's name. The
+                This option allows customization of the functionality that cleans the file's name. The
                 option should be a <code>function</code>. It will receive a single argument value: the name of the 
-                file to be cleansed. The return value of the function should be a <code>Promise</code>, which
-                should resolve with the cleansed asset name.
+                file to be cleaned. The return value of the function should be a <code>Promise</code>, which
+                should resolve with the clean asset name.
                 <br/>
                 <br/>
                 The default functionality will replace any of
@@ -790,7 +790,7 @@ There is a set of options, `FileSystemUploadOptions`, that are specific to uploa
             <td>Replacement value for invalid node characters</td>
             <td>string</td>
             <td>
-                Specifies the value to use when replacing invalid characters in folder and asset node names. This value is used in the default functions that cleanse
+                Specifies the value to use when replacing invalid characters in folder and asset node names. This value is used in the default functions that clean
                 folder/asset names, and is <i>always</i> used when replacing any of the characters <code>./:[]|*\</code>; the value of this option <i>cannot</i> 
                 contain any of those characters. Default: <code>-</code>
                 <br/>

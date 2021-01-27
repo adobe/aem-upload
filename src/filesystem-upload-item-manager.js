@@ -16,8 +16,8 @@ import { normalizePath } from './utils';
 import FileSystemUploadDirectory from './filesystem-upload-directory';
 import FileSystemUploadAsset from './filesystem-upload-asset';
 import {
-    cleanseFolderName,
-    cleanseAssetName,
+    cleanFolderName,
+    cleanAssetName,
     getItemManagerParent,
 } from './filesystem-upload-utils';
 
@@ -63,7 +63,7 @@ export default class FileSystemUploadItemManager {
         let parent = await getItemManagerParent(this, this.rootPath, localPath);
 
         if (!this.directories.has(normalizedPath)) {
-            const nodeName = await cleanseFolderName(this.uploadOptions, Path.basename(normalizedPath));
+            const nodeName = await cleanFolderName(this.uploadOptions, Path.basename(normalizedPath));
             this.directories.set(normalizedPath,
                 new FileSystemUploadDirectory(
                     this.uploadOptions,
@@ -92,7 +92,7 @@ export default class FileSystemUploadItemManager {
         let parent = !this.keepFlat ? await getItemManagerParent(this, this.rootPath, localPath) : undefined;
 
         if (!this.assets.has(normalizedPath)) {
-            const nodeName = await cleanseAssetName(this.uploadOptions, Path.basename(normalizedPath));
+            const nodeName = await cleanAssetName(this.uploadOptions, Path.basename(normalizedPath));
             this.assets.set(normalizedPath,
                 new FileSystemUploadAsset(
                     this.uploadOptions,

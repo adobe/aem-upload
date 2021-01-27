@@ -14,7 +14,7 @@ const should = require('should');
 
 const { importFile } = require('./testutils');
 
-const { cleanseFolderName, cleanseAssetName } = importFile('filesystem-upload-utils');
+const { cleanFolderName, cleanAssetName } = importFile('filesystem-upload-utils');
 const FileSystemUploadOptions = importFile('filesystem-upload-options');
 
 describe('FileSystemUploadUtils Tests', function() {
@@ -23,17 +23,17 @@ describe('FileSystemUploadUtils Tests', function() {
         options = new FileSystemUploadOptions();
     });
 
-    it('test cleanse folder name', async function () {
-        should(await cleanseFolderName(options, 'A b:c')).be.exactly('a-b-c');
+    it('test clean folder name', async function () {
+        should(await cleanFolderName(options, 'A b:c')).be.exactly('a-b-c');
         options.withFolderNodeNameProcessor(async (folderName) => folderName)
             .withInvalidCharacterReplaceValue('_');
-        should(await cleanseFolderName(options, 'A b:c')).be.exactly('A b_c');
+        should(await cleanFolderName(options, 'A b:c')).be.exactly('A b_c');
     });
 
-    it('test cleanse asset name', async function () {
-        should(await cleanseAssetName(options, 'A #b:c.jpg')).be.exactly('A -b-c.jpg');
+    it('test clean asset name', async function () {
+        should(await cleanAssetName(options, 'A #b:c.jpg')).be.exactly('A -b-c.jpg');
         options.withAssetNodeNameProcessor(async (assetName) => assetName)
             .withInvalidCharacterReplaceValue('_');
-        should(await cleanseAssetName(options, 'A #b:c')).be.exactly('A #b_c');
+        should(await cleanAssetName(options, 'A #b:c')).be.exactly('A #b_c');
     });
 });
