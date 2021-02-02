@@ -11,9 +11,8 @@ governing permissions and limitations under the License.
 */
 
 import { v4 as uuid } from 'uuid';
-import AsyncLock from 'async-lock';
 
-const lock = new AsyncLock();
+import { getLock } from './utils';
 
 /**
  * Helper for working with batches, which consist of a number of items that can
@@ -61,7 +60,7 @@ export default class BatchManager {
         let batchEnded = false;
         // since we're dealing with concurrency, be safe and lock the batch
         // when incrementing to ensure we avoid concurrency issues.
-        await lock.acquire(batchId, () => {
+        await getLock(batchId, () => {
             this.batchCounts[batchId].totalProcessed += 1;
             const {
                 totalCount,

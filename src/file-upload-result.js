@@ -13,6 +13,7 @@ governing permissions and limitations under the License.
 import filesize from 'filesize';
 
 import { getAverage } from './utils';
+import { calculateRate } from './http-utils';
 import UploadError from './upload-error';
 import HttpResult from './http-result';
 
@@ -42,6 +43,14 @@ export default class FileUploadResult extends HttpResult {
      */
     startTimer() {
         this.start = new Date().getTime();
+    }
+
+    /**
+     * Retrieves the timestamp when the file started to transfer.
+     * @returns {number} A timestamp.
+     */
+    getStartTime() {
+        return this.start;
     }
 
     /**
@@ -108,6 +117,26 @@ export default class FileUploadResult extends HttpResult {
      */
     setTotalUploadTime(elapsedTime) {
         this.totalTime = elapsedTime;
+    }
+
+    /**
+     * Retrieves the transfer rate of the file, in bytes per second. Will return 0
+     * if the file uploaded too quickly to get a meaningful rate.
+     *
+     * @returns {number} Bytes per second value.
+     */
+    getUploadRate() {
+        return calculateRate(this.getTotalPartUploadTime(), this.getFileSize());
+    }
+
+    /**
+     * Gets the total amount of time, in milliseconds, it took for all parts (only) to upload. This
+     * will exclude the init and complete time.
+     *
+     * @returns {number} Timespan in milliseconds.
+     */
+    getTotalPartUploadTime() {
+        return this.parts.reduce((a, b) => a + b, 0);
     }
 
     /**

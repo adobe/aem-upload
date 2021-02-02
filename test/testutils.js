@@ -67,14 +67,14 @@ module.exports.getConsoleLogger = getConsoleLogger;
  * environment variable.
  * @returns {object} Options for a direct binary operation.
  */
-module.exports.getTestOptions = () => {
+module.exports.getTestOptions = (addlOptions = {}) => {
     if (process.env.AEM_UPLOAD_TEST_LOGGING) {
         return {
-            log: getConsoleLogger()
+            ...addlOptions,
+            log: getConsoleLogger(),
         }
-    } else {
-        return {};
     }
+    return addlOptions;
 }
 
 // stores events for monitorEvents().

@@ -11,6 +11,8 @@ governing permissions and limitations under the License.
 */
 
 const should = require('should');
+const { EventEmitter } = require('events');
+const Sinon = require('sinon');
 
 const { importFile, getTestOptions } = require('../testutils');
 const MockRequest = require('../mock-request');
@@ -27,6 +29,14 @@ describe('HTTP Client Tests', function() {
     let options;
     let uploadOptions;
     let httpClient;
+
+    before(function() {
+        this.clock = Sinon.useFakeTimers(10);
+    });
+
+    after(function() {
+        this.clock.restore();
+    });
 
     beforeEach(function() {
         MockRequest.reset();
@@ -51,7 +61,45 @@ describe('HTTP Client Tests', function() {
         should(response.getElapsedTime() !== undefined).be.ok();
     });
 
+    it('http post request submit smoke test', async function() {
+        const emitter = new EventEmitter();
+        MockRequest.onPost(HOST).reply(() => {
+            emitter.emit('data', { length: 100 });
+            this.clock.tick(500);
+            emitter.emit('data', { length: 200 });
+            this.clock.tick(600);
+            emitter.emit('data', { length: 300 });
+            this.clock.tick(600);
+            emitter.emit('data', { length: 400 });
+            return [
+                201,
+                'success',
+            ];
+        });
+
+        const request = createHttpRequest(HOST)
+            .withData(emitter, 10)
+            .withMethod(HttpRequest.Method.POST);
+
+        const progressEvents = [];
+        request.on('progress', (data) => {
+            progressEvents.push(data);
+        });
+
+        const response = await httpClient.submit(request);
+
+        should(response).be.ok();
+        should(response.getStatusCode()).be.exactly(201);
+        should(progressEvents.length).be.exactly(4);
+        should(progressEvents[0].transferred).be.exactly(100);
+        should(progressEvents[1].transferred).be.exactly(200);
+        should(progressEvents[2].transferred).be.exactly(300);
+        should(progressEvents[3].transferred).be.exactly(400);
+    });
+
     it('test submit retry', async function() {
+        this.clock.restore();
+
         const url = HOST;
         MockRequest.onGet(url).replyOnce(500);
         MockRequest.onGet(url).reply(200, 'retried!');
@@ -64,6 +112,8 @@ describe('HTTP Client Tests', function() {
     });
 
     it('test submit retry network error', async function() {
+        this.clock.restore();
+
         const url = HOST;
         MockRequest.onGet(url).networkErrorOnce();
         MockRequest.onGet(url).reply(200, 'retried!');
@@ -76,6 +126,8 @@ describe('HTTP Client Tests', function() {
     });
 
     it('test submit retry all fail', async function() {
+        this.clock.restore();
+
         const url = HOST;
         MockRequest.onGet(url).reply(500);
 
@@ -121,6 +173,8 @@ describe('HTTP Client Tests', function() {
     }
 
     it('test cancel', async function() {
+        this.clock.restore();
+
         let code = '';
         try {
             await runCancelTest();
@@ -132,6 +186,8 @@ describe('HTTP Client Tests', function() {
     });
 
     it('test cancel no matching id', async function() {
+        this.clock.restore();
+
         return runCancelTest({ cancelId: 'invalid' });
     });
 
@@ -145,6 +201,8 @@ describe('HTTP Client Tests', function() {
     }
 
     it('test cancel via controller', async function() {
+        this.clock.restore();
+
         let code = '';
 
         try {
@@ -157,10 +215,14 @@ describe('HTTP Client Tests', function() {
     });
 
     it('test cancel via controller no matching id', async function() {
+        this.clock.restore();
+
         return runControllerCancelTest('invalid');
     });
 
     it('test cancel all', async function() {
+        this.clock.restore();
+
         let code = '';
 
         try {
@@ -177,6 +239,8 @@ describe('HTTP Client Tests', function() {
     });
 
     it('test cancel all via controller', async function() {
+        this.clock.restore();
+
         let code = '';
         try {
             await runCancelTest({
@@ -193,6 +257,7 @@ describe('HTTP Client Tests', function() {
     });
 
     it('test cancel multiple requests', async function() {
+        this.clock.restore();
         const url = HOST;
         const url2 = `${HOST}1`;
         MockRequest.onGet(url).reply(MockRequest.withDelay(150, [200, 'cancelme']));

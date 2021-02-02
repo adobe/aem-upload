@@ -20,7 +20,7 @@ import { exponentialRetry } from './utils';
  *
  * @returns {Object} Used to cancel an HTTP request.
  */
-export function createCancelToken() {
+function createCancelToken() {
     return CancelToken.source();
 }
 
@@ -41,7 +41,7 @@ export function createCancelToken() {
  *  to typical axios response data, the object will also have an "elapsedTime" property containing the amount
  *  of time (in milliseconds) it took for the request to complete.
  */
-export async function timedRequest(requestOptions, retryOptions, cancelToken) {
+async function timedRequest(requestOptions, retryOptions, cancelToken) {
     const reqStart = new Date().getTime();
     const options = { ...requestOptions };
 
@@ -68,7 +68,7 @@ export async function timedRequest(requestOptions, retryOptions, cancelToken) {
  * @param {*} e Error to check.
  * @returns {boolean} True if the error should be retried, false otherwise.
  */
-export function isRetryableError(e) {
+function isRetryableError(e) {
     if (e && e.isAxiosError) {
         const { response = {} } = e;
         const { status } = response;
@@ -90,10 +90,37 @@ export function isRetryableError(e) {
  * @param {DirectBinaryUploadOptions} options Options to update.
  * @param {HttpResponse} response A response from an HTTP client request.
  */
-export function updateOptionsWithResponse(options, response) {
+function updateOptionsWithResponse(options, response) {
     const setCookie = response.getHeaders()['set-cookie'];
 
     if (setCookie && setCookie.length) {
         options.withCookies(cookie.parse(setCookie[0]));
     }
 }
+
+/**
+ * Calculate the rate of an HTTP transfer, in bytes per second.
+ * @param {number} elapsed The total amount of time, in milliseconds, that
+ *  the transfer has taken so far.
+ * @param {number} totalTransferred The total number of bytes that have
+ *  transferred so far.
+ * @returns {number} Transfer rate, in bytes per second. Note that the
+ *  rate will be 0 if not enough time has elapsed to get an accurate
+ *  measurement.
+ */
+function calculateRate(elapsed, totalTransferred) {
+    if (elapsed > 1000) {
+        const elapsedSeconds = Math.round(elapsed / 1000);
+        return Math.round(totalTransferred / elapsedSeconds);
+    }
+
+    return 0;
+}
+
+export {
+    createCancelToken,
+    timedRequest,
+    isRetryableError,
+    updateOptionsWithResponse,
+    calculateRate,
+};

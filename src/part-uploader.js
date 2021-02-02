@@ -107,8 +107,8 @@ export default class PartUploader extends UploadOptionsBase {
             .withCancelId(part.getTargetFilePath())
             .withTimeout(this.getUploadOptions().getHttpRequestTimeout());
 
-        partRequest.on('progress', loaded => {
-            fileTransferHandler.partTransferProgress(part, loaded);
+        partRequest.on('progress', (progressData) => {
+            fileTransferHandler.partTransferProgress(part, progressData);
         });
 
         const partResult = new PartUploadResult(this.getOptions(), this.getUploadOptions(), part);

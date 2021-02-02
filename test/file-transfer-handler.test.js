@@ -56,11 +56,11 @@ describe('FileTransferHandler tests', function() {
             });
         };
 
-        handler._doFileTransferProgress = async(fileUploadResult, fileInfo, transferred) => {
+        handler._doFileTransferProgress = async(fileUploadResult, fileInfo, progressInfo) => {
             transferProgress.push({
                 fileUploadResult,
                 initResponseFileInfo: fileInfo,
-                transferred
+                ...progressInfo,
             });
         };
 
@@ -146,12 +146,16 @@ describe('FileTransferHandler tests', function() {
         should(startCount).be.exactly(1);
     });
 
+    function getTestProgress(index) {
+        return { transferred: 100 * index, elapsed: 2000 };
+    }
+
     it('test part transfer progress', async function() {
-        await handler.partTransferProgress(initResponseFileInfo, 100);
+        await handler.partTransferProgress(initResponseFileInfo, getTestProgress(1));
         should(transferProgress.length).be.exactly(0);
 
         await handler.partTransferStarted(new UploadResult(options, uploadOptions), initResponseFileInfo);
-        await handler.partTransferProgress(initResponseFileInfo, 100);
+        await handler.partTransferProgress(initResponseFileInfo, getTestProgress(1));
         should(transferProgress.length).be.exactly(1);
 
         const { initResponseFileInfo: progressInfo, fileUploadResult, transferred } = transferProgress[0];
@@ -160,18 +164,18 @@ describe('FileTransferHandler tests', function() {
         should(transferred).be.exactly(100);
 
         await Promise.all([
-            handler.partTransferProgress(initResponseFileInfo, 100),
-            handler.partTransferProgress(initResponseFileInfo, 100),
-            handler.partTransferProgress(initResponseFileInfo, 100),
+            handler.partTransferProgress(initResponseFileInfo, getTestProgress(2)),
+            handler.partTransferProgress(initResponseFileInfo, getTestProgress(3)),
+            handler.partTransferProgress(initResponseFileInfo, getTestProgress(4)),
         ]);
         should(transferProgress.length).be.exactly(1);
 
         await setTimeoutPromise(501);
-        await handler.partTransferProgress(initResponseFileInfo, 100);
+        await handler.partTransferProgress(initResponseFileInfo, getTestProgress(5));
         should(transferProgress.length).be.exactly(2);
 
         const { transferred: transferred2 } = transferProgress[1];
-        should(transferred2).be.exactly(500);
+        should(transferred2).be.exactly(1500);
     });
 
     it('test part transfer ended', async function() {

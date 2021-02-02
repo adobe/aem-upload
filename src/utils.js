@@ -13,10 +13,13 @@ governing permissions and limitations under the License.
 import { promises as fs } from 'fs';
 import Async from 'async';
 import Path from 'path';
+import AsyncLock from 'async-lock';
 
 import { DefaultValues } from './constants';
 import UploadError from './upload-error';
 import ErrorCodes from './error-codes';
+
+const lock = new AsyncLock();
 
 const TEMP_PATTERNS = [
     /^\/~(.*)/, // catch all paths starting with ~
@@ -407,4 +410,23 @@ export async function walkDirectory(directoryPath, maximumPaths = 5000, includeD
         errors: allErrors,
         totalSize: walkedTotalSize
     }
+}
+
+/**
+ * Creates a "thread"-specific lock on a given ID. Other threads requesting
+ * a lock on the same ID won't be able to run unless there are no other
+ * threads holding the lock. Once a lock is obtained, the given callback is
+ * invoked; the lock will be released when the callback has finished
+ * executing. The method itself returns a promise, which will resolve once
+ * the callback has completed.
+ * @param {string} lockId ID for which an exclusive lock will be obtained.
+ * @param {function} callback Invoked when the lock has been obtained. The
+ *  lock will be released when the callback has finished executing. The callback
+ *  can return a Promise, and the method will wait until the Promise resolves
+ *  before releasing the lock.
+ * @returns {Promise} Resolves after a lock has been obtained and the given
+ *  callback has finished executing.
+ */
+export async function getLock(lockId, callback) {
+    return lock.acquire(lockId, callback);
 }

@@ -13,6 +13,7 @@ governing permissions and limitations under the License.
 import UploadOptionsBase from './upload-options-base';
 import HttpClient from './http/http-client';
 import FileUploadResult from './file-upload-result';
+import { getLock } from './utils';
 
 const DEFAULT_PROGRESS_THRESHOLD = 500;
 
@@ -44,8 +45,8 @@ export default class FileTransferHandler extends UploadOptionsBase {
 
         this.fileUploadResults = {};
         this.endedFileUploadResults = {};
-        this.progressEvents = {};
-        this.totalFileTransferred = {};
+        this.lastProgress = 0;
+        this.totalFileProgress = {};
     }
 
     /**
@@ -68,23 +69,25 @@ export default class FileTransferHandler extends UploadOptionsBase {
      *  be false.
      */
     async partTransferStarted(uploadResult, initResponseFileInfo) {
-        const fileName = initResponseFileInfo.getFileName();
         const filePath = initResponseFileInfo.getTargetFilePath();
-        if (!this.fileUploadResults[fileName]) {
-            const fileUploadResult = new FileUploadResult(this.getOptions(), this.getUploadOptions(), initResponseFileInfo);
-            this.fileUploadResults[fileName] = fileUploadResult;
 
-            this.logInfo(`Starting to upload file ${fileName}`);
-
-            fileUploadResult.startTimer();
-            uploadResult.addFileUploadResult(fileUploadResult);
-
-            if (!this.httpClient.isCancelled(filePath)) {
-                await this._doFileTransferStarted(fileUploadResult, initResponseFileInfo);
+        await getLock(filePath, async () => {
+            if (!this.fileUploadResults[filePath]) {
+                const fileUploadResult = new FileUploadResult(this.getOptions(), this.getUploadOptions(), initResponseFileInfo);
+                this.fileUploadResults[filePath] = fileUploadResult;
+    
+                this.logInfo(`Starting to upload file ${filePath}`);
+    
+                fileUploadResult.startTimer();
+                uploadResult.addFileUploadResult(fileUploadResult);
+    
+                if (!this.httpClient.isCancelled(filePath)) {
+                    await this._doFileTransferStarted(fileUploadResult, initResponseFileInfo);
+                }
             }
-        }
+        });
 
-        return !this.httpClient.isCancelled(filePath) && this.fileUploadResults[fileName].isSuccessful();
+        return !this.httpClient.isCancelled(filePath) && this.fileUploadResults[filePath].isSuccessful();
     }
 
     /**
@@ -96,36 +99,41 @@ export default class FileTransferHandler extends UploadOptionsBase {
      * @param {PartResult} [partResult] If specified, will be added to the file's results.
      */
     async partTransferEnded(initResponseFileInfo, partResult = false) {
-        const fileName = initResponseFileInfo.getFileName();
         const filePath = initResponseFileInfo.getTargetFilePath();
-        const fileUploadResult = this.fileUploadResults[fileName];
-        if (fileUploadResult && !this.endedFileUploadResults[fileName]) {
-            if (partResult) {
-                fileUploadResult.addPartResult(partResult);
-            }
 
-            let handler = false;
-            if (this.httpClient.isCancelled(filePath)) {
-                this.logInfo(`File upload for ${filePath} was cancelled by user`);
+        let handler = false;
+        const fileUploadResult = this.fileUploadResults[filePath];
+        await getLock(filePath, () => {
+            if (fileUploadResult && !this.endedFileUploadResults[filePath]) {
+                if (partResult) {
+                    fileUploadResult.addPartResult(partResult);
+                }
 
-                fileUploadResult.setIsCancelled(true);
+                if (this.httpClient.isCancelled(filePath)) {
+                    this.logInfo(`File upload for ${filePath} was cancelled by user`);
 
-                handler = this._doFileTransferCancelled;
-            } else if (!fileUploadResult.isSuccessful()) {
-                this.logInfo(`File upload for ${fileName} failed due to error`);
+                    fileUploadResult.setIsCancelled(true);
 
-                handler = this._doFileTransferError;
-            } else if (initResponseFileInfo.getFilePartCount() === fileUploadResult.getPartCount()) {
-                this.logInfo(`Finished uploading file ${fileName}`);
+                    handler = this._doFileTransferCancelled;
+                } else if (!fileUploadResult.isSuccessful()) {
+                    this.logInfo(`File upload for ${filePath} failed due to error`);
 
-                handler = this._doFileTransferSucceeded;
+                    handler = this._doFileTransferError;
+                } else if (initResponseFileInfo.getFilePartCount() === fileUploadResult.getPartCount()) {
+                    this.logInfo(`Finished uploading file ${filePath}`);
+
+                    handler = this._doFileTransferSucceeded;
+                }
             }
 
             if (handler) {
-                this.endedFileUploadResults[fileName] = true;
-                fileUploadResult.stopTimer();
-                await handler.call(this, fileUploadResult, initResponseFileInfo);
+                this.endedFileUploadResults[filePath] = true;
             }
+        });
+
+        if (handler) {
+            fileUploadResult.stopTimer();
+            await handler.call(this, fileUploadResult, initResponseFileInfo);
         }
     }
 
@@ -136,29 +144,45 @@ export default class FileTransferHandler extends UploadOptionsBase {
      * are notified of the progress on a periodic basis.
      * @param {InitResponseFileInfo} initResponseFileInfo Used to retrieve information
      *  about the file.
-     * @param {number} transferredBytes Number of bytes that have transferred for the
+     * @param {object} progressData Information about the progress.
+     * @param {number} progressData.transferred Number of bytes that have transferred for the
      *  file since the last time the progress event was called for that file.
      */
-    async partTransferProgress(initResponseFileInfo, transferredBytes) {
-        const fileName = initResponseFileInfo.getFileName();
-        const fileUploadResult = this.fileUploadResults[fileName];
+    async partTransferProgress(initResponseFileInfo, progressData) {
+        const filePath = initResponseFileInfo.getTargetFilePath();
+        const { transferred } = progressData;
 
-        if (fileUploadResult && !this.endedFileUploadResults[fileName]) {
-            if (!this.totalFileTransferred[fileName]) {
-                this.totalFileTransferred[fileName] = 0;
+        let fileUploadResult;
+        let fileProgress;
+
+        await getLock(filePath, async() => {
+            fileUploadResult = this.fileUploadResults[filePath];
+
+            if (fileUploadResult && !this.endedFileUploadResults[filePath]) {
+                if (!this.totalFileProgress[filePath]) {
+                    this.totalFileProgress[filePath] = {
+                        transferred: 0,
+                    };
+                }
+
+                // keep track of total bytes transferred across all parts for the file
+                this.totalFileProgress[filePath].transferred += transferred;
+
+                const now = new Date().getTime();
+                const { progressDelay = DEFAULT_PROGRESS_THRESHOLD } = this.getOptions();
+
+                if ((progressDelay <= 0) || ((now - this.lastProgress) > progressDelay)) {
+                    this.lastProgress = now;
+                    fileProgress = this.totalFileProgress[filePath];
+                }
             }
+        });
 
-            // keep track of total bytes transferred across all parts for the file
-            this.totalFileTransferred[fileName] += transferredBytes;
-
-            const lastEvent = this.progressEvents[fileName] || 0;
-            const now = new Date().getTime();
-            const { progressDelay = DEFAULT_PROGRESS_THRESHOLD } = this.getOptions();
-
-            if (now - lastEvent > progressDelay) {
-                this.progressEvents[fileName] = now;
-                await this._doFileTransferProgress(fileUploadResult, initResponseFileInfo, this.totalFileTransferred[fileName]);
-            }
+        if (fileProgress) {
+            return this._doFileTransferProgress(fileUploadResult, initResponseFileInfo, {
+                ...progressData,
+                ...fileProgress,
+            });
         }
     }
 

@@ -14,6 +14,7 @@ const should = require('should');
 const { EventEmitter } = require('events');
 const fs = require('fs');
 const MockFs = require('mock-fs');
+const Sinon = require('sinon');
 
 const { importFile, getTestOptions } = require('../testutils');
 
@@ -23,6 +24,14 @@ const DirectBinaryUploadOptions = importFile('direct-binary-upload-options');
 const HOST = 'http://adobe-aem-upload-unit-test';
 
 describe('HTTP Request Tests', function() {
+
+    before(function() {
+        this.clock = Sinon.useFakeTimers(10);
+    });
+
+    after(function() {
+        this.clock.restore();
+    });
 
     beforeEach(function() {
         MockFs({
@@ -124,8 +133,8 @@ describe('HTTP Request Tests', function() {
             .withData('testing', 10);
 
         let totalTransferred = 0;
-        request.on('progress', (transferred) => {
-            totalTransferred += transferred;
+        request.on('progress', (progressData) => {
+            totalTransferred += progressData.transferred;
         });
 
         request.requestOptions.onUploadProgress({ loaded: 100 });
@@ -141,12 +150,13 @@ describe('HTTP Request Tests', function() {
             .withData(emitter, 10);
 
         let totalTransferred = 0;
-        request.on('progress', (transferred) => {
-            totalTransferred += transferred;
+        request.on('progress', (progressData) => {
+            totalTransferred += progressData.transferred;
         });
 
         emitter.emit('data', '12345');
         emitter.emit('data', '6789');
+        this.clock.tick(2000);
         emitter.emit('data', '123');
 
         should(totalTransferred).be.exactly(12);

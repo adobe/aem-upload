@@ -236,12 +236,12 @@ export default class DirectBinaryUploadProcess extends FileTransferHandler {
      * @param {FileUploadResult} fileUploadResult Unused.
      * @param {InitResponseFileInfo} initResponseFileInfo Used to build event data
      *  for the event.
-     * @param {number} transferredBytes Sent with the event.
+     * @param {object} progressData Information about the progress of the file transfer.
      */
-    async _doFileTransferProgress(fileUploadResult, initResponseFileInfo, transferredBytes) {
+    async _doFileTransferProgress(fileUploadResult, initResponseFileInfo, progressData) {
         this.sendEvent('fileprogress', {
             ...initResponseFileInfo.getFileEventData(),
-            transferred: transferredBytes
+            ...progressData,
         });
     }
 

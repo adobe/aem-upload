@@ -127,17 +127,15 @@ class HttpRequest extends UploadBase {
         if (rawData.on) {
             // in Axios, the "onUploadProgress" option only works in a Browser. In
             // Node.js, use the Stream's events to report progress
-            rawData.on('data', chunk => {
-                this.sendEvent('progress', chunk.length);
+            rawData.on('data', (chunk) => {
+                this.sendProgressEvent(chunk.length, true);
             });
         } else {
             // only available in a Browser.
-            this.requestOptions.onUploadProgress = progress => {
+            this.requestOptions.onUploadProgress = (progress) => {
                 const { loaded } = progress;
                 if (loaded) {
-                    let incLoaded = loaded - this.totalTransferred;
-                    this.totalTransferred = loaded;
-                    this.sendEvent('progress', incLoaded);
+                    this.sendProgressEvent(loaded, false);
                 }
             };
         }
@@ -186,6 +184,29 @@ class HttpRequest extends UploadBase {
      */
     getCancelId() {
         return this.cancelId;
+    }
+
+    /**
+     * Sends a 'progress' event for the request, which will include the
+     * incremental amount of data transferred.
+     * @param {number} transferred Amount of bytes transferred. This could
+     *  be the total amount, or an incremental amount since the last event,
+     *  depending on the isIncremental parameter.
+     * @param {boolean} isIncremental If true, the transferred value is an
+     *  incremental amount since the last event; otherwise it's the total
+     *  amount transferred.
+     */
+    sendProgressEvent(transferred, isIncremental) {
+        let incLoaded = transferred;
+
+        if (isIncremental) {
+            this.totalTransferred += transferred;
+        } else {
+            incLoaded = transferred - this.totalTransferred;
+            this.totalTransferred = transferred;
+        }
+
+        this.sendEvent('progress', { transferred: incLoaded });
     }
 
     /**
