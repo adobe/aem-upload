@@ -20,7 +20,8 @@ const {
     setCredentials,
     doesAemPathExist,
     deleteAemPath,
-    getHttpClient
+    getHttpClient,
+    getPathTitle,
 } = require('./e2eutils');
 
 const DirectBinaryUploadOptions = importFile('direct-binary-upload-options');
@@ -62,9 +63,14 @@ describe('FileSystemUpload end-to-end tests', function() {
         return hasStart && hasEnd;
     }
 
-    async function existsInAemAndHasEvents(httpClient, uploadOptions, filePath) {
+    async function verifyExistsInAemAndHasEvents(httpClient, uploadOptions, filePath) {
         return await doesAemPathExist(httpClient, uploadOptions, filePath) &&
             hasStartAndStopEvents(uploadOptions.getUrl(), filePath);
+    }
+
+    async function verifyExistsInAemAndHasTitle(httpClient, uploadOptions, filePath, title) {
+        should(await doesAemPathExist(httpClient, uploadOptions, filePath)).be.ok();
+        should(await getPathTitle(httpClient, uploadOptions, filePath)).be.exactly(title);
     }
 
     beforeEach(function() {
@@ -104,13 +110,13 @@ describe('FileSystemUpload end-to-end tests', function() {
         should(uploadResult.getNinetyPercentileTotal()).be.ok();
         should(uploadResult.getFileUploadResults().length).be.exactly(uploadResult.getTotalFiles());
 
-        should(await existsInAemAndHasEvents(httpClient, uploadOptions, '/climber-ferrata-la-torre-di-toblin.jpg')).be.ok();
-        should(await existsInAemAndHasEvents(httpClient, uploadOptions, '/skiing_1.jpg')).be.ok();
-        should(await existsInAemAndHasEvents(httpClient, uploadOptions, '/freeride.jpg')).be.ok();
-        should(await existsInAemAndHasEvents(httpClient, uploadOptions, '/freeride-steep.jpg')).be.ok();
-        should(await existsInAemAndHasEvents(httpClient, uploadOptions, '/ice-climbing.jpg')).be.ok();
-        should(await existsInAemAndHasEvents(httpClient, uploadOptions, `/${ENCODED_ASSET1}`)).be.ok();
-        should(await existsInAemAndHasEvents(httpClient, uploadOptions, '/dir-1')).not.be.ok();
+        await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/climber-ferrata-la-torre-di-toblin.jpg');
+        await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/skiing_1.jpg');
+        await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/freeride.jpg');
+        await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/freeride-steep.jpg');
+        await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/ice-climbing.jpg');
+        await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, `/${ENCODED_ASSET1}`);
+        await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/dir-1');
 
         return deleteAemPath(httpClient, uploadOptions);
     });
@@ -150,31 +156,50 @@ describe('FileSystemUpload end-to-end tests', function() {
         should(uploadResult.getFileUploadResults().length).be.exactly(uploadResult.getTotalFiles());
 
         // files supplied directly
-        should(await existsInAemAndHasEvents(httpClient, uploadOptions, '/climber-ferrata-la-torre-di-toblin.jpg')).be.ok();
-        should(await existsInAemAndHasEvents(httpClient, uploadOptions, '/skiing_1.jpg')).be.ok();
+        await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/climber-ferrata-la-torre-di-toblin.jpg');
+        await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/skiing_1.jpg');
 
         // images
-        should(await existsInAemAndHasEvents(httpClient, uploadOptions, '/images/climber-ferrata-la-torre-di-toblin.jpg')).be.ok();
-        should(await existsInAemAndHasEvents(httpClient, uploadOptions, '/images/Freeride-extreme.jpg')).be.ok();
-        should(await existsInAemAndHasEvents(httpClient, uploadOptions, '/images/freeride-siberia.jpg')).be.ok();
+        await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/images/climber-ferrata-la-torre-di-toblin.jpg');
+        await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/images/Freeride-extreme.jpg');
+        await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/images/freeride-siberia.jpg');
 
         // images/dir1
-        should(await existsInAemAndHasEvents(httpClient, uploadOptions, '/images/dir-1/freeride.jpg')).be.ok();
-        should(await existsInAemAndHasEvents(httpClient, uploadOptions, '/images/dir-1/freeride-steep.jpg')).be.ok();
-        should(await existsInAemAndHasEvents(httpClient, uploadOptions, '/images/dir-1/ice-climbing.jpg')).be.ok();
-        should(await existsInAemAndHasEvents(httpClient, uploadOptions, `/images/dir-1/${ENCODED_ASSET1}`)).be.ok();
+        await verifyExistsInAemAndHasTitle(httpClient, uploadOptions, '/images/dir-1', 'Dir 1');
+        await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/images/dir-1/freeride.jpg');
+        await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/images/dir-1/freeride-steep.jpg');
+        await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/images/dir-1/ice-climbing.jpg');
+        await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, `/images/dir-1/${ENCODED_ASSET1}`);
 
         // images/dir1/subdir1
-        should(await existsInAemAndHasEvents(httpClient, uploadOptions, '/images/dir-1/subdir1/ski touring.jpg')).be.ok();
-        should(await existsInAemAndHasEvents(httpClient, uploadOptions, '/images/dir-1/subdir1/skiing_1.jpg')).be.ok();
-        should(await existsInAemAndHasEvents(httpClient, uploadOptions, '/images/dir-1/subdir1/skiing_2.jpg')).be.ok();
+        await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/images/dir-1/subdir1/ski touring.jpg');
+        await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/images/dir-1/subdir1/skiing_1.jpg');
+        await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/images/dir-1/subdir1/skiing_2.jpg');
 
         // images/dir1/folder_♂♀°′″℃＄￡‰§№￠℡㈱
-        should(await existsInAemAndHasEvents(httpClient, uploadOptions, `/images/dir-1/${ENCODED_FOLDER}/${ENCODED_ASSET2}`)).be.ok();
+        await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, `/images/dir-1/${ENCODED_FOLDER}/${ENCODED_ASSET2}`);
 
         should(await doesAemPathExist(httpClient, uploadOptions, '/images/dir-1/subdir2')).not.be.ok();
 
         return deleteAemPath(httpClient, uploadOptions);
+    });
+
+    it('test folder stuff', async () => {
+        const axios = require('axios');
+
+        await axios({
+            url: `http://localhost:4502/api/assets/title-test-${new Date().getTime()}`,
+            method: 'POST',
+            headers: {
+                'Authorization': `Basic ${Buffer.from('admin:admin').toString('base64')}`
+            },
+            data: {
+                class: 'assetFolder',
+                properties: {
+                    'jcr:title': 'Test Folder'
+                }
+            }
+        });
     });
 
 });

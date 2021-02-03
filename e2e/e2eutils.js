@@ -101,6 +101,28 @@ module.exports.doesAemPathExist = async function(httpClient, uploadOptions, rela
 }
 
 /**
+ * Retrieves the jcr:title property value for a given path.
+ * @param {HttpClient} httpClient Will be used to submit HTTP requests.
+ * @param {DirectBinaryUploadOptions} uploadOptions The options' URL will be used
+ *  when querying AEM.
+ * @param {string} relativePath Relative path (from the options's URL) to the item
+ *  to check. Example: /folder/myasset.jpg.
+ * @returns {string} Value of the path's jcr:title property, or empty string if none
+ *  found.
+ */
+module.exports.getPathTitle = async function(httpClient, uploadOptions, relativePath) {
+    const infoUrl = `${uploadOptions.getUrl().replace('/content/dam', '/api/assets')}${encodeURI(relativePath)}.json?showProperty=jcr:title`;
+
+    const request = new HttpRequest(getTestOptions(), infoUrl)
+        .withUploadOptions(uploadOptions);
+
+    const response = await httpClient.submit(request);
+    const { properties = {} } = response.getData();
+
+    return properties['jcr:title'] || '';
+}
+
+/**
  * Deletes a path from the target AEM instance.
  * @param {HttpClient} httpClient Will be used to submit HTTP requests.
  * @param {DirectBinaryUploadOptions} uploadOptions The options' URL will be used
