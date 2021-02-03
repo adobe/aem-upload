@@ -184,22 +184,4 @@ describe('FileSystemUpload end-to-end tests', function() {
         return deleteAemPath(httpClient, uploadOptions);
     });
 
-    it('test folder stuff', async () => {
-        const axios = require('axios');
-
-        await axios({
-            url: `http://localhost:4502/api/assets/title-test-${new Date().getTime()}`,
-            method: 'POST',
-            headers: {
-                'Authorization': `Basic ${Buffer.from('admin:admin').toString('base64')}`
-            },
-            data: {
-                class: 'assetFolder',
-                properties: {
-                    'jcr:title': 'Test Folder'
-                }
-            }
-        });
-    });
-
 });
