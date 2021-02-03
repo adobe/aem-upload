@@ -817,11 +817,10 @@ There is a set of options, `FileSystemUploadOptions`, that are specific to uploa
 
 # Releasing
 
-To publish a new version of the tool, use the following steps:
+To publish a new version of the library, push a new commit with a message that matches the pattern `Release (\\S+)`. The captured
+string will become the version number in a new tag. Check the repository's actions to see the status of the release.
 
-1. Ensure you have publish permissions and have run `npm login` using your NPM credentials. From the root directory, run `npm publish`.
-1. Edit `package.json` and increment the version number.
-1. Commit changes to `package.json`.
+After the release has finished, increment the version number in `package.json` accordingly.
 
 # Todo
 * Pause/resume uploads
