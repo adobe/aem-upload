@@ -817,10 +817,12 @@ There is a set of options, `FileSystemUploadOptions`, that are specific to uploa
 
 # Releasing
 
-To publish a new version of the library, push a new commit with a message that matches the pattern `Release (\\S+)`. The captured
-string will become the version number in a new tag. Check the repository's actions to see the status of the release.
+To publish a new version of the library, follow these steps:
 
-After the release has finished, increment the version number in `package.json` accordingly.
+* Set the version number in `package.json` to the new version.
+* Push a new commit with the changes and a message that matches the pattern `Release (\\S+)`, where `(\\S)` is replaced with the updated
+version number from `package.json`.
+* Check the repository's actions to see the status of the release.
 
 # Todo
 * Pause/resume uploads

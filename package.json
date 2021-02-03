@@ -1,6 +1,6 @@
 {
   "name": "@adobe/aem-upload",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "description": "AEM Assets direct binary access uploading tool",
   "main": "index.js",
   "browser": "./dist/exports.js",
@@ -10,8 +10,8 @@
     "test": "npm run testOnly && npm run lint",
     "testOnly": "mocha --recursive --require @babel/register ./test",
     "build": "./node_modules/.bin/rimraf dist && babel ./src --out-dir dist",
-    "prepublishOnly": "npm run coverage && npm run build",
-    "coverage": "nyc npm run test",
+    "prepublishOnly": "npm test && npm run build",
+    "coverage": "./node_modules/.bin/nyc npm run test",
     "lint": "eslint ./src",
     "e2e": "mocha --recursive --require @babel/register ./e2e"
   },
