@@ -17,7 +17,9 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@master
       with:
-        node-version: 10.0.0
+        node-version: 10.19
+    - name: Install dependencies (all)
+      run: npm install
     - name: Publish if commit message matches release pattern
       uses: mkiki/npm-publish-action@c4315ef5790b7bcec2cbb75b34e37681a409d78d
       with:
