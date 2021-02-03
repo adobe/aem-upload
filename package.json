@@ -1,6 +1,6 @@
 {
   "name": "@adobe/aem-upload",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "description": "AEM Assets direct binary access uploading tool",
   "main": "index.js",
   "browser": "./dist/exports.js",
@@ -8,12 +8,12 @@
   "repository": "adobe/aem-upload",
   "scripts": {
     "test": "npm run testOnly && npm run lint",
-    "testOnly": "mocha --recursive --require @babel/register ./test",
-    "build": "./node_modules/.bin/rimraf dist && babel ./src --out-dir dist",
+    "testOnly": "./node_modules/.bin/mocha --recursive --require @babel/register ./test",
+    "build": "./node_modules/.bin/rimraf dist && ./node_modules/.bin/babel ./src --out-dir dist",
     "prepublishOnly": "npm test && npm run build",
     "coverage": "./node_modules/.bin/nyc npm run test",
-    "lint": "eslint ./src",
-    "e2e": "mocha --recursive --require @babel/register ./e2e"
+    "lint": "./node_modules/.bin/eslint ./src",
+    "e2e": "./node_modules/.bin/mocha --recursive --require @babel/register ./e2e"
   },
   "author": "Adobe",
   "contributors": [
