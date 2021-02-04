@@ -10,8 +10,16 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-export { default as DirectBinaryUpload } from './direct-binary-upload';
-export { default as DirectBinaryUploadOptions } from './direct-binary-upload-options';
-export { default as DirectBinaryUploadErrorCodes } from './error-codes';
-export { default as FileSystemUpload } from './filesystem-upload';
-export { default as FileSystemUploadOptions } from './filesystem-upload-options';
+import DirectBinaryUpload from './direct-binary-upload';
+import DirectBinaryUploadOptions from './direct-binary-upload-options';
+import DirectBinaryUploadErrorCodes from './error-codes';
+import FileSystemUpload from './filesystem-upload';
+import FileSystemUploadOptions from './filesystem-upload-options';
+
+export default {
+    DirectBinaryUpload,
+    DirectBinaryUploadOptions,
+    DirectBinaryUploadErrorCodes,
+    FileSystemUpload,
+    FileSystemUploadOptions,
+}

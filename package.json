@@ -7,8 +7,7 @@
   "license": "Apache-2.0",
   "repository": "adobe/aem-upload",
   "scripts": {
-    "test": "npm run testOnly && npm run lint",
-    "testOnly": "./node_modules/.bin/mocha --recursive --require @babel/register ./test",
+    "test": "./node_modules/.bin/mocha --recursive --require @babel/register ./test",
     "build": "./node_modules/.bin/rimraf dist && ./node_modules/.bin/babel ./src --out-dir dist",
     "prepublishOnly": "npm test && npm run build",
     "coverage": "./node_modules/.bin/nyc npm run test",
@@ -29,7 +28,7 @@
     "core-js": "^3.6.4",
     "filesize": "^4.2.1",
     "regenerator-runtime": "^0.13.5",
-    "uuid": "^8.3.1"
+    "uuid": "^3.3.2"
   },
   "devDependencies": {
     "@babel/cli": "^7.8.4",

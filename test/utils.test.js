@@ -27,20 +27,18 @@ const {
     trimContentDam,
     walkDirectory
 } = importFile('utils', {
-    'fs': {
-        promises: {
-            stat: async function(path) {
-                if (Path.basename(path) === 'error.jpg') {
-                    throw new Error('unit test stat error');
-                }
-                return stats[path];
-            },
-            readdir: async function(path) {
-                if (Path.basename(path) === 'error') {
-                    throw new Error('unit test readdir error');
-                }
-                return dirs[path];
+    './fs-promise': {
+        stat: async function(path) {
+            if (Path.basename(path) === 'error.jpg') {
+                throw new Error('unit test stat error');
             }
+            return stats[path];
+        },
+        readdir: async function(path) {
+            if (Path.basename(path) === 'error') {
+                throw new Error('unit test readdir error');
+            }
+            return dirs[path];
         }
     }
 });
