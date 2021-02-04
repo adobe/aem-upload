@@ -33,7 +33,7 @@ jobs:
     - name: Build
       run: npm run build
     - name: Lint
-      if: ${{ matrix.node-version }} != '6.10.3'
+      if: ${{ matrix.node-version }} == '10.16'
       run: npm run lint
     - name: Run unit tests
       run: npm test
