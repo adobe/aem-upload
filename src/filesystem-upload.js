@@ -10,9 +10,9 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import { promises as fs } from 'fs';
+import fs from './fs-promise';
 import Path from 'path';
-import { v4 as uuid } from 'uuid';
+import uuid from 'uuid';
 
 import DirectBinaryUpload from './direct-binary-upload';
 import DirectBinaryUploadProcess from './direct-binary-upload-process';
