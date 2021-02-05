@@ -12,7 +12,7 @@ governing permissions and limitations under the License.
 
 import fs from './fs-promise';
 import Path from 'path';
-import uuid from 'uuid';
+import { v4 as uuid } from 'uuid';
 
 import DirectBinaryUpload from './direct-binary-upload';
 import DirectBinaryUploadProcess from './direct-binary-upload-process';

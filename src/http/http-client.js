@@ -15,7 +15,7 @@ import ErrorCodes from '../error-codes';
 import UploadOptionsBase from '../upload-options-base';
 import UploadError from '../upload-error';
 import HttpResponse from './http-response';
-import uuid from 'uuid';
+import { v4 as uuid } from 'uuid';
 
 /**
  * Invoked when there is an immediate retry error. Handles special cases and adds the
