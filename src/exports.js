@@ -10,16 +10,22 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import DirectBinaryUpload from './direct-binary-upload';
-import DirectBinaryUploadOptions from './direct-binary-upload-options';
-import DirectBinaryUploadErrorCodes from './error-codes';
-import FileSystemUpload from './filesystem-upload';
-import FileSystemUploadOptions from './filesystem-upload-options';
+import DirectBinaryUploadImport from './direct-binary-upload';
+import DirectBinaryUploadOptionsImport from './direct-binary-upload-options';
+import DirectBinaryUploadErrorCodesImport from './error-codes';
+import FileSystemUploadImport from './filesystem-upload';
+import FileSystemUploadOptionsImport from './filesystem-upload-options';
 
 export default {
-    DirectBinaryUpload,
-    DirectBinaryUploadOptions,
-    DirectBinaryUploadErrorCodes,
-    FileSystemUpload,
-    FileSystemUploadOptions,
+    DirectBinaryUpload: DirectBinaryUploadImport,
+    DirectBinaryUploadOptions: DirectBinaryUploadOptionsImport,
+    DirectBinaryUploadErrorCodes: DirectBinaryUploadErrorCodesImport,
+    FileSystemUpload: FileSystemUploadImport,
+    FileSystemUploadOptions: FileSystemUploadOptionsImport,
 }
+
+export const DirectBinaryUpload = DirectBinaryUploadImport;
+export const DirectBinaryUploadOptions = DirectBinaryUploadOptionsImport;
+export const DirectBinaryUploadErrorCodes = DirectBinaryUploadErrorCodesImport;
+export const FileSystemUpload = FileSystemUploadImport;
+export const FileSystemUploadOptions = FileSystemUploadOptionsImport;

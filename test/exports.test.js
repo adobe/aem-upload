@@ -11,20 +11,18 @@ governing permissions and limitations under the License.
 */
 
 import should from 'should';
-
-import { importFile } from './testutils';
-
-const Exports = importFile('exports');
+import Exports from '../src/exports';
+import { DirectBinaryUploadOptions } from '../src/exports';
 
 describe('Exports Tests', function() {
 
     it('test exports smoke test', function() {
         should(Exports).be.ok();
-        should(Exports.DirectBinaryUpload).be.ok();
         should(Exports.DirectBinaryUploadOptions).be.ok();
-        should(Exports.FileSystemUpload).be.ok();
-        should(Exports.FileSystemUploadOptions).be.ok();
-        should(Exports.DirectBinaryUploadErrorCodes).be.ok();
+        should(DirectBinaryUploadOptions).be.ok();
+
+        should(new Exports.DirectBinaryUploadOptions()).be.ok();
+        should(new DirectBinaryUploadOptions()).be.ok();
     });
 
 });
