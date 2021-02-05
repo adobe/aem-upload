@@ -1,6 +1,6 @@
 {
   "name": "@adobe/aem-upload",
-  "version": "1.0.17",
+  "version": "1.0.18",
   "description": "AEM Assets direct binary access uploading tool",
   "main": "index.js",
   "browser": "./dist/exports.js",
