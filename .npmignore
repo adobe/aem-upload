@@ -6,3 +6,7 @@ browser/
 .eslintrc.json
 .babelrc
 webpack.config.js
+e2e/
+.github/
+test/
+.nyc_output/
