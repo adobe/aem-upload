@@ -39,7 +39,6 @@ import {
     getMaxFileCount,
 } from './filesystem-upload-utils';
 import FileSystemUploadItemManager from './filesystem-upload-item-manager';
-import { file } from 'mock-fs/lib/filesystem';
 
 const MAX_CONCURRENT_DIRS = 10;
 
