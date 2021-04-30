@@ -11,11 +11,13 @@ governing permissions and limitations under the License.
 */
 
 import querystring from 'querystring';
+import { AEMUpload } from '@adobe/httptransfer';
+
+import { getHttpTransferOptions } from './utils';
 
 import InitResponse from './init-response';
-import UploadFile from './upload-file';
-import UploadError from './upload-error';
-import ErrorCodes from './error-codes';
+import InitResponseFilePart from './init-response-file-part';
+import PartUploadResult from './part-upload-result';
 import { 
     updateOptionsWithResponse,
 } from './http-utils';
@@ -23,6 +25,8 @@ import PartUploader from './part-uploader';
 import HttpRequest from './http/http-request';
 import FileTransferHandler from './file-transfer-handler';
 import ConcurrentQueue from './concurrent-queue';
+import FileUploadResult from './file-upload-result';
+import UploadFile from './upload-file';
 
 /**
  * Contains all logic for the process that uploads a set of files using direct binary access.
@@ -85,12 +89,52 @@ export default class DirectBinaryUploadProcess extends FileTransferHandler {
      * @returns {Promise} Resolves when all files have been uploaded.
      */
     async upload(uploadResult) {
-        const initResponse = await this.initiateUpload(uploadResult);
-        this.completeUri = initResponse.getCompleteUri();
+        const aemUpload = new AEMUpload();
+        aemUpload.on('filestart', (data) => this.emit('filestart', data));
+        aemUpload.on('fileprogress', (data) => this.emit('fileprogress', data));
+        aemUpload.on('fileend', (data) => this.emit('fileend', data));
 
-        await this.partUploader.uploadParts(uploadResult, initResponse.getAllParts(), this);
+        const aemUploadOptions = getHttpTransferOptions(this.getOptions(), this.getUploadOptions());
+        const fileCount = aemUploadOptions.uploadFiles.length;
+
+        uploadResult.startTimer();
+
+        this.logInfo(`sending ${fileCount} files to httptransfer`);
+        uploadResult.addTotalFiles(fileCount);
+        await aemUpload.uploadFiles(aemUploadOptions);
+        this.logInfo('successfully uploaded files with httptransfer');
 
         uploadResult.stopTimer();
+
+        // for now httptransfer will fail the whole batch if one file fails. "Fake"
+        // some upload results here to ensure at least some consistency to the results
+        // before introducing the httptransfer module.
+        uploadResult.addInitTime(100); // totally wrong, but temporary
+        this.getUploadOptions().getUploadFiles().forEach((uploadFile) => {
+            const uploadFileInstance = new UploadFile(this.getOptions(), this.getUploadOptions(), uploadFile);
+            const filePart = new InitResponseFilePart(this.getOptions(), this.getUploadOptions(), uploadFileInstance,
+                {
+                    uploadToken: '<redacted>',
+                    fileName: uploadFileInstance.getFileName(),
+                    mimeType: '',
+                    maxPartSize: 0,
+                    minPartSize: 0,
+                    uploadURIs: [
+                        '<handled by httptransfer>'
+                    ]
+                }, {
+                    start: 0,
+                    end: uploadFileInstance.getFileSize(),
+                    url: '<handled by httptransfer>'
+                });
+            const partResult = new PartUploadResult(this.getOptions(), this.getUploadOptions(), filePart);
+            partResult.setUploadTime(1000); // totally wrong, but temporary
+            const fileResult = new FileUploadResult(this.getOptions(), this.getUploadOptions(), filePart);
+            fileResult.setTotalUploadTime(1000); // totally wrong, but temporary
+            fileResult.setTotalCompleteTime(200); // totally wrong, but temporary
+            fileResult.addPartResult(partResult);
+            uploadResult.addFileUploadResult(fileResult);
+        });
 
         // output json result to logger
         this.logInfo('Uploading result in JSON: ' + JSON.stringify(uploadResult, null, 4));
@@ -152,73 +196,6 @@ export default class DirectBinaryUploadProcess extends FileTransferHandler {
         uploadResult.addTotalFiles(fileListInit.length);
 
         return initResponse;
-    }
-
-    /**
-     * Does the work of completing an upload by submitting a request to the complete upload servlet.
-     *
-     * @param {DirectBinaryUploadOptions} options Controls how the method behaves.
-     * @param {FileUploadResult} fileUploadResult Information about the complete request will
-     *  be added to the result.
-     * @param {InitResponseFileInfo} initResponseFileInfo Used to retrieve the file's
-     *  information.
-     */
-    async completeUpload(fileUploadResult, initResponseFileInfo) {
-        const options = this.getUploadOptions();
-        const fileName = initResponseFileInfo.getFileName();
-        const fileSize = initResponseFileInfo.getFileSize();
-        const mimeType = initResponseFileInfo.getMimeType();
-        const uploadToken = initResponseFileInfo.getUploadToken();
-
-        const completeData = {
-            fileName,
-            mimeType,
-            uploadToken,
-            uploadDuration: fileUploadResult.getTotalUploadTime(),
-            fileSize,
-        };
-
-        if (initResponseFileInfo.shouldCreateNewVersion()) {
-            completeData.createVersion = true;
-
-            const versionLabel = initResponseFileInfo.getVersionLabel();
-            const versionComment = initResponseFileInfo.getVersionComment();
-            if (versionLabel) {
-                completeData.versionLabel = versionLabel;
-            }
-            if (versionComment) {
-                completeData.versionComment = versionComment;
-            }
-        } else if (initResponseFileInfo.shouldReplace()) {
-            completeData.replace = true;
-        }
-
-        const urlEncodedData = querystring.stringify(completeData);
-        const completeRequest = new HttpRequest(this.getOptions(), this.completeUri)
-            .withContentType('application/x-www-form-urlencoded')
-            .withMethod(HttpRequest.Method.POST)
-            .withData(urlEncodedData, urlEncodedData.length)
-            .withUploadOptions(options);
-
-        try {
-            const response = await this.getHttpClient().submit(completeRequest, fileUploadResult);
-            const completeElapsedTime = response.getElapsedTime();
-            const completeStatusCode = response.getStatusCode();
-
-            fileUploadResult.setTotalCompleteTime(completeElapsedTime);
-
-            this.logInfo(`Finished complete uploading '${fileName}', response code: '${completeStatusCode}', time elapsed: '${completeElapsedTime}' ms`);
-        } catch (e) {
-            this.logError(`Error while completing uploading for file '${fileName}'`, e);
-            fileUploadResult.setCompleteError(e);
-            this.sendEvent('fileerror', {
-                ...initResponseFileInfo.getFileEventData(),
-                errors: [e]
-            });
-            return;
-        }
-
-        this.sendEvent('fileend', initResponseFileInfo.getFileEventData());
     }
 
     /**

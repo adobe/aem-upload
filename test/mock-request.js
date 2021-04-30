@@ -14,8 +14,12 @@ const querystring = require('querystring');
 const URL = require('url');
 const axios = require('axios');
 const MockAdapter = require('axios-mock-adapter');
+const HttpTransfer = require('@adobe/httptransfer');
 const mime = require('mime');
 
+const MockHttpTransferAdapter = require('./mock-httptransfer-adapter');
+
+const mockHttpTransfer = new MockHttpTransferAdapter(HttpTransfer);
 const mock = new MockAdapter(axios);
 
 /**
@@ -51,6 +55,10 @@ mock.getApiUrl = (targetPath) => {
     return `${mock.getHost()}/api/assets${targetPath}`;
 };
 
+mock.getDirectUploads = () => {
+    return mockHttpTransfer.getDirectUploads();
+};
+
 const origReset = mock.reset;
 let onInits = {};
 let onParts = {};
@@ -64,6 +72,7 @@ let partSize = 512;
 mock.reset = function() {
     origReset.call(mock);
     onInits = {};
+    mockHttpTransfer.reset();
     onParts = {};
     onCompletes = {};
     partSize = 512;
@@ -337,3 +346,4 @@ mock.withDelay = (delay, response) => config => {
 };
 
 module.exports = mock;
+module.exports.mockHttpTransfer = mockHttpTransfer;

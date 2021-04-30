@@ -206,7 +206,18 @@ export default class HttpClient extends UploadOptionsBase {
             );
             return new HttpResponse(this.getOptions(), rawResponse);
         } catch (e) {
-            this.logError('HTTP request failed with error', e);
+            const {
+                isAxiosError,
+                config = {},
+                response = {}
+            } = e || {};
+            if (isAxiosError) {
+                const { url, method } = config;
+                const { status } = response;
+                this.logError(`${method} ${url} < failed with status code ${status}`);
+            } else {
+                this.logError('HTTP request failed with error', e);
+            }
             throw UploadError.fromError(e);
         } finally {
             unregisterCancelId.call(this, httpRequest.getCancelId(), tokenId);

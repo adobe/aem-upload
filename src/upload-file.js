@@ -11,6 +11,7 @@ governing permissions and limitations under the License.
 */
 
 import fs from 'fs';
+import Path from 'path';
 
 import UploadOptionsBase from './upload-options-base';
 import UploadError from './upload-error';
@@ -24,12 +25,12 @@ import ErrorCodes from './error-codes';
  */
 function ensureRequiredOptions(options) {
     if (
-        !options.fileName
+        (!options.fileName && !options.fileUrl)
         || !options.fileSize
         || (!options.filePath &&
             (!options.blob || !options.blob.slice))
     ) {
-        throw new UploadError('UploadFile missing required fields. Must have fileName, fileSize, and either filePath or blob', ErrorCodes.INVALID_OPTIONS);
+        throw new UploadError('UploadFile missing required fields. Must have one of fileName or fileUrl, fileSize, and either filePath or blob', ErrorCodes.INVALID_OPTIONS);
     }
 }
 
@@ -55,13 +56,32 @@ export default class UploadFile extends UploadOptionsBase {
     }
 
     /**
+     * Retrieves the full URL of the file, based on the given upload options
+     * and file options.
+     *
+     * @returns {string} URL of the file.
+     */
+    getFileUrl() {
+        ensureRequiredOptions(this.fileOptions);
+
+        let { fileUrl, fileName } = this.fileOptions;
+
+        if (!fileUrl) {
+            fileUrl = `${this.getUploadOptions().getUrl()}/${encodeURIComponent(fileName)}`;
+        }
+
+        return fileUrl;
+    }
+
+    /**
      * Retrieves the name of the file as provided in the options.
      *
      * @returns {string} Name of the file.
      */
     getFileName() {
         ensureRequiredOptions(this.fileOptions);
-        return this.fileOptions.fileName;
+        const name = Path.basename(new URL(this.getFileUrl()).pathname);
+        return decodeURIComponent(name);
     }
 
     /**
@@ -146,13 +166,28 @@ export default class UploadFile extends UploadOptionsBase {
      */
     toJSON() {
         const {
-            fileName,
             fileSize,
             filePath,
         } = this.fileOptions;
         const json = {
-            fileName,
+            fileUrl: this.getFileUrl(),
             fileSize,
+        }
+
+        if (this.shouldCreateNewVersion()) {
+            json.createVersion = true;
+        }
+
+        if (this.getVersionComment()) {
+            json.versionComment = this.getVersionComment();
+        }
+
+        if (this.getVersionLabel()) {
+            json.versionLabel = this.getVersionLabel();
+        }
+
+        if (this.shouldReplace()) {
+            json.replace = this.shouldReplace();
         }
 
         if (filePath) {

@@ -64,7 +64,7 @@ export default class FileSystemUploadDirectory {
     getParentRemoteUrl() {
         if (!this.parentRemoteUrl) {
             const path = this.parent ? this.parent.getRemotePath() : this.uploadOptions.getTargetFolderPath();
-            this.parentRemoteUrl = `${this.uploadOptions.getUrlPrefix()}${path}`;
+            this.parentRemoteUrl = `${this.uploadOptions.getUrlPrefix()}${encodeURI(path)}`;
         }
         return this.parentRemoteUrl;
     }
