@@ -101,12 +101,10 @@ describe('FileSystemUpload Tests', () => {
                 '/test/file/2',
                 '/test/dir',
             ], {
-                '/test/file/2': {
-                    createVersion: true,
-                    versionLabel: 'test version label',
-                    versionComment: 'test version comment',
-                    replace: true
-                }
+                createVersion: true,
+                versionLabel: 'test version label',
+                versionComment: 'test version comment',
+                replace: true
             });
 
             should(result).be.ok();

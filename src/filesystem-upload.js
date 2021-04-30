@@ -47,23 +47,21 @@ const MAX_CONCURRENT_DIRS = 10;
  * Uploads one or more files from the local file system to a target AEM instance using direct binary access.
  */
 export default class FileSystemUpload extends DirectBinaryUpload {
-    /**
-     * Retrieves information from the local file system for a list of files, creates a new directory in
-     * AEM, then uploads each of the local files to the new directory using direct binary access.
-     *
-     * @param {DirectBinaryUploadOptions} options Controls how the upload process behaves.
-     * @param {Array} localPaths List of local paths to upload. If a path is a directory then its
-     *  files will be retrieved and added to the upload.
-+     * @param {object} [fileOptions] If provided, contains additional options to apply to certain
-+     *  files within the given list of paths. They keys for the object should be the full local path
-+     *  to a file, and the value an object containing any combination of the following properties,
-+     *  which will be applied to the file whose path matches the key:
-+     *   * {boolean} createVersion: If true, the process will create a new version of the file if it
-+     *      already exists.
-+     *   * {string} versionLabel: The label to assign to the new version if one is created.
-+     *   * {string} versionComment: Comment to assign to the new version if one is created.
-+     *   * {boolean} replace: Will delete an asset if it already exists and replace it with the
-+     *      new asset.
+     /**
+      * Retrieves information from the local file system for a list of files, creates a new directory in
+      * AEM, then uploads each of the local files to the new directory using direct binary access.
+      *
+      * @param {DirectBinaryUploadOptions} options Controls how the upload process behaves.
+      * @param {Array} localPaths List of local paths to upload. If a path is a directory then its
+      *  files will be retrieved and added to the upload.
+      * @param {object} [fileOptions] If provided, contains additional options to apply to all files
+      *  that are uploaded. The following properties will be applied to each file uploaded:
+      *   * {boolean} createVersion: If true, the process will create a new version of the file if it
+      *      already exists.
+      *   * {string} versionLabel: The label to assign to the new version if one is created.
+      *   * {string} versionComment: Comment to assign to the new version if one is created.
+      *   * {boolean} replace: Will delete an asset if it already exists and replace it with the
+      *      new asset.
       * @returns {Promise} Will be resolved when all the files have been uploaded. The data
       *  passed in successful resolution will be an instance of UploadResult.
       */
@@ -152,10 +150,8 @@ export default class FileSystemUpload extends DirectBinaryUpload {
         const fileList = [];
 
         files.forEach(file => {
-            const addlOptions = fileOptions[file.getLocalPath()] || {};
-
             fileList.push({
-                ...addlOptions,
+                ...fileOptions,
                 fileName: file.getRemoteNodeName(),
                 filePath: file.getLocalPath(),
                 fileSize: file.getSize()
