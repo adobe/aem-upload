@@ -290,6 +290,26 @@ export default class FileUploadResult extends HttpResult {
             data.cancelled = true;
         }
 
+        const createVersion = this.initResponseFileInfo.shouldCreateNewVersion();
+        const versionLabel = this.initResponseFileInfo.getVersionLabel();
+        const versionComment = this.initResponseFileInfo.getVersionComment();
+        const shouldReplace = this.initResponseFileInfo.shouldReplace();
+        if (createVersion) {
+            data.createVersion = createVersion;
+        }
+
+        if (versionLabel) {
+            data.versionLabel = versionLabel;
+        }
+
+        if (versionComment) {
+            data.versionComment = versionComment;
+        }
+
+        if (shouldReplace) {
+            data.replace = shouldReplace;
+        }
+
         return data;
     }
 }

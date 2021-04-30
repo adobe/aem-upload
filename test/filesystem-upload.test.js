@@ -100,7 +100,14 @@ describe('FileSystemUpload Tests', () => {
                 `/test/file/${ASSET1}`,
                 '/test/file/2',
                 '/test/dir',
-            ]);
+            ], {
+                '/test/file/2': {
+                    createVersion: true,
+                    versionLabel: 'test version label',
+                    versionComment: 'test version comment',
+                    replace: true
+                }
+            });
 
             should(result).be.ok();
             should(result.getErrors().length).be.exactly(0);
@@ -117,6 +124,12 @@ describe('FileSystemUpload Tests', () => {
             validateUploadFile(fileLookup['2'], 10);
             validateUploadFile(fileLookup['3'], 8);
             validateUploadFile(fileLookup['4'], 7);
+
+            const addlOptions = fileLookup['2'].toJSON();
+            should(addlOptions.createVersion).be.ok();
+            should(addlOptions.versionLabel).be.exactly('test version label');
+            should(addlOptions.versionComment).be.exactly('test version comment');
+            should(addlOptions.replace).be.ok();
         });
 
         it('test directory already exists', async () => {
