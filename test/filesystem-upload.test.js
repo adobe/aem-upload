@@ -95,7 +95,13 @@ describe('FileSystemUpload Tests', () => {
 
             const uploadOptions = new FileSystemUploadOptions()
                 .withUrl(MockRequest.getUrl('/target'))
-                .withBasicAuth('testauth');
+                .withBasicAuth('testauth')
+                .withUploadFileOptions({
+                    createVersion: true,
+                    versionLabel: 'test version label',
+                    versionComment: 'test version comment',
+                    replace: true
+                });
 
             const fileSystemUpload = new FileSystemUpload(getTestOptions());
             const result = await fileSystemUpload.upload(uploadOptions, [
@@ -119,6 +125,12 @@ describe('FileSystemUpload Tests', () => {
             validateUploadFile(fileLookup['2'], 10);
             validateUploadFile(fileLookup['3'], 8);
             validateUploadFile(fileLookup['4'], 7);
+
+            const addlOptions = fileLookup['2'].toJSON();
+            should(addlOptions.createVersion).be.ok();
+            should(addlOptions.versionLabel).be.exactly('test version label');
+            should(addlOptions.versionComment).be.exactly('test version comment');
+            should(addlOptions.replace).be.ok();
         });
 
         it('test directory already exists', async () => {
