@@ -13,7 +13,6 @@ governing permissions and limitations under the License.
 import fs from './fs-promise';
 import Path from 'path';
 import { v4 as uuid } from 'uuid';
-import { AEMUpload } from '@adobe/httptransfer';
 
 import DirectBinaryUpload from './direct-binary-upload';
 import DirectBinaryUploadProcess from './direct-binary-upload-process';
