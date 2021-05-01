@@ -53,18 +53,10 @@ export default class FileSystemUpload extends DirectBinaryUpload {
       * @param {DirectBinaryUploadOptions} options Controls how the upload process behaves.
       * @param {Array} localPaths List of local paths to upload. If a path is a directory then its
       *  files will be retrieved and added to the upload.
-      * @param {object} [fileOptions] If provided, contains additional options to apply to all files
-      *  that are uploaded. The following properties will be applied to each file uploaded:
-      *   * {boolean} createVersion: If true, the process will create a new version of the file if it
-      *      already exists.
-      *   * {string} versionLabel: The label to assign to the new version if one is created.
-      *   * {string} versionComment: Comment to assign to the new version if one is created.
-      *   * {boolean} replace: Will delete an asset if it already exists and replace it with the
-      *      new asset.
       * @returns {Promise} Will be resolved when all the files have been uploaded. The data
       *  passed in successful resolution will be an instance of UploadResult.
       */
-      async upload(options, localPaths, fileOptions = {}) {
+      async upload(options, localPaths) {
         const fileSystemUploadOptions = FileSystemUploadOptions.fromOptions(options);
         const uploadOptions = this.getOptions();
         const httpClient = new HttpClient(uploadOptions, fileSystemUploadOptions);
@@ -102,7 +94,7 @@ export default class FileSystemUpload extends DirectBinaryUpload {
         // in the number of directories to upload at a time.
         await concurrentLoop(directoriesWithFiles, MAX_CONCURRENT_DIRS, async (directoryUrl) => {
             const targetFiles = aggregatedFiles[directoryUrl];
-            const uploadFiles = this.convertToUploadFiles(targetFiles, fileOptions);
+            const uploadFiles = this.convertToUploadFiles(options, targetFiles);
 
             this.logInfo(`Uploading ${uploadFiles.length} files to directory ${directoryUrl}`);
 
@@ -140,17 +132,16 @@ export default class FileSystemUpload extends DirectBinaryUpload {
     /**
      * Converts a list of FileSystemUploadAsset instances to a list of UploadFile items, ready
      * for use in upload options.
+     * @param {FileSystemUploadOptions} options Options for the upload.
      * @param {Array} files List of FileSystemUploadAsset instances.
-     * @param {object} fileOptions Additional options to apply to files whose paths match the
-     *  keys in the object.
      * @returns {Array} List of files ready for use with DirectBinaryUploadOptions.withUploadFiles().
      */
-    convertToUploadFiles(files, fileOptions) {
+    convertToUploadFiles(options, files) {
         const fileList = [];
 
         files.forEach(file => {
             fileList.push({
-                ...fileOptions,
+                ...options.getUploadFileOptions(),
                 fileName: file.getRemoteNodeName(),
                 filePath: file.getLocalPath(),
                 fileSize: file.getSize()

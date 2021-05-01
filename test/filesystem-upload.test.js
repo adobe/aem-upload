@@ -93,19 +93,20 @@ describe('FileSystemUpload Tests', () => {
 
             const uploadOptions = new FileSystemUploadOptions()
                 .withUrl(MockRequest.getUrl('/target'))
-                .withBasicAuth('testauth');
+                .withBasicAuth('testauth')
+                .withUploadFileOptions({
+                    createVersion: true,
+                    versionLabel: 'test version label',
+                    versionComment: 'test version comment',
+                    replace: true
+                });
 
             const fileSystemUpload = new FileSystemUpload(getTestOptions());
             const result = await fileSystemUpload.upload(uploadOptions, [
                 `/test/file/${ASSET1}`,
                 '/test/file/2',
                 '/test/dir',
-            ], {
-                createVersion: true,
-                versionLabel: 'test version label',
-                versionComment: 'test version comment',
-                replace: true
-            });
+            ]);
 
             should(result).be.ok();
             should(result.getErrors().length).be.exactly(0);

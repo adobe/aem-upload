@@ -805,6 +805,25 @@ There is a set of options, `FileSystemUploadOptions`, that are specific to uploa
                 </code>
             </td>
         </tr>
+        <tr>
+            <td>Upload file options</td>
+            <td>object</td>
+            <td>
+                Specifies the options to use when uploading each file as part of the file system upload. Most of the options provided when using
+                `DirectBinaryUploadOptions.withUploadFiles()` are valid. The exceptions are `fileName`, `fileSize`, `filePath`, and `blob`, which
+                will be ignored.
+                <br/>
+                <br/>
+                <b>Example</b>
+                <br/>
+                <code>
+                options.withUploadFileOptions({<br/>
+                &nbsp;&nbsp;createVersion: true,<br/>
+                &nbsp;&nbsp;versionLabel: 'version-label'<br/>
+                });
+                </code>
+            </td>
+        </tr>
     </tbody>
 </table>
 
