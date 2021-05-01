@@ -16,6 +16,8 @@ import { AEMUpload } from '@adobe/httptransfer';
 import { getHttpTransferOptions } from './utils';
 
 import InitResponse from './init-response';
+import UploadError from './upload-error';
+import ErrorCodes from './error-codes';
 import InitResponseFilePart from './init-response-file-part';
 import PartUploadResult from './part-upload-result';
 import { 
@@ -106,12 +108,17 @@ export default class DirectBinaryUploadProcess extends FileTransferHandler {
 
         uploadResult.stopTimer();
 
+        const uploadFileOptions = this.getUploadOptions().getUploadFileOptions ? this.getUploadOptions().getUploadFileOptions() : {};
+
         // for now httptransfer will fail the whole batch if one file fails. "Fake"
         // some upload results here to ensure at least some consistency to the results
         // before introducing the httptransfer module.
         uploadResult.addInitTime(100); // totally wrong, but temporary
         this.getUploadOptions().getUploadFiles().forEach((uploadFile) => {
-            const uploadFileInstance = new UploadFile(this.getOptions(), this.getUploadOptions(), uploadFile);
+            const uploadFileInstance = new UploadFile(this.getOptions(), this.getUploadOptions(), {
+                ...uploadFileOptions,
+                ...uploadFile
+            });
             const filePart = new InitResponseFilePart(this.getOptions(), this.getUploadOptions(), uploadFileInstance,
                 {
                     uploadToken: '<redacted>',

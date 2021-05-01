@@ -58,6 +58,10 @@ export default class FileSystemUploadOptions extends DirectBinaryUploadOptions {
             newOptions.assetNodeProcessor = uploadOptions.assetNodeProcessor;
         }
 
+        if (typeof(uploadOptions.uploadFileOptions) === 'object') {
+            newOptions.uploadFileOptions = uploadOptions.uploadFileOptions;
+        }
+
         return newOptions;
     }
 

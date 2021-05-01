@@ -37,7 +37,6 @@ import {
     getMaxFileCount,
 } from './filesystem-upload-utils';
 import FileSystemUploadItemManager from './filesystem-upload-item-manager';
-import DirectBinaryUploadOptions from './direct-binary-upload-options';
 
 /**
  * Uploads one or more files from the local file system to a target AEM instance using direct binary access.

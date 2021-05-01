@@ -18,7 +18,6 @@ import AsyncLock from 'async-lock';
 import { DefaultValues } from './constants';
 import UploadError from './upload-error';
 import ErrorCodes from './error-codes';
-import DirectBinaryUploadOptions from './direct-binary-upload-options';
 import UploadFile from './upload-file';
 
 const lock = new AsyncLock();
@@ -443,7 +442,6 @@ export function getHttpTransferOptions(options, directBinaryUploadOptions) {
     // the httptransfer module accepts a full fileUrl instead of a single
     // url with individual file names. if needed, convert the format with a
     // single url and individual file names to the fileUrl format.
-    const url = directBinaryUploadOptions.getUrl();
     const convertedFiles = directBinaryUploadOptions.getUploadFiles().map((uploadFile) => {
         const uploadFileInstance = new UploadFile(options, directBinaryUploadOptions, uploadFile);
         return uploadFileInstance.toJSON();

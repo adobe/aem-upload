@@ -230,7 +230,6 @@ describe('FileSystemUpload Tests', () => {
                 `/test/file/${ASSET1}`
             ]);
 
-            // console.log(JSON.stringify(result.toJSON(), null, 2));
             should(result).be.ok();
             should(result.getTotalFiles()).be.exactly(9);
             should(result.getTotalCompletedFiles()).be.exactly(result.getTotalFiles());
