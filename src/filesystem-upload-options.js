@@ -145,6 +145,21 @@ export default class FileSystemUploadOptions extends DirectBinaryUploadOptions {
     }
 
     /**
+     * Upload file options that will be applied to each file that is uploaded as
+     * part of the file system upload. Most options that can be passed as part of
+     * a single file upload using DirectBinaryUploadOptions.withUploadFiles() are
+     * valid. The only exceptions are "fileName", "fileSize", "filePath", and
+     * "blob", which will be ignored.
+     *
+     * @param {object} options Upload file options to apply to each file.
+     */
+    withUploadFileOptions(options) {
+        this.uploadFileOptions = options;
+        return this;
+    }
+
+
+    /**
      * Retrieves the maximum number of files that the module can upload in a single upload
      * request.
      *
@@ -189,6 +204,16 @@ export default class FileSystemUploadOptions extends DirectBinaryUploadOptions {
      */
     getInvalidCharacterReplaceValue() {
         return this.replaceValue;
+    }
+
+    /**
+     * Retrieves the upload file options that will be applied to each file uploaded
+     * through the module.
+     *
+     * @returns {object} Upload file options.
+     */
+    getUploadFileOptions() {
+        return this.uploadFileOptions || {};
     }
 
 }

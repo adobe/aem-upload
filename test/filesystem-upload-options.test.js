@@ -22,6 +22,13 @@ describe('FileSystemUploadOptions Tests', function() {
         options = new FileSystemUploadOptions();
     });
 
+    it('test accessors', function() {
+        should(options.getUploadFileOptions()).be.ok();
+        const newOptions = options.withUploadFileOptions({ hello: 'world!' });
+        should(newOptions).be.ok();
+        should(options.getUploadFileOptions().hello).be.exactly('world!');
+    });
+
     it('test from options', async function() {
         let options = new FileSystemUploadOptions()
             .withMaxUploadFiles(20)

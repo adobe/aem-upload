@@ -94,7 +94,7 @@ export default class FileSystemUpload extends DirectBinaryUpload {
         // in the number of directories to upload at a time.
         await concurrentLoop(directoriesWithFiles, MAX_CONCURRENT_DIRS, async (directoryUrl) => {
             const targetFiles = aggregatedFiles[directoryUrl];
-            const uploadFiles = this.convertToUploadFiles(targetFiles);
+            const uploadFiles = this.convertToUploadFiles(options, targetFiles);
 
             this.logInfo(`Uploading ${uploadFiles.length} files to directory ${directoryUrl}`);
 
@@ -132,14 +132,16 @@ export default class FileSystemUpload extends DirectBinaryUpload {
     /**
      * Converts a list of FileSystemUploadAsset instances to a list of UploadFile items, ready
      * for use in upload options.
+     * @param {FileSystemUploadOptions} options Options for the upload.
      * @param {Array} files List of FileSystemUploadAsset instances.
      * @returns {Array} List of files ready for use with DirectBinaryUploadOptions.withUploadFiles().
      */
-    convertToUploadFiles(files) {
+    convertToUploadFiles(options, files) {
         const fileList = [];
 
         files.forEach(file => {
             fileList.push({
+                ...options.getUploadFileOptions(),
                 fileName: file.getRemoteNodeName(),
                 filePath: file.getLocalPath(),
                 fileSize: file.getSize()
