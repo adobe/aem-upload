@@ -46,17 +46,17 @@ const MAX_CONCURRENT_DIRS = 10;
  * Uploads one or more files from the local file system to a target AEM instance using direct binary access.
  */
 export default class FileSystemUpload extends DirectBinaryUpload {
-     /**
-      * Retrieves information from the local file system for a list of files, creates a new directory in
-      * AEM, then uploads each of the local files to the new directory using direct binary access.
-      *
-      * @param {DirectBinaryUploadOptions} options Controls how the upload process behaves.
-      * @param {Array} localPaths List of local paths to upload. If a path is a directory then its
-      *  files will be retrieved and added to the upload.
-      * @returns {Promise} Will be resolved when all the files have been uploaded. The data
-      *  passed in successful resolution will be an instance of UploadResult.
-      */
-      async upload(options, localPaths) {
+    /**
+     * Retrieves information from the local file system for a list of files, creates a new directory in
+     * AEM, then uploads each of the local files to the new directory using direct binary access.
+     *
+     * @param {DirectBinaryUploadOptions} options Controls how the upload process behaves.
+     * @param {Array} localPaths List of local paths to upload. If a path is a directory then its
+     *  files will be retrieved and added to the upload.
+     * @returns {Promise} Will be resolved when all the files have been uploaded. The data
+     *  passed in successful resolution will be an instance of UploadResult.
+     */
+    async upload(options, localPaths) {
         const fileSystemUploadOptions = FileSystemUploadOptions.fromOptions(options);
         const uploadOptions = this.getOptions();
         const httpClient = new HttpClient(uploadOptions, fileSystemUploadOptions);
