@@ -11,7 +11,7 @@ governing permissions and limitations under the License.
 */
 
 import querystring from 'querystring';
-import { AEMUpload } from '@adobe/httptransfer';
+import { AEMUpload } from '@adobe/httptransfer/es2015';
 
 import { getHttpTransferOptions } from './utils';
 
