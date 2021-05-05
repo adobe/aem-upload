@@ -35,12 +35,14 @@ describe('FileSystemUploadOptions Tests', function() {
             .withDeepUpload(true)
             .withFolderNodeNameProcessor(async (name) => name)
             .withAssetNodeNameProcessor(async (name) => name)
-            .withInvalidCharacterReplaceValue('_');
+            .withInvalidCharacterReplaceValue('_')
+            .withUploadFileOptions({ hello: 'world' });
         let copiedOptions = FileSystemUploadOptions.fromOptions(options);
         should(copiedOptions).be.ok();
         should(copiedOptions.getInvalidCharacterReplaceValue()).be.exactly('_');
         should(copiedOptions.getMaxUploadFiles()).be.exactly(20);
         should(copiedOptions.getDeepUpload()).be.ok();
+        should(copiedOptions.getUploadFileOptions().hello).be.exactly('world');
         should(await copiedOptions.getFolderNodeNameProcessor()('folder name')).be.exactly('folder name');
         should(await copiedOptions.getAssetNodeNameProcessor()('asset#name')).be.exactly('asset#name');
 

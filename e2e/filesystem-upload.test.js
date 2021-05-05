@@ -28,7 +28,7 @@ const DirectBinaryUploadOptions = importFile('direct-binary-upload-options');
 const FileSystemUploadOptions = importFile('filesystem-upload-options');
 const FileSystemUpload = importFile('filesystem-upload');
 
-const ENCODED_ASSET1 = `${decodeURI('%E1%84%8B%E1%85%B5%E1%84%83%E1%85%AE%E5%90%8F%E8%AE%80')}.jpg`;
+const ENCODED_ASSET1 = `${decodeURI('%ec%9d%b4%eb%91%90%e5%90%8f%e8%ae%80')}.jpg`;
 const ENCODED_FOLDER = `folder_${decodeURI('%e2%99%82%e2%99%80%c2%b0%e2%80%b2%e2%80%b3%e2%84%83%ef%bc%84%ef%bf%a1%e2%80%b0%c2%a7%e2%84%96%ef%bf%a0%e2%84%a1%e3%88%b1')}`;
 const ENCODED_ASSET2 = `${decodeURI('%e9%83%8e%e7%a4%bc')}.jpg`;
 
@@ -64,8 +64,10 @@ describe('FileSystemUpload end-to-end tests', function() {
     }
 
     async function verifyExistsInAemAndHasEvents(httpClient, uploadOptions, filePath) {
-        return await doesAemPathExist(httpClient, uploadOptions, filePath) &&
-            hasStartAndStopEvents(uploadOptions.getUrl(), filePath);
+        const exists = await doesAemPathExist(httpClient, uploadOptions, filePath);
+        const hasEvents = hasStartAndStopEvents(uploadOptions.getUrl(), filePath);
+        should(exists).be.ok();
+        should(hasEvents).be.ok();
     }
 
     async function verifyExistsInAemAndHasTitle(httpClient, uploadOptions, filePath, title) {
@@ -116,7 +118,7 @@ describe('FileSystemUpload end-to-end tests', function() {
         await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/freeride-steep.jpg');
         await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/ice-climbing.jpg');
         await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, `/${ENCODED_ASSET1}`);
-        await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/dir-1');
+        should(await doesAemPathExist(httpClient, uploadOptions, '/dir-1')).not.be.ok();
 
         return deleteAemPath(httpClient, uploadOptions);
     });

@@ -17,6 +17,7 @@ const { Readable } = require('stream');
 const { importFile, getTestOptions } = require('./testutils');
 const MockRequest = require('./mock-request');
 const MockBlob = require('./mock-blob');
+const { dir } = require('async');
 
 const UploadResult = importFile('upload-result');
 
@@ -62,35 +63,35 @@ describe('DirectBinaryUploadProcessTest', () => {
             await process.upload(new UploadResult(getTestOptions(), options));
 
             // verify that complete request is correct
-            const posts = MockRequest.history.post;
-            should(posts.length).be.exactly(2);
-            should(posts[0].url).be.exactly(MockRequest.getUrl(`${targetFolder}.initiateUpload.json`));
-            should(posts[1].url).be.exactly(MockRequest.getUrl(`${targetFolder}.completeUpload.json`));
+            const directUploads = MockRequest.getDirectUploads();
+            should(directUploads.length).be.exactly(1);
+            should(directUploads[0].uploadFiles.length).be.exactly(1);
 
-            const data = querystring.parse(posts[1].data);
+            const uploadFile = directUploads[0].uploadFiles[0];
+            should(uploadFile.fileUrl).be.exactly(`${MockRequest.getUrl(targetFolder)}/myasset.jpg`);
+            should(uploadFile.fileSize).be.exactly(512);
 
-            should(data.fileName).be.exactly('myasset.jpg');
             if (createVersion) {
-                should(data.createVersion).be.ok();
+                should(uploadFile.createVersion).be.ok();
                 if (versionLabel) {
-                    should(data.versionLabel).be.exactly(versionLabel);
+                    should(uploadFile.versionLabel).be.exactly(versionLabel);
                 } else {
-                    should(data.versionLabel).not.be.ok();
+                    should(uploadFile.versionLabel).not.be.ok();
                 }
                 if (versionComment) {
-                    should(data.versionComment).be.exactly(versionComment);
+                    should(uploadFile.versionComment).be.exactly(versionComment);
                 } else {
                     should(versionComment).not.be.ok();
                 }
             } else {
-                should(data.createVersion).not.be.ok();
-                should(data.versionLabel).not.be.ok();
-                should(data.versionComment).not.be.ok();
+                should(uploadFile.createVersion).not.be.ok();
+                should(uploadFile.versionLabel).not.be.ok();
+                should(uploadFile.versionComment).not.be.ok();
             }
-            if (replace && !createVersion) {
-                should(data.replace).be.ok();
+            if (replace) {
+                should(uploadFile.replace).be.ok();
             } else {
-                should(data.replace).not.be.ok();
+                should(uploadFile.replace).not.be.ok();
             }
         }
 
@@ -127,58 +128,6 @@ describe('DirectBinaryUploadProcessTest', () => {
             return { targetFolder, process: new DirectBinaryUploadProcess(getTestOptions(), options), result: new UploadResult(getTestOptions(), options) };
         }
 
-        it('init retry recovery', async () => {
-            const { targetFolder, process, result } = setupRetryTest();
-
-            MockRequest.onInit(targetFolder, async () => {
-                MockRequest.removeOnInit(targetFolder);
-                return [500];
-            });
-
-            await process.upload(result);
-            should(result.getTotalCompletedFiles()).be.exactly(1);
-            should(result.getErrors().length).be.exactly(0);
-            should(result.getRetryErrors().length).be.exactly(1);
-        });
-
-        it('part retry recover', async () => {
-            const { targetFolder, process, result } = setupRetryTest();
-
-            MockRequest.onPart(targetFolder, 'myasset.jpg', 0, async () => {
-                MockRequest.removeOnPart(targetFolder, 'myasset.jpg', 0);
-                return [500];
-            });
-
-            await process.upload(result);
-            should(result.getTotalCompletedFiles()).be.exactly(1);
-            should(result.getErrors().length).be.exactly(0);
-            should(result.getRetryErrors().length).be.exactly(0);
-
-            const fileResults = result.getFileUploadResults();
-            should(fileResults.length).be.exactly(1);
-
-            const partResults = fileResults[0].getPartUploadResults();
-            should(partResults.length).be.exactly(1);
-            should(partResults[0].getRetryErrors().length).be.exactly(1);
-        });
-
-        it('complete retry recover', async () => {
-            const { targetFolder, process, result } = setupRetryTest();
-
-            MockRequest.onComplete(targetFolder, 'myasset.jpg', async () => {
-                MockRequest.removeOnComplete(targetFolder, 'myasset.jpg');
-                return [500];
-            });
-
-            await process.upload(result);
-            should(result.getTotalCompletedFiles()).be.exactly(1);
-            should(result.getErrors().length).be.exactly(0);
-
-            const fileResults = result.getFileUploadResults();
-            should(fileResults.length).be.exactly(1);
-            should(fileResults[0].getRetryErrors().length).be.exactly(1);
-        });
-
         it('trailing slash', async () => {
             const targetFolder = '/target/folder-trailing-slash';
             MockRequest.addDirectUpload(targetFolder);
@@ -193,11 +142,12 @@ describe('DirectBinaryUploadProcessTest', () => {
             const process = new DirectBinaryUploadProcess(getTestOptions(), options);
             await process.upload(new UploadResult(getTestOptions(), options));
 
-            const posts = MockRequest.history.post;
+            const directUploads = MockRequest.getDirectUploads();
+            should(directUploads.length).be.exactly(1);
+            should(directUploads[0].uploadFiles.length).be.exactly(1);
 
-            should(posts.length).be.exactly(2);
-            should(posts[0].url).be.exactly(`${MockRequest.getUrl(targetFolder)}.initiateUpload.json`);
-            should(posts[1].url).be.exactly(`${MockRequest.getUrl(targetFolder)}.completeUpload.json`);
+            const uploadFile = directUploads[0].uploadFiles[0];
+            should(uploadFile.fileUrl).be.exactly(`${MockRequest.getUrl(targetFolder)}/myasset.jpg`);
         });
 
         it('file upload smoke', async () => {
@@ -230,14 +180,14 @@ describe('DirectBinaryUploadProcessTest', () => {
                 progressDelay: 0
             }, options);
 
-            process.on('fileprogress', event => {
-                const { transferred } = event;
-                if (transferred !== 512 && transferred !== 1024 && transferred !== 1536 && transferred !== 2048) {
-                    should(false).be.ok();
-                }
-            });
-
             await process.upload(new UploadResult(getTestOptions(), options));
+            const directUploads = MockRequest.getDirectUploads();
+            should(directUploads.length).be.exactly(1);
+            should(directUploads[0].uploadFiles.length).be.exactly(1);
+
+            const uploadFile = directUploads[0].uploadFiles[0];
+            should(uploadFile.fileUrl).be.exactly('http://localhost/content/dam/target/file-upload-smoke/fileuploadsmoke.jpg');
+            should(uploadFile.fileSize).be.exactly(1024);
         });
     });
 });

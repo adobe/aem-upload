@@ -20,6 +20,8 @@ const {
     getEvent,
 } = require('./testutils');
 const MockRequest = require('./mock-request');
+const { expectation } = require('sinon');
+const { dir } = require('async');
 const HttpClient = importFile('http/http-client');
 const FileSystemUploadDirectory = importFile('filesystem-upload-directory');
 
@@ -228,7 +230,6 @@ describe('FileSystemUpload Tests', () => {
                 `/test/file/${ASSET1}`
             ]);
 
-            // console.log(JSON.stringify(result.toJSON(), null, 2));
             should(result).be.ok();
             should(result.getTotalFiles()).be.exactly(9);
             should(result.getTotalCompletedFiles()).be.exactly(result.getTotalFiles());
@@ -245,7 +246,7 @@ describe('FileSystemUpload Tests', () => {
                 postedUrls[url]++;
             });
 
-            should(Object.keys(postedUrls).length).be.exactly(16);
+            should(Object.keys(postedUrls).length).be.exactly(6);
             should(postedUrls[MockRequest.getApiUrl('/target')]).be.exactly(1);
             should(postedUrls[MockRequest.getApiUrl('/target/test')]).be.exactly(1);
             should(postedUrls[MockRequest.getApiUrl('/target/test/dir')]).be.exactly(1);
@@ -253,54 +254,26 @@ describe('FileSystemUpload Tests', () => {
             should(postedUrls[MockRequest.getApiUrl(`/target/test/dir/${SUBDIR_ENCODED}`)]).be.exactly(1);
             should(postedUrls[MockRequest.getApiUrl(`/target/test/dir/${SUBDIR_ENCODED}/subsubdir`)]).be.exactly(1);
 
-            should(postedUrls[MockRequest.getUrl('/target.initiateUpload.json')]).be.exactly(1);
-            should(postedUrls[MockRequest.getUrl('/target/test/dir.initiateUpload.json')]).be.exactly(1);
-            should(postedUrls[MockRequest.getUrl('/target/test/file.initiateUpload.json')]).be.exactly(1);
-            should(postedUrls[MockRequest.getUrl(`/target/test/dir/${SUBDIR_ENCODED}.initiateUpload.json`)]).be.exactly(1);
-            should(postedUrls[MockRequest.getUrl(`/target/test/dir/${SUBDIR_ENCODED}/subsubdir.initiateUpload.json`)]).be.exactly(1);
+            const directUploads = MockRequest.getDirectUploads();
+            should(directUploads.length).be.exactly(1);
 
-            should(postedUrls[MockRequest.getUrl('/target.completeUpload.json')]).be.exactly(1);
-            should(postedUrls[MockRequest.getUrl('/target/test/dir.completeUpload.json')]).be.exactly(2);
-            should(postedUrls[MockRequest.getUrl('/target/test/file.completeUpload.json')]).be.exactly(2);
-            should(postedUrls[MockRequest.getUrl(`/target/test/dir/${SUBDIR_ENCODED}.completeUpload.json`)]).be.exactly(2);
-            should(postedUrls[MockRequest.getUrl(`/target/test/dir/${SUBDIR_ENCODED}/subsubdir.completeUpload.json`)]).be.exactly(2);
+            const uploadFiles = directUploads[0].uploadFiles;
+            should(uploadFiles.length).be.exactly(9);
+            should(uploadFiles[0].fileUrl).be.exactly(MockRequest.getUrl('/target/test/dir/3'));
+            should(uploadFiles[1].fileUrl).be.exactly(MockRequest.getUrl('/target/test/dir/4'));
+            should(uploadFiles[2].fileUrl).be.exactly(MockRequest.getUrl('/target/test/file/2'));
+            should(uploadFiles[3].fileUrl).be.exactly(MockRequest.getUrl('/target/test/file/%E5%90%8F'));
+            should(uploadFiles[4].fileUrl).be.exactly(MockRequest.getUrl('/target/test/dir/sub%E5%90%8Fdir/5'));
+            should(uploadFiles[5].fileUrl).be.exactly(MockRequest.getUrl('/target/test/dir/sub%E5%90%8Fdir/6'));
+            should(uploadFiles[6].fileUrl).be.exactly(MockRequest.getUrl('/target/test/dir/sub%E5%90%8Fdir/subsubdir/7'));
+            should(uploadFiles[7].fileUrl).be.exactly(MockRequest.getUrl('/target/test/dir/sub%E5%90%8Fdir/subsubdir/8'));
+            should(uploadFiles[8].fileUrl).be.exactly(MockRequest.getUrl('/target/%E5%90%8F'));
 
             should(getEvent('filestart', `/content/dam/target/${ASSET1}`)).be.ok();
             should(getEvent('fileend', `/content/dam/target/${ASSET1}`)).be.ok();
 
             should(getEvent('filestart', `/content/dam/target/test/dir/${SUBDIR}/5`)).be.ok();
             should(getEvent('fileend', `/content/dam/target/test/dir/${SUBDIR}/5`)).be.ok();
-        });
-
-        it('test directory descendent upload error', async function() {
-            createFsStructure();
-
-            MockRequest.onPost(MockRequest.getApiUrl('/target')).reply(201);
-            MockRequest.onPost(MockRequest.getApiUrl('/target/test')).reply(201);
-            MockRequest.onPost(MockRequest.getApiUrl('/target/test/dir')).reply(201);
-            MockRequest.onPost(MockRequest.getApiUrl(`/target/test/dir/${SUBDIR_ENCODED}`)).reply(201);
-            MockRequest.onPost(MockRequest.getApiUrl(`/target/test/dir/${SUBDIR_ENCODED}/subsubdir`)).reply(201);
-            MockRequest.onPost(MockRequest.getApiUrl('/target/test/file')).reply(201);
-
-            MockRequest.addDirectUpload('/target/test/dir');
-
-            const uploadOptions = new FileSystemUploadOptions()
-                .withUrl(MockRequest.getUrl('/target'))
-                .withBasicAuth('testauth')
-                .withHttpRetryCount(1)
-                .withHttpRetryDelay(10)
-                .withDeepUpload(true);
-
-            const fileSystemUpload = new FileSystemUpload(getTestOptions());
-            const result = await fileSystemUpload.upload(uploadOptions, [
-                '/test'
-            ]);
-
-            should(result).be.ok();
-            should(result.getTotalFiles()).be.exactly(2);
-            should(result.getTotalCompletedFiles()).be.exactly(result.getTotalFiles());
-            should(result.getTotalSize()).be.exactly(15);
-            should(result.getErrors().length).be.exactly(3);
         });
     });
 });
