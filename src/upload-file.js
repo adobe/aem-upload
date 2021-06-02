@@ -26,7 +26,7 @@ import ErrorCodes from './error-codes';
 function ensureRequiredOptions(options) {
     if (
         (!options.fileName && !options.fileUrl)
-        || !options.fileSize
+        || (!options.fileSize && options.fileSize !== 0)
         || (!options.filePath &&
             (!options.blob || !options.blob.slice))
     ) {
