@@ -186,4 +186,22 @@ describe('FileSystemUpload end-to-end tests', function() {
         return deleteAemPath(httpClient, uploadOptions);
     });
 
+    it('zero byte file test', async function() {
+        const targetFolder = getTargetFolder();
+        const uploadOptions = new FileSystemUploadOptions()
+            .withUrl(targetFolder);
+
+        setCredentials(uploadOptions);
+
+        const fileSystemUpload = new FileSystemUpload(getTestOptions());
+
+        monitorEvents(fileSystemUpload);
+
+        const uploadResult = await fileSystemUpload.upload(uploadOptions, [
+            Path.join(__dirname, 'edge-case-images/zero-byte.jpg'),
+        ]);
+        should(events.length).be.exactly(1);
+        should(events[0].event).be.exactly('fileerror');
+    });
+
 });
