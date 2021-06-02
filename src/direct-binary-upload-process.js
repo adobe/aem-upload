@@ -13,7 +13,6 @@ governing permissions and limitations under the License.
 import querystring from 'querystring';
 import { AEMUpload } from '@adobe/httptransfer/es2015';
 import httpTransferLogger from '@adobe/httptransfer/es2015/logger';
-// import debug from 'debug';
 
 import { getHttpTransferOptions } from './utils';
 
@@ -86,16 +85,11 @@ export default class DirectBinaryUploadProcess extends FileTransferHandler {
 
         const log = options.log;
         if (log) {
-            httpTransferLogger.debug.log = (...args) => log.debug.apply(log, args);
-            httpTransferLogger.info.log = (...args) => log.info.apply(log, args);
-            httpTransferLogger.warn.log = (...args) => log.warn.apply(log, args);
-            httpTransferLogger.error.log = (...args) => log.error.apply(log, args);
-            // debug.enable("httptransfer:*");
+            httpTransferLogger.debug = (...args) => log.debug.apply(log, args);
+            httpTransferLogger.info = (...args) => log.info.apply(log, args);
+            httpTransferLogger.warn = (...args) => log.warn.apply(log, args);
+            httpTransferLogger.error = (...args) => log.error.apply(log, args);
         }
-
-        httpTransferLogger.info("test info");
-        httpTransferLogger.warn("test warn");
-        httpTransferLogger.error("test error");
     }
 
     /**
