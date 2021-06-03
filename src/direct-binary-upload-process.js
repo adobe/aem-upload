@@ -101,10 +101,22 @@ export default class DirectBinaryUploadProcess extends FileTransferHandler {
      */
     async upload(uploadResult) {
         const aemUpload = new AEMUpload();
-        aemUpload.on('filestart', (data) => this.emit('filestart', data));
-        aemUpload.on('fileprogress', (data) => this.emit('fileprogress', data));
-        aemUpload.on('fileend', (data) => this.emit('fileend', data));
-        aemUpload.on('fileerror', (data) => this.emit('fileerror', data));
+        aemUpload.on('filestart', (data) => {
+            this.logInfo(`Upload START '${data.fileName}': ${data.fileSize} bytes`);
+            this.emit('filestart', data);
+        });
+        aemUpload.on('fileprogress', (data) => {
+            this.logInfo(`Upload PROGRESS '${data.fileName}': ${data.transferred} of ${data.fileSize} bytes`);
+            this.emit('fileprogress', data)
+        });
+        aemUpload.on('fileend', (data) => {
+            this.logInfo(`Upload COMPLETE '${data.fileName}': ${data.fileSize} bytes`);
+            this.emit('fileend', data);
+        });
+        aemUpload.on('fileerror', (data) => {
+            this.logError(`Upload FAILED '${data.fileName}': '${data.errors[0].message}'`)
+            this.emit('fileerror', data)
+        });
 
         const aemUploadOptions = getHttpTransferOptions(this.getOptions(), this.getUploadOptions());
         const fileCount = aemUploadOptions.uploadFiles.length;
