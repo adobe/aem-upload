@@ -197,7 +197,7 @@ describe('FileSystemUpload end-to-end tests', function() {
 
         monitorEvents(fileSystemUpload);
 
-        const uploadResult = await fileSystemUpload.upload(uploadOptions, [
+        await fileSystemUpload.upload(uploadOptions, [
             Path.join(__dirname, 'edge-case-images/zero-byte.jpg'),
         ]);
         should(events.length).be.exactly(1);
