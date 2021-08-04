@@ -10,6 +10,7 @@
     - [Controlling In-Progress Uploads](#controlling-in-progress-uploads)
   - [Uploading Local Files](#uploading-local-files)
     - [Supported File Options](#supported-file-options)
+  - [Logging](#logging)
 - [Features](#features)
 - [Releasing](#releasing)
 - [Todo](#todo)
@@ -826,6 +827,25 @@ There is a set of options, `FileSystemUploadOptions`, that are specific to uploa
         </tr>
     </tbody>
 </table>
+
+## Logging
+
+The library will log various messages as it goes through the process of uploading items. It will use whichever logger it's given, as long as the object supports methods `debug()`, `info()`, `warn()`, and `error()`. For maximum detail, the library also assumes that each of these methods can accept formatted messages: `log.info('message with %s', 'formatting');`. The logging will work regardless of formatting support, but there will be more information when formatting works correctly.
+
+To provide a logger to the library, pass a `log` element in the options sent into the `DirectBinaryUpload` constructor. Here is a simple example that will log all the library's messages to `console`:
+
+```
+const upload = new DirectBinary.DirectBinaryUpload({
+  log: {
+    debug: (...theArguments) => console.log.apply(null, theArguments),
+    info: (...theArguments) => console.log.apply(null, theArguments),
+    warn: (...theArguments) => console.log.apply(null, theArguments),
+    error: (...theArguments) => console.log.apply(null, theArguments),
+  }
+});
+```
+
+Note that this will also work with the `FileSystemUpload` constructor.
 
 # Features
 * Well tuning to take advantage of nodejs for best uploading performance
