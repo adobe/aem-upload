@@ -444,7 +444,12 @@ export function getHttpTransferOptions(options, directBinaryUploadOptions) {
     // single url and individual file names to the fileUrl format.
     const convertedFiles = directBinaryUploadOptions.getUploadFiles().map((uploadFile) => {
         const uploadFileInstance = new UploadFile(options, directBinaryUploadOptions, uploadFile);
-        return uploadFileInstance.toJSON();
+        const transferOptions = uploadFileInstance.toJSON();
+        if (uploadFile.blob) {
+            // ensure blob is passed through to transfer options
+            transferOptions.blob = uploadFile.blob;
+        }
+        return transferOptions;
     });
 
     return {

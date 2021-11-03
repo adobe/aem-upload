@@ -160,6 +160,17 @@ export default class UploadFile extends UploadOptionsBase {
     }
 
     /**
+     * Retrieves the headers that should be included with each part upload request.
+     * @returns {object} Simple object whose names are header names, and whose values
+     *  are header values.
+     */
+    getPartHeaders() {
+        ensureRequiredOptions(this.fileOptions);
+        const { partHeaders = {} } = this.fileOptions;
+        return partHeaders;
+    }
+
+    /**
      * Converts the class instance into a simple object representation.
      *
      * @returns {object} Simplified view of the class instance.
@@ -192,6 +203,9 @@ export default class UploadFile extends UploadOptionsBase {
 
         if (filePath) {
             json.filePath = filePath;
+        }
+        if (Object.keys(this.getPartHeaders()).length) {
+            json.multipartHeaders = this.getPartHeaders();
         }
         return json;
     }

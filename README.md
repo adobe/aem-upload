@@ -179,14 +179,28 @@ The `DirectBinaryUploadOptions` class supports the following options. Items with
                         </tr>
                         <tr>
                             <td>blob</td>
-                            <td>Array-like</td>
+                            <td>File</td>
                             <td>
-                                Value containing the data for a file. This can potentially be multiple
-                                types of values, as long as the value supports the <code>slice()</code> method (like
-                                an array). Note that either this value <i>or</i> <code>filePath</code>
+                                Data for a file. The only tested and supported value for this property is the <code>value</code> of an HTML <code>&lt;input type='file' /></code>.
+                                Note that either this property <i>or</i> <code>filePath</code>
                                 must be specified. This option is typically most useful when running the
-                                upload tool from a browser; the <code>value</code> of a <code>&lt;input type='file' /></code>
-                                can be used as the <code>blob</code> value.
+                                upload tool from a browser.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>partHeaders</td>
+                            <td>object</td>
+                            <td>
+                                Header values to be included with each part of this file that is transferred. The headers from `DirectBinaryUploadOptions` are
+                                only included in requests that are sent to the target instance; they are ignored when sending requests to the direct binary upload URIs
+                                provided by the instance. This option provides a means for specifying any additional headers that should be included in requests sent to
+                                these URIs.
+                                <br/>
+                                <br/>
+                                Default: <code>{}</code>
+                                <br/>
+                                <br/>
+                                Example: <code>{ 'user-agent': 'My User Agent' }</code>
                             </td>
                         </tr>
                         <tr>
@@ -255,9 +269,11 @@ options.withUploadFiles([
     {
         fileName: 'file2.jpg',
         fileSize: 2048,
-        blob: [
-            'h', 'e', 'l', 'l', 'o'
-        ]
+        // note that this assumes HTML similar to:
+        // &lt;form name="formName">
+        //   &lt;input type="file" name="fileInputName" />
+        // &lt;/form>
+        blob: document.forms['formName']['fileInputName'].files[0]
     }
 ]);</pre>
             </td>
