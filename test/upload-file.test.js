@@ -64,4 +64,29 @@ describe('UploadFile Tests', function() {
             blob: {}
         });
     });
+
+    it('test part headers', function() {
+        const uploadOptions = new DirectBinaryUploadOptions()
+            .withUrl('http://somefakeunittesturl');
+        let uploadFile = new UploadFile(getTestOptions(), uploadOptions, {
+            fileName: 'testfile.jpg',
+            fileSize: 1024,
+            filePath: '/test/file.jpg'
+        });
+        should(uploadFile.getPartHeaders()).be.ok();
+        should(uploadFile.getPartHeaders().missing).not.be.ok();
+        should(uploadFile.toJSON().multipartHeaders).not.be.ok();
+
+        uploadFile = new UploadFile(getTestOptions(), uploadOptions, {
+            fileName: 'testfile.jpg',
+            fileSize: 1024,
+            filePath: '/test/file.jpg',
+            partHeaders: {
+                hello: 'world!'
+            }
+        });
+        should(uploadFile.getPartHeaders()).be.ok();
+        should(uploadFile.getPartHeaders().hello).equal('world!');
+        should(uploadFile.toJSON().multipartHeaders.hello).equal('world!');
+    });
 });

@@ -72,7 +72,7 @@ class DirectBinaryUploadOptions {
 
     /**
      * If specified, an object containing headers that will be sent along with each
-     * request submitted to the target.
+     * request submitted to the target instance.
      *
      * The given headers will be merged with any headers specified previously using
      * the method.
@@ -269,11 +269,12 @@ class DirectBinaryUploadOptions {
      * @returns {Array} List of UploadFile instances as provided to the options instance.
      */
     getUploadFiles() {
-        return this.options.uploadFiles;
+        return this.options.uploadFiles || [];
     }
 
     /**
-     * Retrieves the headers that will be added to each request sent to the target.
+     * Retrieves the headers that will be added to each request sent to the target
+     * instance.
      *
      * @returns {object} The headers as provided to the options instance.
      */
