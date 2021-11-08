@@ -32,8 +32,6 @@ const TEMP_NAME_PATTERNS = [
     /^TestFile/, // InDesign: on file open, InDesign creates .dat.nosync* file, renames it TestFile, and deletes it
     /\.tmp$/i, // Illustrator: on save, creates one or more *.tmp files, renames them to original file name
     /\.~tmp$/i, // some default Windows applications use this file format
-    // OS X
-    /^DCIM/,
     // Windows
     /^desktop\.ini/i,
     /^Thumbs\.db/i,
