@@ -55,7 +55,7 @@ export const RegularExpressions = {
      * Will match values that contain characters that are invalid in AEM folder node
      * names.
      */
-    INVALID_FOLDER_CHARACTERS_REGEX: /[%;#,+?^{}\s"]/g,
+    INVALID_FOLDER_CHARACTERS_REGEX: /[%;#+?^{}\s"&]/g,
 
     /**
      * Will match values that contain characters that are invalid in AEM asset node
