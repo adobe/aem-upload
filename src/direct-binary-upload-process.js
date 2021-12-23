@@ -100,6 +100,20 @@ export default class DirectBinaryUploadProcess extends FileTransferHandler {
      * @returns {Promise} Resolves when all files have been uploaded.
      */
     async upload(uploadResult) {
+        if (typeof window !== "undefined" && typeof window.document !== "undefined") {
+            let tokenResult;
+            const origin = new URL(this.getUploadOptions().getUrl()).origin;
+            const tokenRequestUrl = `${origin}/libs/granite/csrf/token.json`;
+            const tokenRequest = new HttpRequest(this.getOptions(), tokenRequestUrl)
+                .withMethod(HttpRequest.Method.GET)
+                .withResponseType(HttpRequest.ResponseType.JSON)
+                .withUploadOptions(this.getUploadOptions());
+            const response = await this.getHttpClient().submit(tokenRequest, tokenResult);
+            this.uploadOptions.withHeaders({
+                'csrf-token': response.getData().token
+            });
+        }
+
         const aemUpload = new AEMUpload();
         aemUpload.on('filestart', (data) => {
             this.logInfo(`Upload START '${data.fileName}': ${data.fileSize} bytes`);

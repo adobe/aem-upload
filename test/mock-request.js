@@ -219,6 +219,23 @@ function processComplete(targetFolder, options) {
 }
 
 /**
+ * Does the work of handling the complete URI request for a CSRF token.
+ *
+ * @param {string} targetFolder The folder where the asset is being uploaded.
+ * @param {object} options Values that were passed to the request.
+ * @param {object} options.data Body passed to the request.
+ */
+ function returnToken() {
+    return new Promise(resolve => {
+        setTimeout(() => {
+            resolve([200, {
+                "token": "fakeCSRFtoken"
+            }]);
+        }, 100);
+    });
+}
+
+/**
  * Registers a reply that will be invoked when the initiate URI for a given folder is invoked.
  *
  * @param {string} targetFolder Folder whose initiate call is being invoked.
@@ -299,12 +316,17 @@ mock.removeOnComplete = function (targetFolder, targetFile) {
  */
 mock.addDirectUpload = function (targetFolder) {
     const fullUrl = this.getUrl(targetFolder);
+
     this.onPost(`${fullUrl}.initiateUpload.json`).reply(config => {
         return processInit(targetFolder, config);
     });
 
     this.onPost(`${fullUrl}.completeUpload.json`).reply(options => {
         return processComplete(targetFolder, options);
+    });
+
+    this.onGet(`${this.getHost()}/libs/granite/csrf/token.json`).reply(() => {
+        return returnToken();
     });
 };
 

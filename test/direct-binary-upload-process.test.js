@@ -31,7 +31,7 @@ describe('DirectBinaryUploadProcessTest', () => {
     });
 
     describe('upload', () => {
-        async function runCompleteTest(createVersion, versionLabel, versionComment, replace) {
+        async function runCompleteTest(createVersion, versionLabel, versionComment, replace, browser) {
             const targetFolder = `/target/folder-create-version-${new Date().getTime()}`;
             MockRequest.addDirectUpload(targetFolder);
             const fileData = {
@@ -61,6 +61,10 @@ describe('DirectBinaryUploadProcessTest', () => {
             const process = new DirectBinaryUploadProcess(getTestOptions(), options);
 
             await process.upload(new UploadResult(getTestOptions(), options));
+
+            if (browser) {
+                should(options.options.headers['csrf-token']).exist;
+            }
 
             // verify that complete request is correct
             const directUploads = MockRequest.getDirectUploads();
@@ -189,5 +193,20 @@ describe('DirectBinaryUploadProcessTest', () => {
             should(uploadFile.fileUrl).be.exactly('http://localhost/content/dam/target/file-upload-smoke/fileuploadsmoke.jpg');
             should(uploadFile.fileSize).be.exactly(1024);
         });
+
+        describe('in browser', async () => {
+            before(() => {
+                global.window = { document: {} };
+            });
+
+            after(() => {
+                delete global.window;
+            });
+
+            it('insert csrf token', async () => {
+                await runCompleteTest(true, 'label', 'comment', true, true);
+            });
+        });
+
     });
 });
