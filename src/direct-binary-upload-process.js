@@ -15,6 +15,7 @@ import { AEMUpload } from '@adobe/httptransfer/es2015';
 import httpTransferLogger from '@adobe/httptransfer/es2015/logger';
 
 import { getHttpTransferOptions } from './utils';
+import { getCSRFToken } from './csrf';
 
 import InitResponse from './init-response';
 import UploadError from './upload-error';
@@ -101,17 +102,11 @@ export default class DirectBinaryUploadProcess extends FileTransferHandler {
      */
     async upload(uploadResult) {
         if (typeof window !== "undefined" && typeof window.document !== "undefined") {
-            let tokenResult;
-            const origin = new URL(this.getUploadOptions().getUrl()).origin;
-            const tokenRequestUrl = `${origin}/libs/granite/csrf/token.json`;
-            const tokenRequest = new HttpRequest(this.getOptions(), tokenRequestUrl)
-                .withMethod(HttpRequest.Method.GET)
-                .withResponseType(HttpRequest.ResponseType.JSON)
-                .withUploadOptions(this.getUploadOptions());
-            const response = await this.getHttpClient().submit(tokenRequest, tokenResult);
+            const token = await getCSRFToken(this.getHttpClient(), this.getOptions(), this.getUploadOptions());
             this.uploadOptions.withHeaders({
-                'csrf-token': response.getData().token
+                'csrf-token': token
             });
+            this.logInfo(`successfully added retrieve CSRF token into request header`);
         }
 
         const aemUpload = new AEMUpload();

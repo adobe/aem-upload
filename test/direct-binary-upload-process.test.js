@@ -33,6 +33,7 @@ describe('DirectBinaryUploadProcessTest', () => {
     describe('upload', () => {
         async function runCompleteTest(createVersion, versionLabel, versionComment, replace, browser) {
             const targetFolder = `/target/folder-create-version-${new Date().getTime()}`;
+            MockRequest.addCSRF();
             MockRequest.addDirectUpload(targetFolder);
             const fileData = {
                 fileName: 'myasset.jpg',
@@ -64,6 +65,8 @@ describe('DirectBinaryUploadProcessTest', () => {
 
             if (browser) {
                 should(options.options.headers['csrf-token']).exist;
+            } else {
+                should(options.options.headers['csrf-token']).not.exist;
             }
 
             // verify that complete request is correct
@@ -194,7 +197,7 @@ describe('DirectBinaryUploadProcessTest', () => {
             should(uploadFile.fileSize).be.exactly(1024);
         });
 
-        describe('in browser', async () => {
+        describe.only('in browser', async () => {
             before(() => {
                 global.window = { document: {} };
             });
@@ -205,6 +208,33 @@ describe('DirectBinaryUploadProcessTest', () => {
 
             it('insert csrf token', async () => {
                 await runCompleteTest(true, 'label', 'comment', true, true);
+            });
+
+            it('should throw an error if insert csrf token fails', async () => {
+                const targetFolder = `/target/folder-create-version-${new Date().getTime()}`;
+                MockRequest.addDirectUpload(targetFolder);
+                const options = new DirectBinaryUploadOptions()
+                    .withUrl(MockRequest.getUrl(targetFolder))
+                    .withUploadFiles([{
+                        fileName: 'myasset.jpg',
+                        fileSize: 512,
+                        blob: new MockBlob(),
+                    }]);
+                const process = new DirectBinaryUploadProcess(getTestOptions(), options);
+
+                let processErr;
+                try {
+                    await process.upload(new UploadResult(getTestOptions(), options));
+                } catch (e) {
+                    processErr = e;
+                }
+
+                should(processErr).be.Error();
+                should(processErr.message).containEql('Fail to retrieve CSRF token before uploading');
+                should(options.options.headers['csrf-token']).not.exist;
+
+                const directUploads = MockRequest.getDirectUploads();
+                should(directUploads).not.exist;
             });
         });
 

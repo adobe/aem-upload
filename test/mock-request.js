@@ -231,7 +231,7 @@ function processComplete(targetFolder, options) {
             resolve([200, {
                 "token": "fakeCSRFtoken"
             }]);
-        }, 100);
+        }, 10);
     });
 }
 
@@ -324,7 +324,14 @@ mock.addDirectUpload = function (targetFolder) {
     this.onPost(`${fullUrl}.completeUpload.json`).reply(options => {
         return processComplete(targetFolder, options);
     });
+};
 
+/**
+ * Registers a mock endpoint that will return a fake csrf token
+ *
+ * @param {string} targetFolder Folder path.
+ */
+mock.addCSRF = function () {
     this.onGet(`${this.getHost()}/libs/granite/csrf/token.json`).reply(() => {
         return returnToken();
     });
