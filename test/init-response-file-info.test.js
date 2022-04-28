@@ -22,7 +22,7 @@ describe('InitResponseFileInfo Tests', function() {
     it('test get target file path', function() {
         const options = {};
         const uploadOptions = new DirectBinaryUploadOptions()
-            .withUrl('http://somereallyfakeunittesturl/content/dam/test%20path');
+            .withUrl('http://somereallyfakeunittesturl/content/dam/test%2Bpath');
         const rawFileData = {
             fileName: 'asset.jpg',
             fileSize: 1024,
@@ -30,6 +30,10 @@ describe('InitResponseFileInfo Tests', function() {
         };
         const uploadFile = new UploadFile(options, uploadOptions, rawFileData);
         const fileInfo = new InitResponseFileInfo(options, uploadOptions, uploadFile, rawFileData);
-        should(fileInfo.getTargetFilePath()).be.exactly('/content/dam/test path/asset.jpg');
+        should(fileInfo.getTargetFilePath()).be.exactly('/content/dam/test+path/asset.jpg');
+
+        const eventData = fileInfo.getFileEventData();
+        should(eventData.targetFolder).be.exactly('/content/dam/test+path');
+        should(eventData.targetFile).be.exactly('/content/dam/test+path/asset.jpg');
     });
 });

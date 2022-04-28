@@ -247,7 +247,7 @@ class DirectBinaryUploadOptions {
      */
     getTargetFolderPath() {
         const { pathname } = URL.parse(this.getUrl());
-        return decodeURI(pathname);
+        return decodeURIComponent(pathname);
     }
 
     /**
