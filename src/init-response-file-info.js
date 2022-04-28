@@ -52,6 +52,8 @@ export default class InitResponseFileInfo extends UploadOptionsBase {
     /**
      * Retrieves the full path to the location where the file will be uploaded in the target instance.
      *
+     * This value will not be URL encoded.
+     *
      * @returns {string} Full path to the file.
      */
     getTargetFilePath() {
@@ -168,7 +170,7 @@ export default class InitResponseFileInfo extends UploadOptionsBase {
      * @returns {object} Event information for the file.
      */
     getFileEventData() {
-        const targetFolder = decodeURI(this.getUploadOptions().getTargetFolderPath());
+        const targetFolder = this.getUploadOptions().getTargetFolderPath();
         return {
             fileName: this.getFileName(),
             fileSize: this.getFileSize(),

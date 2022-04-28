@@ -139,3 +139,23 @@ module.exports.deleteAemPath = async function(httpClient, uploadOptions, relativ
 
     return httpClient.submit(request);
 }
+
+module.exports.createAemFolder = async function(httpClient, uploadOptions, folderName) {
+    const createUrl = `${uploadOptions.getUrl().replace('/content/dam', `/api/assets/${encodeURIComponent(folderName)}`)}`;
+
+    const data = JSON.stringify({
+        class: 'assetFolder',
+        properties: {
+            title: 'Test Folder'
+        }
+    });
+    const request = new HttpRequest(getTestOptions(), createUrl)
+        .withUploadOptions(uploadOptions)
+        .withMethod(HttpRequest.Method.POST)
+        .withHeaders({
+            'content-type': 'application/json',
+        })
+        .withData(data, data.length);
+
+    return httpClient.submit(request);
+}
