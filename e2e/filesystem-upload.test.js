@@ -22,6 +22,8 @@ const {
     deleteAemPath,
     getHttpClient,
     getPathTitle,
+    createAemFolder,
+    getAemEndpoint,
 } = require('./e2eutils');
 
 const DirectBinaryUploadOptions = importFile('direct-binary-upload-options');
@@ -203,5 +205,42 @@ describe('FileSystemUpload end-to-end tests', function() {
         should(events.length).be.exactly(1);
         should(events[0].event).be.exactly('fileerror');
     });
+
+    it('GB18030 folder upload test', async function() {
+        const folderName = `aem-upload-e2e_中文_${new Date().getTime()}`;
+        const targetFolder = `${getAemEndpoint()}/content/dam`;
+        const uploadOptions = new DirectBinaryUploadOptions()
+            .withUrl(targetFolder);
+
+        setCredentials(uploadOptions);
+
+        const httpClient = getHttpClient(uploadOptions);
+
+        await createAemFolder(httpClient, uploadOptions, folderName);
+
+        const fileSystemUpload = new FileSystemUpload(getTestOptions());
+
+        monitorEvents(fileSystemUpload);
+
+        const uploadUrl = `${targetFolder}/${encodeURI(folderName)}`;
+        uploadOptions.withUrl(uploadUrl);
+
+        const uploadResult = await fileSystemUpload.upload(uploadOptions, [
+            Path.join(__dirname, 'images/climber-ferrata-la-torre-di-toblin.jpg'),
+        ]);
+
+        should(uploadResult).be.ok();
+
+        await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/climber-ferrata-la-torre-di-toblin.jpg');
+
+        const doubleEncodedUrl = `${targetFolder}/${encodeURI(encodeURI(folderName))}`;
+        uploadOptions.withUrl(doubleEncodedUrl);
+
+        const doubleEncodedExists = await doesAemPathExist(httpClient, uploadOptions, '/climber-ferrata-la-torre-di-toblin.jpg');
+        should(doubleEncodedExists).not.be.ok();
+
+        uploadOptions.withUrl(uploadUrl);
+        return deleteAemPath(httpClient, uploadOptions);
+    })
 
 });

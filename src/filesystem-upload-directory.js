@@ -50,6 +50,9 @@ export default class FileSystemUploadDirectory {
     /**
      * Retrieves the full, remote path (only) of the item. Will be built
      * using the remote node name provided in the constructor.
+     *
+     * The value will not be URL encoded.
+     *
      * @returns {string} Path ready for use in a URL.
      */
     getRemotePath() {

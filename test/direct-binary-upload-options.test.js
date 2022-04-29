@@ -47,4 +47,11 @@ describe('DirectBinaryUploadOptionsTest', () => {
             .withAddContentLengthHeader(true);
         should(options).be.ok();
     });
+
+    it('test getTargetFolderPath', () => {
+        const options = new DirectBinaryUploadOptions()
+            .withUrl('http://somereallyfakeurlhopefully/content/dam/test%20path/asset.jpg');
+        should(options.getTargetFolderPath()).be.exactly('/content/dam/test path/asset.jpg');
+    });
+
 });

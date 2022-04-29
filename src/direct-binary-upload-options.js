@@ -241,11 +241,13 @@ class DirectBinaryUploadOptions {
      * Retrieves the path to the folder where the files will be uploaded. This value
      * is based on the URL that was provided to the options.
      *
+     * The path value will not be URL encoded.
+     *
      * @returns {string} Full path to a folder on the target.
      */
     getTargetFolderPath() {
         const { pathname } = URL.parse(this.getUrl());
-        return pathname;
+        return decodeURIComponent(pathname);
     }
 
     /**
