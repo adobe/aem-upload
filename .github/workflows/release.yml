@@ -20,6 +20,8 @@ jobs:
         node-version: 10.19
     - name: Install dependencies (all)
       run: npm install
+    - name: Add safe repository
+      run: git config --global --add safe.directory /github/workspace
     - name: Publish if commit message matches release pattern
       uses: mkiki/npm-publish-action@c4315ef5790b7bcec2cbb75b34e37681a409d78d
       with:
