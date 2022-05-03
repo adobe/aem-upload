@@ -1,0 +1,35 @@
+{
+    "plugins": [
+      ["@semantic-release/commit-analyzer", {
+        "preset": "eslint",
+        "releaseRules": [
+        {
+          "subject": "*",
+          "release": false
+        },
+        {
+          "subject": "BREAKING-RELEASE:*",
+          "release": "major"
+        },
+        {
+          "subject": "FEATURE-RELEASE:*",
+          "release": "minor"
+        },
+        {
+          "subject": "BUGFIX-RELEASE:*",
+          "release": "patch"
+        }
+        ]
+      }],
+      ["@semantic-release/release-notes-generator", {
+        "preset": "eslint"
+      }],
+      ["@semantic-release/npm"],
+      ["@semantic-release/git", {
+        "preset": "eslint",
+        "assets": ["package.json", "package-lock.json"],
+        "message": " [ci skip] no-release: version number update"
+      }],
+      ["@semantic-release/github"]
+    ]
+}
