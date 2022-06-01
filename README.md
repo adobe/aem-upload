@@ -884,6 +884,9 @@ that the commit message of the PR begins with one of the following values:
 
 PRs whose messages do not meet this format will _not_ generate a new release.
 
+Release notes are generated based on semantic-release's [eslint](https://github.com/conventional-changelog/conventional-changelog/tree/master/packages/conventional-changelog-eslint) preset. Follow the guidelines
+in the preset's documentation to include commit messages in a release's notes.
+
 # Todo
 * Pause/resume uploads
 
