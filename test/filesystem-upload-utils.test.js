@@ -24,14 +24,14 @@ describe('FileSystemUploadUtils Tests', function() {
     });
 
     it('test clean folder name', async function () {
-        should(await cleanFolderName(options, 'A b:c')).be.exactly('a-b-c');
+        should(await cleanFolderName(options, 'A b:c.d')).be.exactly('a-b-c-d');
         options.withFolderNodeNameProcessor(async (folderName) => folderName)
             .withInvalidCharacterReplaceValue('_');
         should(await cleanFolderName(options, 'A b:c')).be.exactly('A b_c');
     });
 
     it('test clean asset name', async function () {
-        should(await cleanAssetName(options, 'A #b:c.jpg')).be.exactly('A -b-c.jpg');
+        should(await cleanAssetName(options, 'A #b:c.d.jpg')).be.exactly('A -b-c.d.jpg');
         options.withAssetNodeNameProcessor(async (assetName) => assetName)
             .withInvalidCharacterReplaceValue('_');
         should(await cleanAssetName(options, 'A #b:c')).be.exactly('A #b_c');
