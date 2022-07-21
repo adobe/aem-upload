@@ -272,7 +272,12 @@ describe('UtilsTest', function () {
             headers: {},
             concurrent: true,
             maxConcurrent: 5,
-            uploadFiles: []
+            uploadFiles: [],
+            requestOptions: {
+                requestTimeout: 60000,
+                retryCount: 3,
+                retryDelay: 5000
+            }
         });
 
         uploadOptions.withConcurrent(false)
@@ -294,7 +299,11 @@ describe('UtilsTest', function () {
                 fileSize: 2048,
                 fileName: 'blob-file.jpg',
                 blob: [1, 2, 3]
-            }]);
+            }])
+            .withHttpRetryCount(5)
+            .withHttpRetryDelay(1000)
+            .withHttpRequestTimeout(8000)
+            .withHttpOptions({ agent: 'test' });
         httpTransfer = getHttpTransferOptions(getTestOptions(), uploadOptions);
         should(httpTransfer).deepEqual({
             headers: {
@@ -317,7 +326,13 @@ describe('UtilsTest', function () {
                 blob: [1, 2, 3],
                 fileSize: 2048,
                 fileUrl: 'http://localhost/content/dam/blob-file.jpg'
-            }]
+            }],
+            requestOptions: {
+                requestTimeout: 8000,
+                retryCount: 5,
+                retryDelay: 1000,
+                agent: 'test'
+            }
         });
     });
 });

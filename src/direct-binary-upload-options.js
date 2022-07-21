@@ -229,6 +229,21 @@ class DirectBinaryUploadOptions {
     }
 
     /**
+     * Sets any raw options that will be passed directly to the underlying HTTP client. Setting this
+     * value will _merge_ the options with any existing values that may have been set. Duplicate
+     * options will be overwritten with the incoming value provided to this method.
+     * @param {object} options 
+     * @returns {DirectBinaryUploadOptions} The current options instance. Allows for chaining.
+     */
+    withHttpOptions(options) {
+        this.options = {
+            ...this.options,
+            ...options,
+        };
+        return this;
+    }
+
+    /**
      * Retrieves the target URL to which files will be uploaded.
      *
      * @returns {string} Target URL as provided to the options instance.

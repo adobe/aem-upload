@@ -11,6 +11,7 @@
   - [Uploading Local Files](#uploading-local-files)
     - [Supported File Options](#supported-file-options)
   - [Logging](#logging)
+  - [Proxy Support](#proxy-support)
 - [Features](#features)
 - [Releasing](#releasing)
 - [Todo](#todo)
@@ -398,6 +399,30 @@ options.withUploadFiles([
                 <b>Example</b>
                 <br/>
                 <code>options.withHttpRetryDelay(3000);</code>
+            </td>
+        </tr>
+        <tr>
+            <td>http options</td>
+            <td>object</td>
+            <td>
+                Additional options that will be passed directly to the underlying HTTP client. Supported options and values are those
+                provided by the <a href="https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch" target="_blank">Fetch API</a> (for browsers), and
+                <a href="https://www.npmjs.com/package/node-fetch" target="_blank">Node Fetch</a> (for Node.JS).
+                <br/>
+                <br/>
+                The options passed into this method will be merged with any options that may have been set separately. New options
+                will be added, existing options will be overwritten.
+                <br/>
+                <br/>
+                <b>Example</b>
+                <br/>
+                <code>options.withHttpOptions({</code>
+                <br/>
+                <code>&nbsp;&nbsp;&nbsp;&nbsp;'agent': customAgent,</code>
+                <br/>
+                <code>&nbsp;&nbsp;&nbsp;&nbsp;'redirect': 'follow'</code>
+                <br/>
+                <code>});</code>
             </td>
         </tr>
     </tbody>
@@ -862,6 +887,20 @@ const upload = new DirectBinary.DirectBinaryUpload({
 ```
 
 Note that this will also work with the `FileSystemUpload` constructor.
+
+## Proxy Support
+
+When running in a browser, the library will use whichever proxy settings are detected and applied by the browser. In Node.JS, all HTTP requests are sent directly to the target, without going through a proxy. Auto detecting a system's proxy settings is not supported in Node.JS, but
+consumers can use `DirectBinaryUploadOptions.withHttpOptions()` to modify the default behavior in either context.
+
+For example, use the `agent` option defined by the `Fetch API`:
+
+```
+const options = new DirectBinaryUploadOptions()
+    .withHttpOptions({
+        agent: myProxyAgent
+    });
+```
 
 # Features
 * Well tuning to take advantage of nodejs for best uploading performance

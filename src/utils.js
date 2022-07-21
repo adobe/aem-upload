@@ -450,10 +450,17 @@ export function getHttpTransferOptions(options, directBinaryUploadOptions) {
         return transferOptions;
     });
 
+    const requestOptions = { ...directBinaryUploadOptions.toJSON() };
+    delete requestOptions.url;
+    delete requestOptions.headers;
+    delete requestOptions.uploadFiles;
+    delete requestOptions.maxConcurrent;
+
     return {
         uploadFiles: convertedFiles,
         headers: directBinaryUploadOptions.getHeaders(),
         concurrent: directBinaryUploadOptions.isConcurrent(),
-        maxConcurrent: directBinaryUploadOptions.getMaxConcurrent()
+        maxConcurrent: directBinaryUploadOptions.getMaxConcurrent(),
+        requestOptions,
     };
 }

@@ -54,4 +54,22 @@ describe('DirectBinaryUploadOptionsTest', () => {
         should(options.getTargetFolderPath()).be.exactly('/content/dam/test path/asset.jpg');
     });
 
+    it('test withHttpOptions', () => {
+        const options = new DirectBinaryUploadOptions()
+            .withUrl('http://somereallyfakeurlhopefully/content/dam/test%20path/asset.jpg')
+            .withMaxConcurrent(2)
+            .withHttpOptions({
+                customOption: 'test',
+                maxConcurrent: 6,
+            });
+        const {
+            url,
+            maxConcurrent,
+            customOption,
+        } = options.toJSON();
+        should(url).be.exactly('http://somereallyfakeurlhopefully/content/dam/test%20path/asset.jpg');
+        should(maxConcurrent).be.exactly(6);
+        should(customOption).be.exactly('test');
+    });
+
 });
