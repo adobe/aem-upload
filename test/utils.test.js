@@ -29,6 +29,7 @@ const {
     joinUrlPath,
     trimContentDam,
     walkDirectory,
+    getProxyAgentOptions,
     getHttpTransferOptions
 } = importFile('utils', {
     './fs-promise': {
@@ -48,6 +49,7 @@ const {
 });
 const { DefaultValues } = importFile('constants');
 const DirectBinaryUploadOptions = importFile('direct-binary-upload-options');
+const HttpProxy = importFile('http-proxy');
 
 describe('UtilsTest', function () {
     function addFileSystem(fullPath, isDir, size = 0) {
@@ -264,6 +266,26 @@ describe('UtilsTest', function () {
         should(file2 >= 0).be.ok();
     });
 
+    it('test get proxy agent options', () => {
+        const uploadOptions = new DirectBinaryUploadOptions();
+        should(getProxyAgentOptions(uploadOptions)).not.be.ok();
+        uploadOptions.withHttpProxy(new HttpProxy('http://localhost:1234'));
+        let proxyOptions = getProxyAgentOptions(uploadOptions);
+        should(proxyOptions.protocol).be.exactly('http:');
+        should(proxyOptions.hostname).be.exactly('localhost');
+        should(proxyOptions.port).be.exactly('1234');
+        should(proxyOptions.auth).not.be.ok();
+
+        uploadOptions.withHttpProxy(
+            new HttpProxy('https://127.0.0.1:4321')
+                .withBasicAuth('admin', 'pass'));
+        proxyOptions = getProxyAgentOptions(uploadOptions);
+        should(proxyOptions.protocol).be.exactly('https:');
+        should(proxyOptions.hostname).be.exactly('127.0.0.1');
+        should(proxyOptions.port).be.exactly('4321');
+        should(proxyOptions.auth).be.exactly('admin:pass');
+    });
+
     it('test get http transfer options', function() {
         const uploadOptions = new DirectBinaryUploadOptions()
             .withUrl('http://localhost/content/dam');
@@ -272,12 +294,7 @@ describe('UtilsTest', function () {
             headers: {},
             concurrent: true,
             maxConcurrent: 5,
-            uploadFiles: [],
-            requestOptions: {
-                requestTimeout: 60000,
-                retryCount: 3,
-                retryDelay: 5000
-            }
+            uploadFiles: []
         });
 
         uploadOptions.withConcurrent(false)
@@ -300,11 +317,12 @@ describe('UtilsTest', function () {
                 fileName: 'blob-file.jpg',
                 blob: [1, 2, 3]
             }])
-            .withHttpRetryCount(5)
-            .withHttpRetryDelay(1000)
-            .withHttpRequestTimeout(8000)
-            .withHttpOptions({ agent: 'test' });
+            .withHttpProxy(new HttpProxy('http://localhost:1234'));
         httpTransfer = getHttpTransferOptions(getTestOptions(), uploadOptions);
+        should(httpTransfer.requestOptions).be.ok();
+        should(httpTransfer.requestOptions.agent).be.ok();
+        should(httpTransfer.requestOptions.agent.constructor.name).be.exactly('HttpProxyAgent');
+        delete httpTransfer.requestOptions;
         should(httpTransfer).deepEqual({
             headers: {
                 hello: 'world!'
@@ -326,13 +344,13 @@ describe('UtilsTest', function () {
                 blob: [1, 2, 3],
                 fileSize: 2048,
                 fileUrl: 'http://localhost/content/dam/blob-file.jpg'
-            }],
-            requestOptions: {
-                requestTimeout: 8000,
-                retryCount: 5,
-                retryDelay: 1000,
-                agent: 'test'
-            }
+            }]
         });
+
+        uploadOptions.withHttpProxy(new HttpProxy('https://localhost:1234'));
+        httpTransfer = getHttpTransferOptions(getTestOptions(), uploadOptions);
+        should(httpTransfer.requestOptions).be.ok();
+        should(httpTransfer.requestOptions.agent).be.ok();
+        should(httpTransfer.requestOptions.agent.constructor.name).be.exactly('HttpsProxyAgent');
     });
 });

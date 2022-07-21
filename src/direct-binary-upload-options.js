@@ -229,17 +229,12 @@ class DirectBinaryUploadOptions {
     }
 
     /**
-     * Sets any raw options that will be passed directly to the underlying HTTP client. Setting this
-     * value will _merge_ the options with any existing values that may have been set. Duplicate
-     * options will be overwritten with the incoming value provided to this method.
-     * @param {object} options 
+     * Defines the proxy that all HTTP requests sent by the client should use.
+     * @param {HttpProxy} proxy Information about the proxy that the upload should use.
      * @returns {DirectBinaryUploadOptions} The current options instance. Allows for chaining.
      */
-    withHttpOptions(options) {
-        this.options = {
-            ...this.options,
-            ...options,
-        };
+    withHttpProxy(proxy) {
+        this.proxy = proxy;
         return this;
     }
 
@@ -371,13 +366,30 @@ class DirectBinaryUploadOptions {
     }
 
     /**
+     * Retrieves the HTTP proxy in use by the options. Will be falsy if no proxy is set.
+     * @returns {HttpProxy} Options for the upload's HTTP proxy.
+     */
+    getHttpProxy() {
+        return this.proxy;
+    }
+
+    /**
      * Overridden to return an object appropriate for representing this class as a
      * JSON object.
      *
      * @returns {object} The class's JSON representation.
      */
     toJSON() {
-        return this.options;
+        const json = {
+            ...this.options
+        };
+
+        const proxy = this.getHttpProxy();
+        if (proxy) {
+            json.proxy = proxy.toJSON();
+        }
+
+        return json;
     }
 }
 

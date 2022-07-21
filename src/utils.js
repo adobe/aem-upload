@@ -14,6 +14,9 @@ import fs from './fs-promise';
 import Async from 'async';
 import Path from 'path';
 import AsyncLock from 'async-lock';
+import URL from 'url';
+import HttpProxyAgent from 'http-proxy-agent';
+import HttpsProxyAgent from 'https-proxy-agent';
 
 import { DefaultValues } from './constants';
 import UploadError from './upload-error';
@@ -431,6 +434,26 @@ export async function getLock(lockId, callback) {
 }
 
 /**
+ * Builds proxy agent options based on upload options. Note that the method may return a falsy value, which
+ * indicates that a proxy does not apply.
+ * @param {DirectBinaryUploadOptions} directBinaryUploadOptions Options from which to retrieve information.
+ * @returns {object} Options for either http-proxy-agent or https-proxy-agent.
+ */
+export function getProxyAgentOptions(directBinaryUploadOptions) {
+    const proxy = directBinaryUploadOptions.getHttpProxy();
+    if (proxy) {
+        const proxyOptions = proxy.getUrl();
+        const user = proxy.getBasicAuthUser();
+        const password = proxy.getBasicAuthPassword();
+        if (user) {
+            proxyOptions.auth = `${user}:${password}`;
+        }
+        return proxyOptions;
+    }
+    return false;
+}
+
+/**
  * Converts options provided in a DirectBinaryUploadOptions instance to a format
  * suitable to pass to the httptransfer module.
  * @param {object} options General upload object options.
@@ -450,17 +473,36 @@ export function getHttpTransferOptions(options, directBinaryUploadOptions) {
         return transferOptions;
     });
 
-    const requestOptions = { ...directBinaryUploadOptions.toJSON() };
-    delete requestOptions.url;
-    delete requestOptions.headers;
-    delete requestOptions.uploadFiles;
-    delete requestOptions.maxConcurrent;
-
-    return {
+    const transferOptions = {
         uploadFiles: convertedFiles,
         headers: directBinaryUploadOptions.getHeaders(),
         concurrent: directBinaryUploadOptions.isConcurrent(),
         maxConcurrent: directBinaryUploadOptions.getMaxConcurrent(),
-        requestOptions,
     };
+
+    const proxyOptions = getProxyAgentOptions(directBinaryUploadOptions);
+    if (proxyOptions) {
+        const { protocol = 'http:' } = proxyOptions;
+        transferOptions.requestOptions = {
+            agent: protocol === 'https:' ? new HttpsProxyAgent(proxyOptions) : new HttpProxyAgent(proxyOptions)
+        };
+    }
+
+    return transferOptions;
+}
+
+/**
+ * Validates and retrieves basic authentication information from a set of options. Will throw an error
+ * if only one of username or password is provided.
+ * @param {object} options Options from which "username" and "password" properties will be retrieved.
+ */
+export function getBasicAuth(options) {
+    const { username, password } = options;
+    if (username && !password) {
+        throw new UploadError('password is required for basic auth', ErrorCodes.INVALID_OPTIONS);
+    }
+    if (password && !username) {
+        throw new UploadError('username is required for basic auth', ErrorCodes.INVALID_OPTIONS);
+    }
+    return options;
 }

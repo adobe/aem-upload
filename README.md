@@ -402,27 +402,21 @@ options.withUploadFiles([
             </td>
         </tr>
         <tr>
-            <td>http options</td>
-            <td>object</td>
+            <td>http proxy</td>
+            <td>HttpProxy</td>
             <td>
-                Additional options that will be passed directly to the underlying HTTP client. Supported options and values are those
-                provided by the <a href="https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch" target="_blank">Fetch API</a> (for browsers), and
-                <a href="https://www.npmjs.com/package/node-fetch" target="_blank">Node Fetch</a> (for Node.JS).
-                <br/>
-                <br/>
-                The options passed into this method will be merged with any options that may have been set separately. New options
-                will be added, existing options will be overwritten.
+                Information about the proxy that should be used for all HTTP requests sent by the library. See <a href="#proxy-support" target="_blank">proxy support</a> documentation for additional information.
                 <br/>
                 <br/>
                 <b>Example</b>
                 <br/>
-                <code>options.withHttpOptions({</code>
+                <code>import { HttpProxy } from '@adobe/aem-upload';
                 <br/>
-                <code>&nbsp;&nbsp;&nbsp;&nbsp;'agent': customAgent,</code>
+                <code>options.withHttpProxy(</code>
                 <br/>
-                <code>&nbsp;&nbsp;&nbsp;&nbsp;'redirect': 'follow'</code>
+                <code>&nbsp;&nbsp;new HttpProxy('http://my-proxy:1234')</code>
                 <br/>
-                <code>});</code>
+                <code>&nbsp;&nbsp;&nbsp;&nbsp;.withBasicAuth('user', 'pass'));</code>
             </td>
         </tr>
     </tbody>
@@ -891,16 +885,7 @@ Note that this will also work with the `FileSystemUpload` constructor.
 ## Proxy Support
 
 When running in a browser, the library will use whichever proxy settings are detected and applied by the browser. In Node.JS, all HTTP requests are sent directly to the target, without going through a proxy. Auto detecting a system's proxy settings is not supported in Node.JS, but
-consumers can use `DirectBinaryUploadOptions.withHttpOptions()` to modify the default behavior in either context.
-
-For example, use the `agent` option defined by the `Fetch API`:
-
-```
-const options = new DirectBinaryUploadOptions()
-    .withHttpOptions({
-        agent: myProxyAgent
-    });
-```
+consumers can use `DirectBinaryUploadOptions.withHttpProxy()` to modify the default behavior in either context.
 
 # Features
 * Well tuning to take advantage of nodejs for best uploading performance
