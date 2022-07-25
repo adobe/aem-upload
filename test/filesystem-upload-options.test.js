@@ -15,6 +15,7 @@ const should = require('should');
 const { importFile } = require('./testutils');
 
 const FileSystemUploadOptions = importFile('filesystem-upload-options');
+const HttpProxy = importFile('http-proxy');
 
 describe('FileSystemUploadOptions Tests', function() {
     let options;
@@ -43,15 +44,18 @@ describe('FileSystemUploadOptions Tests', function() {
         should(copiedOptions.getMaxUploadFiles()).be.exactly(20);
         should(copiedOptions.getDeepUpload()).be.ok();
         should(copiedOptions.getUploadFileOptions().hello).be.exactly('world');
+        should(copiedOptions.getHttpProxy()).not.be.ok();
         should(await copiedOptions.getFolderNodeNameProcessor()('folder name')).be.exactly('folder name');
         should(await copiedOptions.getAssetNodeNameProcessor()('asset#name')).be.exactly('asset#name');
 
         options = new FileSystemUploadOptions()
             .withFolderNodeNameProcessor('invalid')
             .withAssetNodeNameProcessor('invalid')
-            .withInvalidCharacterReplaceValue(() => {});
+            .withInvalidCharacterReplaceValue(() => {})
+            .withHttpProxy(new HttpProxy('http://reallyfakehostname'));
         copiedOptions = FileSystemUploadOptions.fromOptions(options);
         should(copiedOptions).be.ok();
+        should(copiedOptions.getHttpProxy()).be.ok();
         should(copiedOptions.getInvalidCharacterReplaceValue()).be.exactly('-');
         should(await copiedOptions.getFolderNodeNameProcessor()('folder name')).be.exactly('folder-name');
         should(await copiedOptions.getAssetNodeNameProcessor()('asset#name')).be.exactly('asset-name');

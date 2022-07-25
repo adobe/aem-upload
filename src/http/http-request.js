@@ -49,8 +49,20 @@ class HttpRequest extends UploadBase {
      * @returns The current request instance, so that methods can be chained.
      */
     withUploadOptions(uploadOptions) {
+        if (uploadOptions.getHttpProxy()) {
+            this.withProxy(uploadOptions.getHttpProxy());
+        }
         return this.withHeaders(uploadOptions.getHeaders())
             .withTimeout(uploadOptions.getHttpRequestTimeout());
+    }
+
+    /**
+     * Sets information about the proxy that will be used for the request.
+     * @param {HttpProxy} proxy Proxy to use.
+     */
+    withProxy(proxy) {
+        this.requestOptions.proxy = proxy.toJSON();
+        return this;
     }
 
     /**
