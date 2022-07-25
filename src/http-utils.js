@@ -17,6 +17,8 @@ import HttpsProxyAgent from 'https-proxy-agent';
 
 import { exponentialRetry } from './utils';
 import UploadFile from './upload-file';
+import UploadError from './upload-error';
+import ErrorCodes from './error-codes';
 
 /**
  * Retrieves a token that can be used to cancel an http request.
