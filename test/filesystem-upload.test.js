@@ -20,10 +20,9 @@ const {
     getEvent,
 } = require('./testutils');
 const MockRequest = require('./mock-request');
-const { expectation } = require('sinon');
-const { dir } = require('async');
 const HttpClient = importFile('http/http-client');
 const FileSystemUploadDirectory = importFile('filesystem-upload-directory');
+const HttpProxy = importFile('http-proxy');
 
 function MockDirectBinaryUpload() {
 
@@ -183,7 +182,8 @@ describe('FileSystemUpload Tests', () => {
 
             const uploadOptions = new FileSystemUploadOptions()
                 .withUrl(MockRequest.getUrl('/folder/structure'))
-                .withBasicAuth('testauth');
+                .withBasicAuth('testauth')
+                .withHttpProxy(new HttpProxy('http://somereallyfakeproxyhost'));
             const path1Dir = new FileSystemUploadDirectory(uploadOptions, '/prefix/path1', 'path1');
             const fsUpload = new FileSystemUpload(getTestOptions());
             await fsUpload.createUploadDirectories(uploadOptions, httpClient, [
@@ -196,8 +196,14 @@ describe('FileSystemUpload Tests', () => {
             const { post: posts = [] } = MockRequest.history;
             should(posts.length).be.exactly(3);
             should(posts[0].url).be.exactly(MockRequest.getApiUrl('/folder/structure/path1'))
+            should(posts[0].proxy).be.ok();
+            should(posts[0].proxy.host).be.exactly('somereallyfakeproxyhost');
             should(posts[1].url).be.exactly(MockRequest.getApiUrl('/folder/structure/path1/dir1'))
+            should(posts[1].proxy).be.ok();
+            should(posts[1].proxy.host).be.exactly('somereallyfakeproxyhost');
             should(posts[2].url).be.exactly(MockRequest.getApiUrl('/folder/structure/path1/dir2'))
+            should(posts[2].proxy).be.ok();
+            should(posts[2].proxy.host).be.exactly('somereallyfakeproxyhost');
         });
 
         it('smoke test directory descendent upload', async function () {
