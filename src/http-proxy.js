@@ -14,7 +14,7 @@ import URL from 'url';
 
 import UploadError from './upload-error';
 import ErrorCodes from './error-codes';
-import { getBasicAuth } from './utils';
+import { getBasicAuth } from './http-utils';
 
 const PRIVATE = Symbol('PRIVATE');
 
