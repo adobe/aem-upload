@@ -14,7 +14,6 @@ import fs from './fs-promise';
 import Async from 'async';
 import Path from 'path';
 import AsyncLock from 'async-lock';
-import URL from 'url';
 import HttpProxyAgent from 'http-proxy-agent';
 import HttpsProxyAgent from 'https-proxy-agent';
 
