@@ -17,8 +17,6 @@ import HttpsProxyAgent from 'https-proxy-agent';
 
 import { exponentialRetry } from './utils';
 import UploadFile from './upload-file';
-import UploadError from './upload-error';
-import ErrorCodes from './error-codes';
 
 /**
  * Retrieves a token that can be used to cancel an http request.
@@ -122,24 +120,6 @@ function calculateRate(elapsed, totalTransferred) {
     return 0;
 }
 
-
-/**
- * Validates and retrieves basic authentication information from a set of options. Will throw an error
- * if only one of username or password is provided.
- * @param {object} options Options from which "username" and "password" properties will be retrieved.
- */
-function getBasicAuth(options) {
-    const { username, password } = options;
-    if (username && !password) {
-        throw new UploadError('password is required for basic auth', ErrorCodes.INVALID_OPTIONS);
-    }
-    if (password && !username) {
-        throw new UploadError('username is required for basic auth', ErrorCodes.INVALID_OPTIONS);
-    }
-    return options;
-}
-
-
 /**
  * Builds proxy agent options based on upload options. Note that the method may return a falsy value, which
  * indicates that a proxy does not apply.
@@ -204,7 +184,6 @@ export {
     isRetryableError,
     updateOptionsWithResponse,
     calculateRate,
-    getBasicAuth,
     getProxyAgentOptions,
     getHttpTransferOptions,
 };

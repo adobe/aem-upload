@@ -386,7 +386,7 @@ class DirectBinaryUploadOptions {
 
         const proxy = this.getHttpProxy();
         if (proxy) {
-            json.proxy = proxy.toJSON();
+            json.proxy = proxy.toHttpOptions();
         }
 
         return json;

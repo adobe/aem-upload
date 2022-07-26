@@ -14,7 +14,6 @@ import URL from 'url';
 
 import UploadError from './upload-error';
 import ErrorCodes from './error-codes';
-import { getBasicAuth } from './http-utils';
 
 const PRIVATE = Symbol('PRIVATE');
 
@@ -50,7 +49,8 @@ export default class HttpProxy {
      * @returns {string} Username for basic authentication.
      */
     getBasicAuthUser() {
-        return getBasicAuth(this[PRIVATE]).username;
+        const { username } = this[PRIVATE];
+        return username;
     }
 
     /**
@@ -59,7 +59,8 @@ export default class HttpProxy {
      * @returns {string} Password for basic authentication.
      */
     getBasicAuthPassword() {
-        return getBasicAuth(this[PRIVATE]).password;
+        const { password } = this[PRIVATE];
+        return password;
     }
 
     /**
@@ -69,8 +70,16 @@ export default class HttpProxy {
      * @returns {HttpProxy} Current instance, for chaining.
      */
     withBasicAuth(user, password) {
-        this[PRIVATE].username = user;
-        this[PRIVATE].password = password;
+        if (user || password) {
+            if (user && !password) {
+                throw new UploadError('password is required for basic auth', ErrorCodes.INVALID_OPTIONS);
+            }
+            if (password && !user) {
+                throw new UploadError('username is required for basic auth', ErrorCodes.INVALID_OPTIONS);
+            }
+            this[PRIVATE].username = user;
+            this[PRIVATE].password = password;
+        }
         return this;
     }
 
@@ -79,7 +88,7 @@ export default class HttpProxy {
      * "proxy" option of an axios request.
      * @returns {object} All information about the proxy.
      */
-    toJSON() {
+    toHttpOptions() {
         const {
             protocol,
             hostname,
@@ -99,5 +108,18 @@ export default class HttpProxy {
             };
         }
         return json;
+    }
+
+    /**
+     * Retrieves a simple JSON representation of the proxy info.
+     * @returns {object} All information about the proxy.
+     */
+    toJSON() {
+        const options = this.toHttpOptions();
+        if (options.auth) {
+            options.auth.username = '<redacted>';
+            options.auth.password = '<redacted>';
+        }
+        return options;
     }
 }

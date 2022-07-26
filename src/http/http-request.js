@@ -61,7 +61,7 @@ class HttpRequest extends UploadBase {
      * @param {HttpProxy} proxy Proxy to use.
      */
     withProxy(proxy) {
-        this.requestOptions.proxy = proxy.toJSON();
+        this.requestOptions.proxy = proxy.toHttpOptions();
         return this;
     }
 
