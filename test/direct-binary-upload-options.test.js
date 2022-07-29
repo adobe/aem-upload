@@ -54,4 +54,23 @@ describe('DirectBinaryUploadOptionsTest', () => {
         should(options.getTargetFolderPath()).be.exactly('/content/dam/test path/asset.jpg');
     });
 
+    it('test withHttpProxy', () => {
+        const options = new DirectBinaryUploadOptions()
+            .withUrl('http://somereallyfakeurlhopefully/content/dam/test%20path/asset.jpg')
+            .withMaxConcurrent(2);
+        let proxy = options.getHttpProxy();
+        should(proxy).not.be.ok();
+        options.withHttpProxy({
+                host: 'somereallyfakeurlhopefully',
+                port: 1234
+            });
+        proxy = options.getHttpProxy();
+        should(options.getUrl()).be.exactly('http://somereallyfakeurlhopefully/content/dam/test%20path/asset.jpg');
+        should(options.getMaxConcurrent()).be.exactly(2);
+        should(proxy).deepEqual({
+            host: 'somereallyfakeurlhopefully',
+            port: 1234
+        });
+    });
+
 });

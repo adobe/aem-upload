@@ -20,6 +20,7 @@ const { importFile, getTestOptions } = require('../testutils');
 
 const HttpRequest = importFile('http/http-request');
 const DirectBinaryUploadOptions = importFile('direct-binary-upload-options');
+const HttpProxy = importFile('http-proxy');
 
 const HOST = 'http://adobe-aem-upload-unit-test';
 
@@ -66,8 +67,9 @@ describe('HTTP Request Tests', function() {
             .withHeaders({
                 uploadHeader: 'upload',
                 header1: 'uploadoptions'
-            }
-        ))
+            })
+            .withHttpProxy(new HttpProxy('http://somereallyfakedomainhost:1234'))
+        )
         .withContentType('application/json')
         .withHeaders({
             header1: 'test1',
@@ -88,7 +90,8 @@ describe('HTTP Request Tests', function() {
             headers = {},
             data,
             responseType,
-            timeout
+            timeout,
+            proxy
         } = options;
 
         should(url).be.exactly(HOST);
@@ -96,6 +99,11 @@ describe('HTTP Request Tests', function() {
         should(data).be.exactly('hello world!');
         should(responseType).be.exactly(HttpRequest.ResponseType.TEXT);
         should(timeout).be.ok();
+        should(proxy).deepEqual({
+            host: 'somereallyfakedomainhost',
+            protocol: 'http',
+            port: 1234
+        });
 
         const {
             header1,

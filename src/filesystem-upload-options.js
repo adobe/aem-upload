@@ -46,6 +46,10 @@ export default class FileSystemUploadOptions extends DirectBinaryUploadOptions {
         newOptions.options = { ...uploadOptions.options };
         newOptions.controller = uploadOptions.controller;
 
+        if (uploadOptions.proxy) {
+            newOptions.proxy = uploadOptions.proxy;
+        }
+
         if (typeof(uploadOptions.replaceValue) === 'string') {
             newOptions.replaceValue = uploadOptions.replaceValue;
         }
