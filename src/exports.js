@@ -15,6 +15,7 @@ import DirectBinaryUploadOptionsImport from './direct-binary-upload-options';
 import DirectBinaryUploadErrorCodesImport from './error-codes';
 import FileSystemUploadImport from './filesystem-upload';
 import FileSystemUploadOptionsImport from './filesystem-upload-options';
+import HttpProxyImport from './http-proxy';
 
 export default {
     DirectBinaryUpload: DirectBinaryUploadImport,
@@ -22,6 +23,7 @@ export default {
     DirectBinaryUploadErrorCodes: DirectBinaryUploadErrorCodesImport,
     FileSystemUpload: FileSystemUploadImport,
     FileSystemUploadOptions: FileSystemUploadOptionsImport,
+    HttpProxy: HttpProxyImport,
 }
 
 export const DirectBinaryUpload = DirectBinaryUploadImport;
@@ -29,3 +31,4 @@ export const DirectBinaryUploadOptions = DirectBinaryUploadOptionsImport;
 export const DirectBinaryUploadErrorCodes = DirectBinaryUploadErrorCodesImport;
 export const FileSystemUpload = FileSystemUploadImport;
 export const FileSystemUploadOptions = FileSystemUploadOptionsImport;
+export const HttpProxy = HttpProxyImport;

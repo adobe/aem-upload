@@ -18,7 +18,6 @@ import AsyncLock from 'async-lock';
 import { DefaultValues } from './constants';
 import UploadError from './upload-error';
 import ErrorCodes from './error-codes';
-import UploadFile from './upload-file';
 
 const lock = new AsyncLock();
 
@@ -428,32 +427,4 @@ export async function walkDirectory(directoryPath, maximumPaths = 5000, includeD
  */
 export async function getLock(lockId, callback) {
     return lock.acquire(lockId, callback);
-}
-
-/**
- * Converts options provided in a DirectBinaryUploadOptions instance to a format
- * suitable to pass to the httptransfer module.
- * @param {object} options General upload object options.
- * @param {DirectBinaryUploadOptions} directBinaryUploadOptions Options to convert.
- */
-export function getHttpTransferOptions(options, directBinaryUploadOptions) {
-    // the httptransfer module accepts a full fileUrl instead of a single
-    // url with individual file names. if needed, convert the format with a
-    // single url and individual file names to the fileUrl format.
-    const convertedFiles = directBinaryUploadOptions.getUploadFiles().map((uploadFile) => {
-        const uploadFileInstance = new UploadFile(options, directBinaryUploadOptions, uploadFile);
-        const transferOptions = uploadFileInstance.toJSON();
-        if (uploadFile.blob) {
-            // ensure blob is passed through to transfer options
-            transferOptions.blob = uploadFile.blob;
-        }
-        return transferOptions;
-    });
-
-    return {
-        uploadFiles: convertedFiles,
-        headers: directBinaryUploadOptions.getHeaders(),
-        concurrent: directBinaryUploadOptions.isConcurrent(),
-        maxConcurrent: directBinaryUploadOptions.getMaxConcurrent()
-    };
 }

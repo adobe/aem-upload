@@ -11,6 +11,7 @@
   - [Uploading Local Files](#uploading-local-files)
     - [Supported File Options](#supported-file-options)
   - [Logging](#logging)
+  - [Proxy Support](#proxy-support)
 - [Features](#features)
 - [Releasing](#releasing)
 - [Todo](#todo)
@@ -398,6 +399,24 @@ options.withUploadFiles([
                 <b>Example</b>
                 <br/>
                 <code>options.withHttpRetryDelay(3000);</code>
+            </td>
+        </tr>
+        <tr>
+            <td>http proxy</td>
+            <td>HttpProxy</td>
+            <td>
+                Information about the proxy that should be used for all HTTP requests sent by the library. See <a href="#proxy-support" target="_blank">proxy support</a> documentation for additional information.
+                <br/>
+                <br/>
+                <b>Example</b>
+                <br/>
+                <code>import { HttpProxy } from '@adobe/aem-upload';
+                <br/>
+                <code>options.withHttpProxy(</code>
+                <br/>
+                <code>&nbsp;&nbsp;new HttpProxy('http://my-proxy:1234')</code>
+                <br/>
+                <code>&nbsp;&nbsp;&nbsp;&nbsp;.withBasicAuth('user', 'pass'));</code>
             </td>
         </tr>
     </tbody>
@@ -862,6 +881,11 @@ const upload = new DirectBinary.DirectBinaryUpload({
 ```
 
 Note that this will also work with the `FileSystemUpload` constructor.
+
+## Proxy Support
+
+When running in a browser, the library will use whichever proxy settings are detected and applied by the browser. In Node.JS, all HTTP requests are sent directly to the target, without going through a proxy. Auto detecting a system's proxy settings is not supported in Node.JS, but
+consumers can use `DirectBinaryUploadOptions.withHttpProxy()` to modify the default behavior in either context.
 
 # Features
 * Well tuning to take advantage of nodejs for best uploading performance
