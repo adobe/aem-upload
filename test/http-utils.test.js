@@ -13,12 +13,19 @@ governing permissions and limitations under the License.
 const should = require('should');
 const cookie = require('cookie');
 
-const { importFile } = require('./testutils');
+const { importFile, getTestOptions } = require('./testutils');
 const MockRequest = require('./mock-request');
 const { default: HttpResponse } = require('../src/http/http-response');
 const DirectBinaryUploadOptions = importFile('direct-binary-upload-options');
 
-const { timedRequest, updateOptionsWithResponse, isRetryableError } = importFile('http-utils');
+const {
+    timedRequest,
+    updateOptionsWithResponse,
+    isRetryableError,
+    getProxyAgentOptions,
+    getHttpTransferOptions,
+} = importFile('http-utils');
+const HttpProxy = importFile('http-proxy');
 
 describe('HttpUtilsTest', () => {
     beforeEach(() => {
@@ -83,5 +90,95 @@ describe('HttpUtilsTest', () => {
                 status: 500
             }
         })).be.ok();
+    });
+
+
+    it('test get http transfer options', function() {
+        const uploadOptions = new DirectBinaryUploadOptions()
+            .withUrl('http://localhost/content/dam');
+        let httpTransfer = getHttpTransferOptions(getTestOptions(), uploadOptions)
+        should(httpTransfer).deepEqual({
+            headers: {},
+            concurrent: true,
+            maxConcurrent: 5,
+            uploadFiles: []
+        });
+
+        uploadOptions.withConcurrent(false)
+            .withHeaders({
+                hello: 'world!'
+            })
+            .withUploadFiles([{
+                fileSize: 1024,
+                fileName: 'file.jpg',
+                filePath: '/my/test/file.jpg',
+                createVersion: true,
+                versionComment: 'My Comment',
+                versionLabel: 'Version Label',
+                replace: true,
+                partHeaders: {
+                    part: 'header'
+                }
+            }, {
+                fileSize: 2048,
+                fileName: 'blob-file.jpg',
+                blob: [1, 2, 3]
+            }])
+            .withHttpProxy(new HttpProxy('http://localhost:1234'));
+        httpTransfer = getHttpTransferOptions(getTestOptions(), uploadOptions);
+        should(httpTransfer.requestOptions).be.ok();
+        should(httpTransfer.requestOptions.agent).be.ok();
+        should(httpTransfer.requestOptions.agent.constructor.name).be.exactly('HttpProxyAgent');
+        delete httpTransfer.requestOptions;
+        should(httpTransfer).deepEqual({
+            headers: {
+                hello: 'world!'
+            },
+            concurrent: false,
+            maxConcurrent: 1,
+            uploadFiles: [{
+                createVersion: true,
+                filePath: '/my/test/file.jpg',
+                fileSize: 1024,
+                fileUrl: 'http://localhost/content/dam/file.jpg',
+                multipartHeaders: {
+                    part: 'header'
+                },
+                replace: true,
+                versionComment: 'My Comment',
+                versionLabel: 'Version Label'
+            }, {
+                blob: [1, 2, 3],
+                fileSize: 2048,
+                fileUrl: 'http://localhost/content/dam/blob-file.jpg'
+            }]
+        });
+
+        uploadOptions.withHttpProxy(new HttpProxy('https://localhost:1234'));
+        httpTransfer = getHttpTransferOptions(getTestOptions(), uploadOptions);
+        should(httpTransfer.requestOptions).be.ok();
+        should(httpTransfer.requestOptions.agent).be.ok();
+        should(httpTransfer.requestOptions.agent.constructor.name).be.exactly('HttpsProxyAgent');
+    });
+
+
+    it('test get proxy agent options', () => {
+        const uploadOptions = new DirectBinaryUploadOptions();
+        should(getProxyAgentOptions(uploadOptions)).not.be.ok();
+        uploadOptions.withHttpProxy(new HttpProxy('http://localhost:1234'));
+        let proxyOptions = getProxyAgentOptions(uploadOptions);
+        should(proxyOptions.protocol).be.exactly('http:');
+        should(proxyOptions.hostname).be.exactly('localhost');
+        should(proxyOptions.port).be.exactly('1234');
+        should(proxyOptions.auth).not.be.ok();
+
+        uploadOptions.withHttpProxy(
+            new HttpProxy('https://127.0.0.1:4321')
+                .withBasicAuth('admin', 'pass'));
+        proxyOptions = getProxyAgentOptions(uploadOptions);
+        should(proxyOptions.protocol).be.exactly('https:');
+        should(proxyOptions.hostname).be.exactly('127.0.0.1');
+        should(proxyOptions.port).be.exactly('4321');
+        should(proxyOptions.auth).be.exactly('admin:pass');
     });
 });

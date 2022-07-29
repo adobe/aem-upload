@@ -15,7 +15,6 @@ const Path = require('path');
 
 const {
     importFile,
-    getTestOptions
 } = require('./testutils');
 
 let dirs = {};
@@ -29,7 +28,6 @@ const {
     joinUrlPath,
     trimContentDam,
     walkDirectory,
-    getHttpTransferOptions
 } = importFile('utils', {
     './fs-promise': {
         stat: async function(path) {
@@ -47,7 +45,6 @@ const {
     }
 });
 const { DefaultValues } = importFile('constants');
-const DirectBinaryUploadOptions = importFile('direct-binary-upload-options');
 
 describe('UtilsTest', function () {
     function addFileSystem(fullPath, isDir, size = 0) {
@@ -262,62 +259,5 @@ describe('UtilsTest', function () {
 
         should(file1 >= 0 && file1 < file2).be.ok();
         should(file2 >= 0).be.ok();
-    });
-
-    it('test get http transfer options', function() {
-        const uploadOptions = new DirectBinaryUploadOptions()
-            .withUrl('http://localhost/content/dam');
-        let httpTransfer = getHttpTransferOptions(getTestOptions(), uploadOptions)
-        should(httpTransfer).deepEqual({
-            headers: {},
-            concurrent: true,
-            maxConcurrent: 5,
-            uploadFiles: []
-        });
-
-        uploadOptions.withConcurrent(false)
-            .withHeaders({
-                hello: 'world!'
-            })
-            .withUploadFiles([{
-                fileSize: 1024,
-                fileName: 'file.jpg',
-                filePath: '/my/test/file.jpg',
-                createVersion: true,
-                versionComment: 'My Comment',
-                versionLabel: 'Version Label',
-                replace: true,
-                partHeaders: {
-                    part: 'header'
-                }
-            }, {
-                fileSize: 2048,
-                fileName: 'blob-file.jpg',
-                blob: [1, 2, 3]
-            }]);
-        httpTransfer = getHttpTransferOptions(getTestOptions(), uploadOptions);
-        should(httpTransfer).deepEqual({
-            headers: {
-                hello: 'world!'
-            },
-            concurrent: false,
-            maxConcurrent: 1,
-            uploadFiles: [{
-                createVersion: true,
-                filePath: '/my/test/file.jpg',
-                fileSize: 1024,
-                fileUrl: 'http://localhost/content/dam/file.jpg',
-                multipartHeaders: {
-                    part: 'header'
-                },
-                replace: true,
-                versionComment: 'My Comment',
-                versionLabel: 'Version Label'
-            }, {
-                blob: [1, 2, 3],
-                fileSize: 2048,
-                fileUrl: 'http://localhost/content/dam/blob-file.jpg'
-            }]
-        });
     });
 });

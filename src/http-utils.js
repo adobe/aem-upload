@@ -12,8 +12,11 @@ governing permissions and limitations under the License.
 
 import axios, { CancelToken } from 'axios';
 import cookie from 'cookie';
+import HttpProxyAgent from 'http-proxy-agent';
+import HttpsProxyAgent from 'https-proxy-agent';
 
 import { exponentialRetry } from './utils';
+import UploadFile from './upload-file';
 
 /**
  * Retrieves a token that can be used to cancel an http request.
@@ -117,10 +120,70 @@ function calculateRate(elapsed, totalTransferred) {
     return 0;
 }
 
+/**
+ * Builds proxy agent options based on upload options. Note that the method may return a falsy value, which
+ * indicates that a proxy does not apply.
+ * @param {DirectBinaryUploadOptions} directBinaryUploadOptions Options from which to retrieve information.
+ * @returns {object} Options for either http-proxy-agent or https-proxy-agent.
+ */
+function getProxyAgentOptions(directBinaryUploadOptions) {
+    const proxy = directBinaryUploadOptions.getHttpProxy();
+    if (proxy) {
+        const proxyOptions = proxy.getUrl();
+        const user = proxy.getBasicAuthUser();
+        const password = proxy.getBasicAuthPassword();
+        if (user) {
+            proxyOptions.auth = `${user}:${password}`;
+        }
+        return proxyOptions;
+    }
+    return false;
+}
+
+/**
+ * Converts options provided in a DirectBinaryUploadOptions instance to a format
+ * suitable to pass to the httptransfer module.
+ * @param {object} options General upload object options.
+ * @param {DirectBinaryUploadOptions} directBinaryUploadOptions Options to convert.
+ */
+function getHttpTransferOptions(options, directBinaryUploadOptions) {
+    // the httptransfer module accepts a full fileUrl instead of a single
+    // url with individual file names. if needed, convert the format with a
+    // single url and individual file names to the fileUrl format.
+    const convertedFiles = directBinaryUploadOptions.getUploadFiles().map((uploadFile) => {
+        const uploadFileInstance = new UploadFile(options, directBinaryUploadOptions, uploadFile);
+        const transferOptions = uploadFileInstance.toJSON();
+        if (uploadFile.blob) {
+            // ensure blob is passed through to transfer options
+            transferOptions.blob = uploadFile.blob;
+        }
+        return transferOptions;
+    });
+
+    const transferOptions = {
+        uploadFiles: convertedFiles,
+        headers: directBinaryUploadOptions.getHeaders(),
+        concurrent: directBinaryUploadOptions.isConcurrent(),
+        maxConcurrent: directBinaryUploadOptions.getMaxConcurrent(),
+    };
+
+    const proxyOptions = getProxyAgentOptions(directBinaryUploadOptions);
+    if (proxyOptions) {
+        const { protocol = 'http:' } = proxyOptions;
+        transferOptions.requestOptions = {
+            agent: protocol === 'https:' ? new HttpsProxyAgent(proxyOptions) : new HttpProxyAgent(proxyOptions)
+        };
+    }
+
+    return transferOptions;
+}
+
 export {
     createCancelToken,
     timedRequest,
     isRetryableError,
     updateOptionsWithResponse,
     calculateRate,
+    getProxyAgentOptions,
+    getHttpTransferOptions,
 };

@@ -14,8 +14,6 @@ import querystring from 'querystring';
 import { AEMUpload } from '@adobe/httptransfer/es2015';
 import httpTransferLogger from '@adobe/httptransfer/es2015/logger';
 
-import { getHttpTransferOptions } from './utils';
-
 import InitResponse from './init-response';
 import UploadError from './upload-error';
 import ErrorCodes from './error-codes';
@@ -23,6 +21,7 @@ import InitResponseFilePart from './init-response-file-part';
 import PartUploadResult from './part-upload-result';
 import { 
     updateOptionsWithResponse,
+    getHttpTransferOptions,
 } from './http-utils';
 import PartUploader from './part-uploader';
 import HttpRequest from './http/http-request';
