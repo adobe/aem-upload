@@ -92,6 +92,7 @@ module.exports.monitorEvents = (toMonitor) => {
     toMonitor.on('fileend', data => events.push({ event: 'fileend', data }));
     toMonitor.on('fileerror', data => events.push({ event: 'fileerror', data }));
     toMonitor.on('filecancelled', data => events.push({ event: 'filecancelled', data }));
+    toMonitor.on('foldercreated', data => events.push({ event: 'foldercreated', data }));
 }
 
 /**
@@ -114,6 +115,33 @@ module.exports.getEvent = (eventName, targetFile) => {
             const expectedTargetFolder = targetFile.substr(0, lastSlash);
             should(fileName).be.exactly(expectedFileName);
             should(targetFolder).be.exactly(expectedTargetFolder);
+
+            return data;
+        }
+    }
+    return false;
+}
+
+/**
+ * Determines if an event with a matching "targetFolder" value was emitted since the
+ * last invocation of monitorEvents(). If found, the event's other data values will
+ * be validated.
+ * @param {string} eventName Name of the expected event.
+ * @param {string} targetFolder Value of the "targetFolder" event data property for the
+ *  expected event.
+ * @returns {object|boolean} The event's data if found, otherwise false.
+ */
+module.exports.getFolderEvent = (eventName, targetFolder) => {
+    for (let i = 0; i < events.length; i++) {
+        const { event, data } = events[i];
+
+        if (event === eventName && data.targetFolder === targetFolder) {
+            const { folderName, targetParent } = data;
+            const lastSlash = targetFolder.lastIndexOf('/');
+            const expectedFolderName = targetFolder.substr(lastSlash + 1);
+            const expectedTargetParent = targetFolder.substr(0, lastSlash);
+            should(folderName).be.exactly(expectedFolderName);
+            should(targetParent).be.exactly(expectedTargetParent);
 
             return data;
         }

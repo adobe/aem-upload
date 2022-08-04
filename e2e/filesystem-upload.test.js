@@ -45,18 +45,25 @@ describe('FileSystemUpload end-to-end tests', function() {
         upload.on('fileend', data => events.push({ event: 'fileend', data }));
         upload.on('fileerror', data => events.push({ event: 'fileerror', data }));
         upload.on('filecancelled', data => events.push({ event: 'filecancelled', data }));
+        upload.on('foldercreated', data => events.push({ event: 'foldercreated', data }));
     }
 
-    function hasEvent(eventName, targetFolder, filePath) {
-        const checkPath = decodeURI(new URL(`${targetFolder}${filePath}`).pathname);
+    function hasEventCheck(eventName, targetFolder, path, pathFunc) {
+        const checkPath = decodeURI(new URL(`${targetFolder}${path}`).pathname);
         for (let i = 0; i < events.length; i++) {
             const { event, data } = events[i];
 
-            if (event === eventName && data.targetFile === checkPath) {
+            if (event === eventName && pathFunc(data) === checkPath) {
                 return true;
             }
         }
         return false;
+    }
+
+    function hasEvent(eventName, targetFolder, filePath) {
+        return hasEventCheck(eventName, targetFolder, filePath, (data) => {
+            return data.targetFile;
+        });
     }
 
     function hasStartAndStopEvents(targetFolder, filePath) {
@@ -183,7 +190,10 @@ describe('FileSystemUpload end-to-end tests', function() {
         // images/dir1/folder_♂♀°′″℃＄￡‰§№￠℡㈱
         await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, `/images/dir-1/${ENCODED_FOLDER}/${ENCODED_ASSET2}`);
 
-        should(await doesAemPathExist(httpClient, uploadOptions, '/images/dir-1/subdir2')).not.be.ok();
+        should(hasEventCheck('foldercreated', targetFolder, '/images/dir-1/subdir2', (data) => {
+            return data.targetFolder;
+        })).be.ok();
+        should(await doesAemPathExist(httpClient, uploadOptions, '/images/dir-1/subdir2')).be.ok();
 
         return deleteAemPath(httpClient, uploadOptions);
     });
@@ -202,8 +212,9 @@ describe('FileSystemUpload end-to-end tests', function() {
         await fileSystemUpload.upload(uploadOptions, [
             Path.join(__dirname, 'edge-case-images/zero-byte.jpg'),
         ]);
-        should(events.length).be.exactly(1);
-        should(events[0].event).be.exactly('fileerror');
+        should(events.length).be.exactly(2);
+        should(events[0].event).be.exactly('foldercreated');
+        should(events[1].event).be.exactly('fileerror');
     });
 
     it('GB18030 folder upload test', async function() {

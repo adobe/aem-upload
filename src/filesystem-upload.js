@@ -66,7 +66,7 @@ export default class FileSystemUpload extends DirectBinaryUpload {
             errors,
             totalSize
         } = await this.getUploadInformation(fileSystemUploadOptions, localPaths);
-    
+
         this.logInfo(`From ${localPaths.length} paths, filesystem upload compiled upload of ${directories.length} directories, ${files.length} files, with a total size of ${totalSize}. Encountered ${errors.length} filesystem-related errors.`);
 
         const uploadId = uuid();
@@ -82,24 +82,28 @@ export default class FileSystemUpload extends DirectBinaryUpload {
 
         const uploadFiles = this.convertToUploadFilesWithUrl(fileSystemUploadOptions, files);
 
-        this.logInfo(`Uploading ${uploadFiles.length} files`);
+        if (uploadFiles.length) {
+            this.logInfo(`Uploading ${uploadFiles.length} files`);
 
-        // initiate the upload process
-        const fileUploadOptions = FileSystemUploadOptions.fromOptions(fileSystemUploadOptions)
-            .withUploadFiles(uploadFiles);
+            // initiate the upload process
+            const fileUploadOptions = FileSystemUploadOptions.fromOptions(fileSystemUploadOptions)
+                .withUploadFiles(uploadFiles);
 
-        const uploadProcess = new DirectBinaryUploadProcess(this.getOptions(), fileUploadOptions, httpClient, partUploader);
+            const uploadProcess = new DirectBinaryUploadProcess(this.getOptions(), fileUploadOptions, httpClient, partUploader);
 
-        uploadProcess.on('filestart', data => this.sendEvent('filestart', data));
-        uploadProcess.on('fileprogress', data => this.sendEvent('fileprogress', data));
-        uploadProcess.on('fileend', data => this.sendEvent('fileend', data));
-        uploadProcess.on('fileerror', data => this.sendEvent('fileerror', data));
-        uploadProcess.on('filecancelled', data => this.sendEvent('filecancelled', data));
+            uploadProcess.on('filestart', data => this.sendEvent('filestart', data));
+            uploadProcess.on('fileprogress', data => this.sendEvent('fileprogress', data));
+            uploadProcess.on('fileend', data => this.sendEvent('fileend', data));
+            uploadProcess.on('fileerror', data => this.sendEvent('fileerror', data));
+            uploadProcess.on('filecancelled', data => this.sendEvent('filecancelled', data));
 
-        try {
-            await uploadProcess.upload(uploadResult);
-        } catch (uploadError) {
-            uploadResult.addUploadError(uploadError);
+            try {
+                await uploadProcess.upload(uploadResult);
+            } catch (uploadError) {
+                uploadResult.addUploadError(uploadError);
+            }
+        } else {
+            this.logInfo('No files found in provided paths, skipping upload.');
         }
 
         this.sendEvent('fileuploadend', {
@@ -324,6 +328,11 @@ export default class FileSystemUpload extends DirectBinaryUpload {
                     .withUploadOptions(options);
                 const response = await httpClient.submit(createFolderRequest);
                 updateOptionsWithResponse(options, response);
+                this.emit('foldercreated', {
+                    folderName: folderName,
+                    targetParent: Path.dirname(targetFolder).replaceAll(/\\/g, '/'),
+                    targetFolder
+                });
             } catch (e) {
                 if (e && e.code == ErrorCodes.ALREADY_EXISTS) {
                     this.logInfo(`AEM folder '${targetFolder}' already exists`);
