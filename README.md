@@ -410,7 +410,7 @@ options.withUploadFiles([
                 <br/>
                 <b>Example</b>
                 <br/>
-                <code>import { HttpProxy } from '@adobe/aem-upload';
+                <code>import { HttpProxy } from '@adobe/aem-upload';</code>
                 <br/>
                 <code>options.withHttpProxy(</code>
                 <br/>
@@ -621,6 +621,48 @@ through the stages of uploading a file. These events are listed below.
                 A simple javascript <code>object</code> containing the same properties as "filestart."
             </td>
         </tr>
+        <tr>
+            <td>foldercreated</td>
+            <td>
+                Indicates that the upload process created a new folder in the target.
+            </td>
+            <td>
+                The data sent with the event will be a simple javascript <code>object</code>
+                with the following properties:
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Property</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody style="vertical-align: top">
+                        <tr>
+                            <td>folderName</td>
+                            <td>string</td>
+                            <td>
+                                The name (i.e. title) of the folder, as it was created. This will <i>not</i> be a URI encoded value.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>targetParent</td>
+                            <td>number</td>
+                            <td>
+                                Full path to the AEM folder where the folder was created. This will <i>not</i> be a URI encoded value.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>targetFolder</td>
+                            <td>string</td>
+                            <td>
+                                Full path to the AEM folder that was created. This will <i>not</i> be a URI encoded value.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </td>
+        </tr>
     </tbody>
 </table>
 
@@ -687,6 +729,13 @@ controller.cancel();
 
 The library supports uploading local files and folders. For folders, the tool
 will include all immediate children files in the folder. It will not process sub-folders unless the "deep upload" option is specified.
+
+When deep uploading, the library will create a folder structure in the target that mirrors the folder being uploaded. The title of the newly
+created folders will match the name of the folder as it exists on the local filesystem. The path of the target may be modified depending on
+path character restrictions in AEM, and depending on the options provided in the upload (see "Function for processing folder node names" for
+more information).
+
+Whenever the library creates a new folder, it will emit the `foldercreated` event. See event documentation for details.
 
 The following example illustrates how to upload local files.
 

@@ -217,7 +217,7 @@ describe('UtilsTest', function () {
         createDirectoryStructure();
 
         const { directories, files, totalSize, errors } = await walkDirectory('/root');
-        should(directories.length).be.exactly(3);
+        should(directories.length).be.exactly(6);
         should(files.length).be.exactly(6);
         should(totalSize).be.exactly(files.length * 1024);
         should(errors.length).be.exactly(2);
@@ -225,10 +225,16 @@ describe('UtilsTest', function () {
         const dir1 = getPathIndex(directories, '/root/dir1');
         const dir2 = getPathIndex(directories, '/root/dir1/dir2');
         const dir3 = getPathIndex(directories, '/root/dir1/dir2/dir3');
+        const dir4 = getPathIndex(directories, '/root/emptydir');
+        const dir5 = getPathIndex(directories, '/root/emptydir/emptysubdir');
+        const dir6 = getPathIndex(directories, '/root/error');
 
         should(dir1 >= 0 && dir1 > dir2 && dir1 > dir3);
         should(dir2 >= 0 && dir2 > dir3);
         should(dir3 >= 0);
+        should(dir6 >= 0);
+        should(dir4 >= 0);
+        should(dir5 > dir4);
 
         const file1 = getPathIndex(files, '/root/file1.jpg');
         const file2 = getPathIndex(files, '/root/file2.jpg');
@@ -249,7 +255,15 @@ describe('UtilsTest', function () {
         createDirectoryStructure();
 
         const { directories, files, totalSize, errors } = await walkDirectory('/root', 1000, false);
-        should(directories.length).be.exactly(0);
+        should(directories.length).be.exactly(3);
+
+        const dir1 = getPathIndex(directories, '/root/dir1');
+        const dir2 = getPathIndex(directories, '/root/error');
+        const dir3 = getPathIndex(directories, '/root/emptydir');
+        should(dir1 >= 0);
+        should(dir2 >= 0);
+        should(dir3 >= 0);
+
         should(files.length).be.exactly(2);
         should(totalSize).be.exactly(files.length * 1024);
         should(errors.length).be.exactly(1);

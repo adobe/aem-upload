@@ -18,6 +18,7 @@ const {
     getTestOptions,
     monitorEvents,
     getEvent,
+    getFolderEvent
 } = require('./testutils');
 const MockRequest = require('./mock-request');
 const HttpClient = importFile('http/http-client');
@@ -206,6 +207,19 @@ describe('FileSystemUpload Tests', () => {
             should(posts[2].proxy.host).be.exactly('somereallyfakeproxyhost');
         });
 
+        function buildPostLookup() {
+            let postedUrls = {};
+            MockRequest.history.post.forEach(post => {
+                const { url } = post;
+
+                if (!postedUrls[url]) {
+                    postedUrls[url] = 0;
+                }
+                postedUrls[url]++;
+            });
+            return postedUrls;
+        }
+
         it('smoke test directory descendent upload', async function () {
             createFsStructure();
 
@@ -242,16 +256,7 @@ describe('FileSystemUpload Tests', () => {
             should(result.getTotalSize()).be.exactly(59);
             should(result.getErrors().length).be.exactly(0);
 
-            let postedUrls = {};
-            MockRequest.history.post.forEach(post => {
-                const { url } = post;
-
-                if (!postedUrls[url]) {
-                    postedUrls[url] = 0;
-                }
-                postedUrls[url]++;
-            });
-
+            const postedUrls = buildPostLookup();
             should(Object.keys(postedUrls).length).be.exactly(6);
             should(postedUrls[MockRequest.getApiUrl('/target')]).be.exactly(1);
             should(postedUrls[MockRequest.getApiUrl('/target/test')]).be.exactly(1);
@@ -280,6 +285,49 @@ describe('FileSystemUpload Tests', () => {
 
             should(getEvent('filestart', `/content/dam/target/test/dir/${SUBDIR}/5`)).be.ok();
             should(getEvent('fileend', `/content/dam/target/test/dir/${SUBDIR}/5`)).be.ok();
+        });
+
+        it('test upload empty directory', async () => {
+            const structure = {
+                '/test/dir': {
+                    'subdir': {
+                        'subsubdir': {}
+                    }
+                }
+            };
+            MockFs(structure);
+            const uploadOptions = new FileSystemUploadOptions()
+                .withUrl(MockRequest.getUrl('/target'))
+                .withBasicAuth('testauth')
+                .withHttpRetryCount(1)
+                .withHttpRetryDelay(10)
+                .withDeepUpload(true);
+
+            MockRequest.onPost(MockRequest.getApiUrl('/target')).reply(201);
+            MockRequest.onPost(MockRequest.getApiUrl('/target/test')).reply(201);
+            MockRequest.onPost(MockRequest.getApiUrl('/target/test/dir')).reply(201);
+            MockRequest.onPost(MockRequest.getApiUrl(`/target/test/dir/subdir`)).reply(201);
+            MockRequest.onPost(MockRequest.getApiUrl(`/target/test/dir/subdir/subsubdir`)).reply(201);
+
+            const fileSystemUpload = new FileSystemUpload(getTestOptions());
+            monitorEvents(fileSystemUpload);
+            const result = await fileSystemUpload.upload(uploadOptions, [
+                '/test'
+            ]);
+            should(result).be.ok();
+
+            const postedUrls = buildPostLookup();
+            should(Object.keys(postedUrls).length).be.exactly(5);
+            should(postedUrls[MockRequest.getApiUrl('/target')]).be.exactly(1);
+            should(postedUrls[MockRequest.getApiUrl('/target/test')]).be.exactly(1);
+            should(postedUrls[MockRequest.getApiUrl('/target/test/dir')]).be.exactly(1);
+            should(postedUrls[MockRequest.getApiUrl('/target/test/dir/subdir')]).be.exactly(1);
+            should(postedUrls[MockRequest.getApiUrl('/target/test/dir/subdir/subsubdir')]).be.exactly(1);
+            should(getFolderEvent('foldercreated', '/content/dam/target')).be.ok();
+            should(getFolderEvent('foldercreated', '/content/dam/target/test')).be.ok();
+            should(getFolderEvent('foldercreated', '/content/dam/target/test/dir')).be.ok();
+            should(getFolderEvent('foldercreated', '/content/dam/target/test/dir/subdir')).be.ok();
+            should(getFolderEvent('foldercreated', '/content/dam/target/test/dir/subdir/subsubdir')).be.ok();
         });
     });
 });

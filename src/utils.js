@@ -347,23 +347,6 @@ async function processDirectory(directoryPath, directories, files, errors) {
     return totalSize;
 }
 
-function removeEmptyDirectories(directories, files) {
-    const validDirectories = [];
-    for (let d = 0; d < directories.length; d++) {
-        const directory = directories[d];
-        const directoryPrefix = Path.join(directory.path, '/');
-        for (let f = 0; f < files.length; f++) {
-            const file = files[f];
-            if (file.path.startsWith(directoryPrefix)) {
-                validDirectories.push(directory);
-                break;
-            }
-        }
-    }
-    
-    return validDirectories;
-}
-
 /**
  * Walks a directory by retrieving all the directories and files
  * in the given path, then walking all those sub directories, then
@@ -403,7 +386,7 @@ export async function walkDirectory(directoryPath, maximumPaths = 5000, includeD
     }
 
     return {
-        directories: removeEmptyDirectories(allDirectories, allFiles),
+        directories: allDirectories,
         files: allFiles,
         errors: allErrors,
         totalSize: walkedTotalSize
