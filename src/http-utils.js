@@ -62,7 +62,6 @@ async function timedRequest(requestOptions, retryOptions, cancelToken) {
     // add proxy for axios request to httpAgent or httpsAgent property as mentioned
     //  in this issue: https://github.com/axios/axios/issues/2072
     if (options.proxy) {
-      console.log(`adding proxy to axios request ${JSON.stringify(options.proxy)}`)
       const { protocol = 'http:' } = URL.parse(options.url);
       if (protocol === 'https:') {
         options.httpsAgent = new HttpsProxyAgent(options.proxy);
