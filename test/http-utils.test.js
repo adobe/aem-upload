@@ -52,6 +52,56 @@ describe('HttpUtilsTest', () => {
             should(status).be.exactly(200);
             should(elapsedTime >= 100).be.ok();
         });
+
+        it('proxy to http endpoint (requests made with axios)', async () => {
+            MockRequest.onGet('http://timedrequestunittest').reply((requestOptions) => {
+                should(requestOptions.httpsAgent).not.be.ok();
+                should(requestOptions.httpAgent).be.ok();
+                should(requestOptions.httpAgent.proxy).be.ok();
+                should(requestOptions.httpAgent.proxy.host).equal('myproxy');
+                should(requestOptions.httpAgent.proxy.port).equal(8080);
+                should(requestOptions.httpAgent.proxy.protocol).equal('http');
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        resolve([200, { success: true }]);
+                    }, 100);
+                });
+            });
+
+            await timedRequest({
+                url: 'http://timedrequestunittest',
+                proxy: {
+                    protocol: 'http',
+                    host: 'myproxy',
+                    port: '8080'
+                }
+            }, {});
+        });
+
+        it('proxy to https endpoint (requests made with axios)', async () => {
+            MockRequest.onGet('https://timedrequestunittest').reply((requestOptions) => {
+                should(requestOptions.httpAgent).not.be.ok();
+                should(requestOptions.httpsAgent).be.ok();
+                should(requestOptions.httpsAgent.proxy).be.ok();
+                should(requestOptions.httpsAgent.proxy.host).equal('myproxy');
+                should(requestOptions.httpsAgent.proxy.port).equal(8080);
+                should(requestOptions.httpsAgent.proxy.protocol).equal('http');
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        resolve([200, { success: true }]);
+                    }, 100);
+                });
+            });
+
+            await timedRequest({
+                url: 'https://timedrequestunittest',
+                proxy: {
+                    protocol: 'http',
+                    host: 'myproxy',
+                    port: '8080'
+                }
+            }, {});
+        });
     });
 
     function createResponse(headers = {}) {
@@ -125,6 +175,8 @@ describe('HttpUtilsTest', () => {
                 blob: [1, 2, 3]
             }])
             .withHttpProxy(new HttpProxy('http://localhost:1234'));
+
+        // test proxying to http endpoint - requests made with node-httptransfer
         httpTransfer = getHttpTransferOptions(getTestOptions(), uploadOptions);
         should(httpTransfer.requestOptions).be.ok();
         should(httpTransfer.requestOptions.agent).be.ok();
@@ -154,7 +206,8 @@ describe('HttpUtilsTest', () => {
             }]
         });
 
-        uploadOptions.withHttpProxy(new HttpProxy('https://localhost:1234'));
+        // test proxying to https endpoint - requests made with node-httptransfer
+        uploadOptions.withUrl('https://localhost/content/dam');
         httpTransfer = getHttpTransferOptions(getTestOptions(), uploadOptions);
         should(httpTransfer.requestOptions).be.ok();
         should(httpTransfer.requestOptions.agent).be.ok();

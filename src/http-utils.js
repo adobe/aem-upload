@@ -12,6 +12,7 @@ governing permissions and limitations under the License.
 
 import axios, { CancelToken } from 'axios';
 import cookie from 'cookie';
+import URL from 'url';
 import HttpProxyAgent from 'http-proxy-agent';
 import HttpsProxyAgent from 'https-proxy-agent';
 
@@ -57,6 +58,19 @@ async function timedRequest(requestOptions, retryOptions, cancelToken) {
     }
 
     let response;
+
+    // add proxy for axios request to httpAgent or httpsAgent property as mentioned
+    //  in this issue: https://github.com/axios/axios/issues/2072
+    if (options.proxy) {
+      const { protocol = 'http:' } = URL.parse(options.url);
+      if (protocol === 'https:') {
+        options.httpsAgent = new HttpsProxyAgent(options.proxy);
+      } else {
+        options.httpAgent = new HttpProxyAgent(options.proxy);
+      }
+      // need to clear this property since it does not work (see above issue)
+      options.proxy = false;
+    }
 
     await exponentialRetry(retryOptions, async () => {
         response = await axios(options);
@@ -169,7 +183,7 @@ function getHttpTransferOptions(options, directBinaryUploadOptions) {
 
     const proxyOptions = getProxyAgentOptions(directBinaryUploadOptions);
     if (proxyOptions) {
-        const { protocol = 'http:' } = proxyOptions;
+        const { protocol = 'http:' } = URL.parse(directBinaryUploadOptions.getUrl());
         transferOptions.requestOptions = {
             agent: protocol === 'https:' ? new HttpsProxyAgent(proxyOptions) : new HttpProxyAgent(proxyOptions)
         };

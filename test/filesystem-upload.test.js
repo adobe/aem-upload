@@ -197,14 +197,18 @@ describe('FileSystemUpload Tests', () => {
             const { post: posts = [] } = MockRequest.history;
             should(posts.length).be.exactly(3);
             should(posts[0].url).be.exactly(MockRequest.getApiUrl('/folder/structure/path1'))
-            should(posts[0].proxy).be.ok();
-            should(posts[0].proxy.host).be.exactly('somereallyfakeproxyhost');
+            // confirm proxy details - requests made with axios
+            should(posts[0].proxy).equal(false);
+            should(posts[0].httpAgent).be.ok();
+            should(posts[0].httpAgent.proxy.host).be.exactly('somereallyfakeproxyhost');
             should(posts[1].url).be.exactly(MockRequest.getApiUrl('/folder/structure/path1/dir1'))
-            should(posts[1].proxy).be.ok();
-            should(posts[1].proxy.host).be.exactly('somereallyfakeproxyhost');
+            should(posts[1].proxy).equal(false);
+            should(posts[1].httpAgent).be.ok();
+            should(posts[1].httpAgent.proxy.host).be.exactly('somereallyfakeproxyhost');
             should(posts[2].url).be.exactly(MockRequest.getApiUrl('/folder/structure/path1/dir2'))
-            should(posts[2].proxy).be.ok();
-            should(posts[2].proxy.host).be.exactly('somereallyfakeproxyhost');
+            should(posts[2].proxy).equal(false);
+            should(posts[2].httpAgent).be.ok();
+            should(posts[2].httpAgent.proxy.host).be.exactly('somereallyfakeproxyhost');
         });
 
         function buildPostLookup() {
