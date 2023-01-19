@@ -52,12 +52,11 @@ export default class DirectBinaryUpload extends UploadBase {
      *  documentation for details.
      */
     async canUpload(options) {
-        const uploadProcess = new DirectBinaryUploadProcess(this.getOptions(), options);
-
-        await uploadProcess.initiateUpload(new UploadResult(this.getOptions(), options), [{
-            fileName: `${new Date().getTime()}_canUploadTest.jpg`,
-            fileSize: 1,
-            blob: [1]
-        }]);
+        // this is a legacy option, but leaving the method in place for backward compatibility. The library
+        // previously only worked if direct binary upload was enabled on AEM. However, the capabilities
+        // of node-httptransfer were updated so that it could upload using the create asset servlet if
+        // direct binary upload is not available. So the upload process will now work with any AEM instance,
+        // regardless of its configuration
+        return true;
     }
 }
