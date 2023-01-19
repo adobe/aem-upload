@@ -51,6 +51,7 @@ export default class DirectBinaryUpload extends UploadBase {
      * @param {DirectBinaryUploadOptions} options Options for the proposed upload. See module
      *  documentation for details.
      */
+    // eslint-disable-next-line no-unused-vars
     async canUpload(options) {
         // this is a legacy option, but leaving the method in place for backward compatibility. The library
         // previously only worked if direct binary upload was enabled on AEM. However, the capabilities
