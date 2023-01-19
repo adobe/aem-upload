@@ -69,47 +69,26 @@ export default class FileSystemUpload extends DirectBinaryUpload {
 
         this.logInfo(`From ${localPaths.length} paths, filesystem upload compiled upload of ${directories.length} directories, ${files.length} files, with a total size of ${totalSize}. Encountered ${errors.length} filesystem-related errors.`);
 
-        const uploadId = uuid();
-        const uploadEventData = {
-            uploadId,
-            fileCount: files.length,
-            directoryCount: directories.length,
-            totalSize
-        };
-        this.sendEvent('fileuploadstart', uploadEventData);
-
-        await this.createUploadDirectories(fileSystemUploadOptions, httpClient, directories);
-
         const uploadFiles = this.convertToUploadFilesWithUrl(fileSystemUploadOptions, files);
+
+        // initiate the upload process
+        const fileUploadOptions = FileSystemUploadOptions.fromOptions(fileSystemUploadOptions)
+            .withUploadFiles(uploadFiles);
+
+        const uploadProcess = new DirectBinaryUploadProcess(this.getOptions(), fileUploadOptions, httpClient, partUploader);
+
+        this.beforeUploadProcess(uploadProcess, directories.length);
+        await this.createUploadDirectories(fileSystemUploadOptions, httpClient, directories);
 
         if (uploadFiles.length) {
             this.logInfo(`Uploading ${uploadFiles.length} files`);
 
-            // initiate the upload process
-            const fileUploadOptions = FileSystemUploadOptions.fromOptions(fileSystemUploadOptions)
-                .withUploadFiles(uploadFiles);
-
-            const uploadProcess = new DirectBinaryUploadProcess(this.getOptions(), fileUploadOptions, httpClient, partUploader);
-
-            uploadProcess.on('filestart', data => this.sendEvent('filestart', data));
-            uploadProcess.on('fileprogress', data => this.sendEvent('fileprogress', data));
-            uploadProcess.on('fileend', data => this.sendEvent('fileend', data));
-            uploadProcess.on('fileerror', data => this.sendEvent('fileerror', data));
-            uploadProcess.on('filecancelled', data => this.sendEvent('filecancelled', data));
-
-            try {
-                await uploadProcess.upload(uploadResult);
-            } catch (uploadError) {
-                uploadResult.addUploadError(uploadError);
-            }
+            await this.executeUploadProcess(uploadProcess, uploadResult);
         } else {
             this.logInfo('No files found in provided paths, skipping upload.');
         }
 
-        this.sendEvent('fileuploadend', {
-            ...uploadEventData,
-            result: uploadResult.toJSON()
-        });
+        this.afterUploadProcess(uploadProcess, uploadResult, directories.length);
 
         // we have a list of multiple results (for each directory upload). Merge all those
         // into a single result that contains metrics for the overall upload of all

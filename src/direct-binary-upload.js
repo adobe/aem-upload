@@ -33,13 +33,9 @@ export default class DirectBinaryUpload extends UploadBase {
         const uploadProcess = new DirectBinaryUploadProcess(this.getOptions(), options);
         const uploadResult = new UploadResult(this.getOptions(), options);
 
-        uploadProcess.on('filestart', data => this.sendEvent('filestart', data));
-        uploadProcess.on('fileprogress', data => this.sendEvent('fileprogress', data));
-        uploadProcess.on('fileend', data => this.sendEvent('fileend', data));
-        uploadProcess.on('fileerror', data => this.sendEvent('fileerror', data));
-        uploadProcess.on('filecancelled', data => this.sendEvent('filecancelled', data));
-
-        await uploadProcess.upload(uploadResult);
+        this.beforeUploadProcess(uploadProcess);
+        await this.executeUploadProcess(uploadProcess, uploadResult);
+        this.afterUploadProcess(uploadProcess, uploadResult);
 
         return uploadResult;
     }

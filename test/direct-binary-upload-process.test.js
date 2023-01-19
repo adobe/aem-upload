@@ -189,5 +189,20 @@ describe('DirectBinaryUploadProcessTest', () => {
             should(uploadFile.fileUrl).be.exactly('http://localhost/content/dam/target/file-upload-smoke/fileuploadsmoke.jpg');
             should(uploadFile.fileSize).be.exactly(1024);
         });
+
+        it('test total upload size', function () {
+            const options = new DirectBinaryUploadOptions()
+                .withUploadFiles([{
+                    fileName: 'fileuploadsmoke.jpg',
+                    fileSize: 1024,
+                    filePath: '/test/file/path.jpg'
+                }, {
+                    fileName: 'fileuploadsmoke2.jpg',
+                    fileSize: 2048,
+                    filePath: '/test/file/path2.jpg'
+                }]);
+            const process = new DirectBinaryUploadProcess(getTestOptions(), options);
+            should(process.getTotalSize()).be.exactly(3072);
+        });
     });
 });

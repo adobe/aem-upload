@@ -13,6 +13,7 @@ governing permissions and limitations under the License.
 import querystring from 'querystring';
 import { AEMUpload } from '@adobe/httptransfer/es2015';
 import httpTransferLogger from '@adobe/httptransfer/es2015/logger';
+import { v4 as uuid } from 'uuid';
 
 import InitResponse from './init-response';
 import UploadError from './upload-error';
@@ -81,6 +82,7 @@ export default class DirectBinaryUploadProcess extends FileTransferHandler {
         this.fileEvents = {};
         this.fileTransfer = {};
         this.completeUri = '';
+        this.uploadId = uuid();
 
         const log = options.log;
         if (log) {
@@ -89,6 +91,30 @@ export default class DirectBinaryUploadProcess extends FileTransferHandler {
             httpTransferLogger.warn = (...args) => log.warn.apply(log, args);
             httpTransferLogger.error = (...args) => log.error.apply(log, args);
         }
+    }
+
+    /**
+     * Retrieves a unique identifier that can be used to identify this particular upload.
+     *
+     * @returns {string} ID representing the upload.
+     */
+    getUploadId() {
+        return this.uploadId;
+    }
+
+    /**
+     * Retrieves the total size of the upload, which is determined based on the file size
+     * specified on each upload file.
+     *
+     * @returns {number} Total size, in bytes.
+     */
+    getTotalSize() {
+        let totalSize = 0;
+        this.getUploadOptions().getUploadFiles().forEach((uploadFile) => {
+            const { fileSize = 0 } = uploadFile;
+            totalSize += fileSize;
+        });
+        return totalSize;
     }
 
     /**
