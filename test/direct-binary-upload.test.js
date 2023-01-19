@@ -254,6 +254,7 @@ describe('DirectBinaryUploadTest', () => {
             should(events[7].event).be.exactly('fileuploadend');
             should(events[7].data.fileCount).be.exactly(2);
             should(events[7].data.totalSize).be.exactly(3023);
+            should(events[7].data.result).be.ok;
         });
 
         it('direct binary not supported', async() => {
@@ -275,7 +276,15 @@ describe('DirectBinaryUploadTest', () => {
                 });
             });
 
-            await upload.canUpload(options);
+            let threw = false;
+            try {
+                await upload.canUpload(options);
+            } catch (e) {
+                should(e).be.ok();
+                should(e.getCode()).be.exactly(ErrorCodes.NOT_SUPPORTED);
+                threw = true;
+            }
+            should(threw).be.ok();
         });
     });
 });
