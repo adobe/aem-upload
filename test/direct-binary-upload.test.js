@@ -276,15 +276,7 @@ describe('DirectBinaryUploadTest', () => {
                 });
             });
 
-            let threw = false;
-            try {
-                await upload.canUpload(options);
-            } catch (e) {
-                should(e).be.ok();
-                should(e.getCode()).be.exactly(ErrorCodes.NOT_SUPPORTED);
-                threw = true;
-            }
-            should(threw).be.ok();
+            await upload.canUpload(options);
         });
     });
 });

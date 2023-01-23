@@ -23,8 +23,7 @@
 
 In AEM Assets 6.5 and prior, a single post request to a servlet that manges asset binaries is enough for uploading files. Newer versions of AEM can be configured 
 to use direct binary upload, which means that asset binaries are no longer uploaded straight to AEM. Because of this there is a more complex 
-algorithm to follow when uploading asset binaries. Due to the fact that direct binary upload is a configuration, whether or not this library can be used 
-on a given AEM instance will vary. However, all AEM as a Cloud Service instances will have direct binary upload enabled, so this library will work with those.
+algorithm to follow when uploading asset binaries. This library will check the configuration of the target AEM instance, and will either use the direct binary upload algorithm or the create asset servlet, depending on the configuration.
 
 This tool is provided for making uploading easier, and can be used as a command line executable
 or required as a Node.js module.
