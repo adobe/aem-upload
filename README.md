@@ -492,6 +492,76 @@ through the stages of uploading a file. These events are listed below.
     </thead>
     <tbody style="vertical-align: top">
         <tr>
+            <td>fileuploadstart</td>
+            <td>Indicates an upload of one or more files is starting.</td>
+            <td>
+                The data sent with the event will be a simple javascript <code>object</code>
+                with the following properties:
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Property</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody style="vertical-align: top">
+                        <tr>
+                            <td>uploadId</td>
+                            <td>string</td>
+                            <td>
+                                A unique identifier that can be used to identify the upload session.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>fileCount</td>
+                            <td>number</td>
+                            <td>
+                                The total number of files that will be uploaded as part of this upload session.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>totalSize</td>
+                            <td>number</td>
+                            <td>
+                                The total size, in bytes, of all files that will be uploaded as part of this upload session.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>directoryCount</td>
+                            <td>number</td>
+                            <td>The number of directories included in the upload session.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </td>
+        </tr>
+        <tr>
+            <td>fileuploadend</td>
+            <td>Indicates an upload of one or more files has finished.</td>
+            <td>
+                The data sent with the event will be the same as the `fileuploadstart` event, with the following additional elements:
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Property</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody style="vertical-align: top">
+                        <tr>
+                            <td>result</td>
+                            <td>object</td>
+                            <td>
+                                Simple javascript object containing the same upload result information that is returned by the library's `upload()` methods.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </td>
+        </tr>
+        <tr>
             <td>filestart</td>
             <td>Indicates that a file has started to upload.</td>
             <td>

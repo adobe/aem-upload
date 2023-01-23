@@ -85,4 +85,74 @@ export default class UploadBase extends EventEmitter {
     sendEvent(eventName, eventData) {
         this.emit(eventName, eventData);
     }
+
+    /**
+     * Builds information about an upload, which will be included in upload-level
+     * events sent by the uploader process.
+     *
+     * @param {import('./direct-binary-upload-process').default} uploadProcess The
+     *  upload process that will be performing the work of the upload.
+     * @param {number} [directoryCount=0] If specified, the number of directories
+     *  that will be created by the upload process.
+     */
+    getUploadEventData(uploadProcess, directoryCount = 0) {
+        return {
+            uploadId: uploadProcess.getUploadId(),
+            fileCount: uploadProcess.getUploadOptions().getUploadFiles().length,
+            totalSize: uploadProcess.getTotalSize(),
+            directoryCount
+        };
+    }
+
+    /**
+     * Sends an event that will inform consumers that items are about to be uploaded.
+     *
+     * @param {import('./direct-binary-upload-process').default} uploadProcess The
+     *  upload process that will be performing the work of the upload.
+     * @param {number} [directoryCount=0] If specified, the number of directories
+     *  that will be created by the upload process.
+     */
+    beforeUploadProcess(uploadProcess, directoryCount = 0) {
+        this.sendEvent('fileuploadstart', this.getUploadEventData(uploadProcess, directoryCount));
+    }
+
+    /**
+     * Sends an event that will inform consumers that items have finished uploading.
+     *
+     * @param {import('./direct-binary-upload-process').default} uploadProcess The
+     *  upload process that will be performing the work of the upload.
+     * @param {import('./upload-result').default} uploadResult Result information
+     *  about the upload.
+     * @param {number} [directoryCount=0] If specified, the number of directories
+     *  that will be created by the upload process.
+     */
+    afterUploadProcess(uploadProcess, uploadResult, directoryCount = 0) {
+        this.sendEvent('fileuploadend', {
+            ...this.getUploadEventData(uploadProcess, directoryCount),
+            result: uploadResult.toJSON()
+        });
+    }
+
+    /**
+     * Does the work of executing an upload of one or more files to AEM.
+     *
+     * @param {import('./direct-binary-upload-process').default} uploadProcess The
+     *  upload process that will be performing the work of the upload.
+     * @param {import('./upload-result').default} uploadResult Result information
+     *  about the upload.
+     * @returns {Promise} Resolves when the upload has finished.
+     */
+    async executeUploadProcess(uploadProcess, uploadResult) {
+        uploadProcess.on('filestart', data => this.sendEvent('filestart', data));
+        uploadProcess.on('fileprogress', data => this.sendEvent('fileprogress', data));
+        uploadProcess.on('fileend', data => this.sendEvent('fileend', data));
+        uploadProcess.on('fileerror', data => this.sendEvent('fileerror', data));
+        uploadProcess.on('filecancelled', data => this.sendEvent('filecancelled', data));
+
+        try {
+            await uploadProcess.upload(uploadResult);
+        } catch (uploadError) {
+            uploadResult.addUploadError(uploadError);
+        }
+    }
 }

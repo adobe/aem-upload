@@ -71,6 +71,12 @@ function verifyFile2Event(eventName, eventData, folderName = 'folder') {
 }
 
 function monitorEvents(upload) {
+    upload.on('fileuploadstart', data => {
+        events.push({ event: 'fileuploadstart', data });
+    });
+    upload.on('fileuploadend', data => {
+        events.push({ event: 'fileuploadend', data });
+    });
     upload.on('filestart', data => {
         events.push({ event: 'filestart', data });
     });
@@ -197,13 +203,15 @@ describe('DirectBinaryUploadTest', () => {
             should(file2Part1.getError()).not.be.ok();
 
             // verify that events are correct
-            should(events.length).be.exactly(6);
-            verifyFile1Event('filestart', events[0]);
-            verifyFile1Event('fileprogress', events[1]);
-            verifyFile1Event('fileend', events[2]);
-            verifyFile2Event('filestart', events[3]);
-            verifyFile2Event('fileprogress', events[4]);
-            verifyFile2Event('fileend', events[5]);
+            should(events.length).be.exactly(8);
+            should(events[0].event).be.exactly('fileuploadstart');
+            verifyFile1Event('filestart', events[1]);
+            verifyFile1Event('fileprogress', events[2]);
+            verifyFile1Event('fileend', events[3]);
+            verifyFile2Event('filestart', events[4]);
+            verifyFile2Event('fileprogress', events[5]);
+            verifyFile2Event('fileend', events[6]);
+            should(events[7].event).be.exactly('fileuploadend');
         });
 
         it('progress events', async() => {
@@ -223,23 +231,30 @@ describe('DirectBinaryUploadTest', () => {
 
             await upload.uploadFiles(options);
 
-            should(events.length).be.exactly(6);
+            should(events.length).be.exactly(8);
 
-            should(events[0].event).be.exactly('filestart');
-            should(events[0].data.fileName).be.exactly('targetfile.jpg');
-            should(events[1].event).be.exactly('fileprogress');
+            should(events[0].event).be.exactly('fileuploadstart');
+            should(events[0].data.fileCount).be.exactly(2);
+            should(events[0].data.totalSize).be.exactly(3023);
+            should(events[1].event).be.exactly('filestart');
             should(events[1].data.fileName).be.exactly('targetfile.jpg');
-            should(events[1].data.transferred).be.exactly(512);
-            should(events[2].event).be.exactly('fileend');
+            should(events[2].event).be.exactly('fileprogress');
             should(events[2].data.fileName).be.exactly('targetfile.jpg');
+            should(events[2].data.transferred).be.exactly(512);
+            should(events[3].event).be.exactly('fileend');
+            should(events[3].data.fileName).be.exactly('targetfile.jpg');
 
-            should(events[3].event).be.exactly('filestart');
-            should(events[3].data.fileName).be.exactly('targetfile2.jpg');
-            should(events[4].event).be.exactly('fileprogress');
+            should(events[4].event).be.exactly('filestart');
             should(events[4].data.fileName).be.exactly('targetfile2.jpg');
-            should(events[4].data.transferred).be.exactly(512);
-            should(events[5].event).be.exactly('fileend');
+            should(events[5].event).be.exactly('fileprogress');
             should(events[5].data.fileName).be.exactly('targetfile2.jpg');
+            should(events[5].data.transferred).be.exactly(512);
+            should(events[6].event).be.exactly('fileend');
+            should(events[6].data.fileName).be.exactly('targetfile2.jpg');
+            should(events[7].event).be.exactly('fileuploadend');
+            should(events[7].data.fileCount).be.exactly(2);
+            should(events[7].data.totalSize).be.exactly(3023);
+            should(events[7].data.result).be.ok;
         });
 
         it('direct binary not supported', async() => {
