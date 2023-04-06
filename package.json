@@ -29,8 +29,7 @@
     "cookie": "^0.4.1",
     "core-js": "^3.6.4",
     "filesize": "^4.2.1",
-    "http-proxy-agent": "^5.0.0",
-    "https-proxy-agent": "^5.0.1",
+    "hpagent": "^1.2.0",
     "regenerator-runtime": "^0.13.5",
     "uuid": "^3.3.2"
   },

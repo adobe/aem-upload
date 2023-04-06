@@ -36,6 +36,10 @@ class HttpRequest extends UploadBase {
             method: HttpRequest.Method.GET,
             timeout: DefaultValues.REQUEST_TIMEOUT,
         };
+        // special handling to allow configurable support for self-signed certificates
+        if (typeof options.strictSSL !== 'undefined') {
+          this.requestOptions.strictSSL = options.strictSSL;
+        }
         this.headers = {};
         this.cancelId = '';
         this.totalTransferred = 0;
