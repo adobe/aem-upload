@@ -201,12 +201,11 @@ function getHttpTransferOptions(options, directBinaryUploadOptions) {
     //  strictSSL/rejectUnauthorized, or both
     const { protocol = 'http:' } = URL.parse(directBinaryUploadOptions.getUrl());
     const proxyOptions = getProxyAgentOptions(directBinaryUploadOptions);
-    if (proxyOptions) {
+    if (proxyOptions && proxyOptions.href) {
       const agentOptions = {};
 
       // TODO: figure out how to assemble proxy url
-      const proxy = proxyOptions.href ? proxyOptions.href : `${proxyOptions.protocol}://${proxyOptions.host}:${proxyOptions.port}/`;
-      agentOptions.proxy = proxy;
+      agentOptions.proxy = proxyOptions.href;
 
       if (typeof options.strictSSL !== 'undefined') {
         agentOptions.rejectUnauthorized = options.strictSSL;

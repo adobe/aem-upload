@@ -13,7 +13,7 @@ governing permissions and limitations under the License.
 const should = require('should');
 const cookie = require('cookie');
 
-const { importFile, getTestOptions } = require('./testutils');
+const { importFile, getTestOptions, getTestUploadOptions } = require('./testutils');
 const MockRequest = require('./mock-request');
 const { default: HttpResponse } = require('../src/http/http-response');
 const DirectBinaryUploadOptions = importFile('direct-binary-upload-options');
@@ -53,11 +53,28 @@ describe('HttpUtilsTest', () => {
             should(elapsedTime >= 100).be.ok();
         });
 
-        it('proxy to http endpoint (requests made with axios)', async () => {
+        it('no agent if no proxy and no strictSSL', async () => {
+            MockRequest.onGet('https://timedrequestunittest').reply((requestOptions) => {
+                should(requestOptions.httpAgent).not.be.ok();
+                should(requestOptions.httpsAgent).not.be.ok();
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        resolve([200, { success: true }]);
+                    }, 100);
+                });
+            });
+
+            await timedRequest({
+                url: 'https://timedrequestunittest',
+            }, {});
+        });
+
+        it('proxy to http endpoint', async () => {
             MockRequest.onGet('http://timedrequestunittest').reply((requestOptions) => {
                 should(requestOptions.httpsAgent).not.be.ok();
                 should(requestOptions.httpAgent).be.ok();
                 should(requestOptions.httpAgent.proxy).be.ok();
+                should(requestOptions.httpAgent.constructor.name).equal('HttpProxyAgent');
                 should(requestOptions.httpAgent.proxy.hostname).equal('myproxy');
                 should(requestOptions.httpAgent.proxy.port).equal('8080');
                 should(requestOptions.httpAgent.proxy.protocol).equal('http:');
@@ -78,11 +95,68 @@ describe('HttpUtilsTest', () => {
             }, {});
         });
 
-        it.('proxy to https endpoint (requests made with axios)', async () => {
+        it('proxy to http endpoint with strictSSL=false', async () => {
+            MockRequest.onGet('http://timedrequestunittest').reply((requestOptions) => {
+                should(requestOptions.httpsAgent).not.be.ok();
+                should(requestOptions.httpAgent).be.ok();
+                should(requestOptions.httpAgent.proxy).be.ok();
+                should(requestOptions.httpAgent.constructor.name).equal('HttpProxyAgent');
+                should(requestOptions.httpAgent.proxy.hostname).equal('myproxy');
+                should(requestOptions.httpAgent.proxy.port).equal('8080');
+                should(requestOptions.httpAgent.proxy.protocol).equal('http:');
+                should(requestOptions.httpAgent.options.rejectUnauthorized).equal(false);
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        resolve([200, { success: true }]);
+                    }, 100);
+                });
+            });
+
+            await timedRequest({
+                url: 'http://timedrequestunittest',
+                proxy: {
+                    protocol: 'http',
+                    host: 'myproxy',
+                    port: '8080'
+                },
+                strictSSL: false,
+            }, {});
+        });
+
+        it('proxy to http endpoint with strictSSL=true', async () => {
+            MockRequest.onGet('http://timedrequestunittest').reply((requestOptions) => {
+                should(requestOptions.httpsAgent).not.be.ok();
+                should(requestOptions.httpAgent).be.ok();
+                should(requestOptions.httpAgent.proxy).be.ok();
+                should(requestOptions.httpAgent.constructor.name).equal('HttpProxyAgent');
+                should(requestOptions.httpAgent.proxy.hostname).equal('myproxy');
+                should(requestOptions.httpAgent.proxy.port).equal('8080');
+                should(requestOptions.httpAgent.proxy.protocol).equal('http:');
+                should(requestOptions.httpAgent.options.rejectUnauthorized).equal(true);
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        resolve([200, { success: true }]);
+                    }, 100);
+                });
+            });
+
+            await timedRequest({
+                url: 'http://timedrequestunittest',
+                proxy: {
+                    protocol: 'http',
+                    host: 'myproxy',
+                    port: '8080'
+                },
+                strictSSL: true,
+            }, {});
+        });
+
+        it('proxy to https endpoint', async () => {
             MockRequest.onGet('https://timedrequestunittest').reply((requestOptions) => {
                 should(requestOptions.httpAgent).not.be.ok();
                 should(requestOptions.httpsAgent).be.ok();
                 should(requestOptions.httpsAgent.proxy).be.ok();
+                should(requestOptions.httpsAgent.constructor.name).equal('HttpsProxyAgent');
                 should(requestOptions.httpsAgent.proxy.hostname).equal('myproxy');
                 should(requestOptions.httpsAgent.proxy.port).equal('8080');
                 should(requestOptions.httpsAgent.proxy.protocol).equal('http:');
@@ -100,6 +174,146 @@ describe('HttpUtilsTest', () => {
                     host: 'myproxy',
                     port: '8080'
                 }
+            }, {});
+        });
+
+        it('proxy to https endpoint with strictSSL=false', async () => {
+            MockRequest.onGet('https://timedrequestunittest').reply((requestOptions) => {
+                should(requestOptions.httpAgent).not.be.ok();
+                should(requestOptions.httpsAgent).be.ok();
+                should(requestOptions.httpsAgent.proxy).be.ok();
+                should(requestOptions.httpsAgent.constructor.name).equal('HttpsProxyAgent');
+                should(requestOptions.httpsAgent.proxy.hostname).equal('myproxy');
+                should(requestOptions.httpsAgent.proxy.port).equal('8080');
+                should(requestOptions.httpsAgent.proxy.protocol).equal('http:');
+                should(requestOptions.httpsAgent.options.rejectUnauthorized).equal(false);
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        resolve([200, { success: true }]);
+                    }, 100);
+                });
+            });
+
+            await timedRequest({
+                url: 'https://timedrequestunittest',
+                proxy: {
+                    protocol: 'http',
+                    host: 'myproxy',
+                    port: '8080'
+                },
+                strictSSL: false,
+            }, {});
+        });
+
+        it('proxy to https endpoint with strictSSL=true', async () => {
+            MockRequest.onGet('https://timedrequestunittest').reply((requestOptions) => {
+                should(requestOptions.httpAgent).not.be.ok();
+                should(requestOptions.httpsAgent).be.ok();
+                should(requestOptions.httpsAgent.proxy).be.ok();
+                should(requestOptions.httpsAgent.constructor.name).equal('HttpsProxyAgent');
+                should(requestOptions.httpsAgent.proxy.hostname).equal('myproxy');
+                should(requestOptions.httpsAgent.proxy.port).equal('8080');
+                should(requestOptions.httpsAgent.proxy.protocol).equal('http:');
+                should(requestOptions.httpsAgent.options.rejectUnauthorized).equal(true);
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        resolve([200, { success: true }]);
+                    }, 100);
+                });
+            });
+
+            await timedRequest({
+                url: 'https://timedrequestunittest',
+                proxy: {
+                    protocol: 'http',
+                    host: 'myproxy',
+                    port: '8080'
+                },
+                strictSSL: true,
+            }, {});
+        });
+
+        it('proxy to https endpoint with strictSSL unset', async () => {
+            MockRequest.onGet('https://timedrequestunittest').reply((requestOptions) => {
+                should(requestOptions.httpAgent).not.be.ok();
+                should(requestOptions.httpsAgent).be.ok();
+                should(requestOptions.httpsAgent.constructor.name).equal('HttpsProxyAgent');
+                should(requestOptions.httpsAgent.proxy).be.ok();
+                should(requestOptions.httpsAgent.proxy.hostname).equal('myproxy');
+                should(requestOptions.httpsAgent.proxy.port).equal('8080');
+                should(requestOptions.httpsAgent.proxy.protocol).equal('http:');
+                should(requestOptions.httpsAgent.options.rejectUnauthorized).not.be.ok();
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        resolve([200, { success: true }]);
+                    }, 100);
+                });
+            });
+
+            await timedRequest({
+                url: 'https://timedrequestunittest',
+                proxy: {
+                    protocol: 'http',
+                    host: 'myproxy',
+                    port: '8080'
+                },
+            }, {});
+        });
+
+        it('node agent if no proxy and strictSSL=false to https endpoint', async () => {
+            MockRequest.onGet('https://timedrequestunittest').reply((requestOptions) => {
+                should(requestOptions.httpAgent).not.be.ok();
+                should(requestOptions.httpsAgent).be.ok();
+                should(requestOptions.httpsAgent.constructor.name).equal('Agent');
+                should(requestOptions.httpsAgent.proxy).not.be.ok();
+                should(requestOptions.httpsAgent.options.rejectUnauthorized).equals(false);
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        resolve([200, { success: true }]);
+                    }, 100);
+                });
+            });
+
+            await timedRequest({
+                url: 'https://timedrequestunittest',
+                strictSSL: false,
+            }, {});
+        });
+
+        it('node agent if no proxy and strictSSL=true to https endpoint', async () => {
+            MockRequest.onGet('https://timedrequestunittest').reply((requestOptions) => {
+                should(requestOptions.httpAgent).not.be.ok();
+                should(requestOptions.httpsAgent).be.ok();
+                should(requestOptions.httpsAgent.constructor.name).equal('Agent');
+                should(requestOptions.httpsAgent.proxy).not.be.ok();
+                should(requestOptions.httpsAgent.options.rejectUnauthorized).equals(true);
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        resolve([200, { success: true }]);
+                    }, 100);
+                });
+            });
+
+            await timedRequest({
+                url: 'https://timedrequestunittest',
+                strictSSL: true,
+            }, {});
+        });
+
+        it('no agent if no proxy and strictSSL=false to http endpoint', async () => {
+            MockRequest.onGet('http://timedrequestunittest').reply((requestOptions) => {
+                should(requestOptions.httpAgent).not.be.ok();
+                should(requestOptions.httpsAgent).not.be.ok();
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        resolve([200, { success: true }]);
+                    }, 100);
+                });
+            });
+
+            await timedRequest({
+                url: 'http://timedrequestunittest',
+                strictSSL: false,
             }, {});
         });
     });
@@ -153,65 +367,121 @@ describe('HttpUtilsTest', () => {
             maxConcurrent: 5,
             uploadFiles: []
         });
+    });
 
-        uploadOptions.withConcurrent(false)
-            .withHeaders({
-                hello: 'world!'
-            })
-            .withUploadFiles([{
-                fileSize: 1024,
-                fileName: 'file.jpg',
-                filePath: '/my/test/file.jpg',
-                createVersion: true,
-                versionComment: 'My Comment',
-                versionLabel: 'Version Label',
-                replace: true,
-                partHeaders: {
-                    part: 'header'
-                }
-            }, {
-                fileSize: 2048,
-                fileName: 'blob-file.jpg',
-                blob: [1, 2, 3]
-            }])
-            .withHttpProxy(new HttpProxy('http://localhost:1234'));
+    // contains href
+    it('test get http transfer options - proxy to http endpoint', function() {
+      const uploadOptions = getTestUploadOptions()
+          .withUrl('http://localhost/content/dam')
+          .withHttpProxy(new HttpProxy('http://localhost:1234'));
 
-        // test proxying to http endpoint - requests made with node-httptransfer
-        httpTransfer = getHttpTransferOptions(getTestOptions(), uploadOptions);
-        should(httpTransfer.requestOptions).be.ok();
-        should(httpTransfer.requestOptions.agent).be.ok();
-        should(httpTransfer.requestOptions.agent.constructor.name).be.exactly('HttpProxyAgent');
-        delete httpTransfer.requestOptions;
-        should(httpTransfer).deepEqual({
-            headers: {
-                hello: 'world!'
-            },
-            concurrent: false,
-            maxConcurrent: 1,
-            uploadFiles: [{
-                createVersion: true,
-                filePath: '/my/test/file.jpg',
-                fileSize: 1024,
-                fileUrl: 'http://localhost/content/dam/file.jpg',
-                multipartHeaders: {
-                    part: 'header'
-                },
-                replace: true,
-                versionComment: 'My Comment',
-                versionLabel: 'Version Label'
-            }, {
-                blob: [1, 2, 3],
-                fileSize: 2048,
-                fileUrl: 'http://localhost/content/dam/blob-file.jpg'
-            }]
-        });
+      const httpTransfer = getHttpTransferOptions(getTestOptions(), uploadOptions);
+      should(httpTransfer.requestOptions).be.ok();
+      should(httpTransfer.requestOptions.agent).be.ok();
+      should(httpTransfer.requestOptions.agent.constructor.name).be.exactly('HttpProxyAgent');
+    });
 
-        // test proxying to https endpoint - requests made with node-httptransfer
-        uploadOptions.withUrl('https://localhost/content/dam');
-        httpTransfer = getHttpTransferOptions(getTestOptions(), uploadOptions);
-        should(httpTransfer.requestOptions).be.ok();
-        should(httpTransfer.requestOptions.agent).be.ok();
-        should(httpTransfer.requestOptions.agent.constructor.name).be.exactly('HttpsProxyAgent');
+
+    it('test get http transfer options - proxy to http endpoint with strictSSL=false', function() {
+      const uploadOptions = getTestUploadOptions()
+          .withUrl('htts://localhost/content/dam')
+          .withHttpProxy(new HttpProxy('http://localhost:1234'));
+
+      const httpTransfer = getHttpTransferOptions(getTestOptions({ strictSSL: false }), uploadOptions);
+      should(httpTransfer.requestOptions).be.ok();
+      should(httpTransfer.requestOptions.agent).be.ok();
+      should(httpTransfer.requestOptions.agent.constructor.name).be.exactly('HttpProxyAgent');
+      should(httpTransfer.requestOptions.agent.options.rejectUnauthorized).be.exactly(false);
+    });
+
+
+    it('test get http transfer options - proxy to http endpoint with strictSSL=true', function() {
+      const uploadOptions = getTestUploadOptions()
+          .withUrl('http://localhost/content/dam')
+          .withHttpProxy(new HttpProxy('http://localhost:1234'));
+
+      const httpTransfer = getHttpTransferOptions(getTestOptions({ strictSSL: true }), uploadOptions);
+      should(httpTransfer.requestOptions).be.ok();
+      should(httpTransfer.requestOptions.agent).be.ok();
+      should(httpTransfer.requestOptions.agent.constructor.name).be.exactly('HttpProxyAgent');
+      should(httpTransfer.requestOptions.agent.options.rejectUnauthorized).be.exactly(true);
+    });
+
+
+    it('test get http transfer options - proxy to https endpoint', function() {
+      const uploadOptions = getTestUploadOptions()
+          .withUrl('https://localhost/content/dam')
+          .withHttpProxy(new HttpProxy('http://localhost:1234'));
+
+      const httpTransfer = getHttpTransferOptions(getTestOptions(), uploadOptions);
+      should(httpTransfer.requestOptions).be.ok();
+      should(httpTransfer.requestOptions.agent).be.ok();
+      should(httpTransfer.requestOptions.agent.constructor.name).be.exactly('HttpsProxyAgent');
+    });
+
+
+    it('test get http transfer options - proxy to https endpoint with strictSSL=false', function() {
+      const uploadOptions = getTestUploadOptions()
+          .withUrl('https://localhost/content/dam')
+          .withHttpProxy(new HttpProxy('http://localhost:1234'));
+
+      const httpTransfer = getHttpTransferOptions(getTestOptions({ strictSSL: false }), uploadOptions);
+      should(httpTransfer.requestOptions).be.ok();
+      should(httpTransfer.requestOptions.agent).be.ok();
+      should(httpTransfer.requestOptions.agent.constructor.name).be.exactly('HttpsProxyAgent');
+      should(httpTransfer.requestOptions.agent.options.rejectUnauthorized).be.exactly(false);
+    });
+
+
+    it('test get http transfer options - proxy to https endpoint with strictSSL=true', function() {
+      const uploadOptions = getTestUploadOptions()
+          .withUrl('https://localhost/content/dam')
+          .withHttpProxy(new HttpProxy('http://localhost:1234'));
+
+      const httpTransfer = getHttpTransferOptions(getTestOptions({ strictSSL: true }), uploadOptions);
+      should(httpTransfer.requestOptions).be.ok();
+      should(httpTransfer.requestOptions.agent).be.ok();
+      should(httpTransfer.requestOptions.agent.constructor.name).be.exactly('HttpsProxyAgent');
+      should(httpTransfer.requestOptions.agent.options.rejectUnauthorized).be.exactly(true);
+    });
+
+
+    it('test get http transfer options - no requestOptions when no proxy or strictSSL', function() {
+      const uploadOptions = getTestUploadOptions()
+          .withUrl('https://localhost/content/dam');
+
+      const httpTransfer = getHttpTransferOptions(getTestOptions(), uploadOptions);
+      should(httpTransfer.requestOptions).not.be.ok();
+    });
+
+
+    it('test get http transfer options - node https agent when strictSSL=false and no proxy', function() {
+      const uploadOptions = getTestUploadOptions()
+          .withUrl('https://localhost/content/dam');
+
+      const httpTransfer = getHttpTransferOptions(getTestOptions({ strictSSL: false }), uploadOptions);
+      should(httpTransfer.requestOptions.agent).be.ok();
+      should(httpTransfer.requestOptions.agent.constructor.name).be.exactly('Agent');
+      should(httpTransfer.requestOptions.agent.options.rejectUnauthorized).be.exactly(false);
+    });
+
+
+    it('test get http transfer options - node https agent when strictSSL=true and no proxy', function() {
+      const uploadOptions = getTestUploadOptions()
+          .withUrl('https://localhost/content/dam');
+
+      const httpTransfer = getHttpTransferOptions(getTestOptions({ strictSSL: true }), uploadOptions);
+      should(httpTransfer.requestOptions.agent).be.ok();
+      should(httpTransfer.requestOptions.agent.constructor.name).be.exactly('Agent');
+      should(httpTransfer.requestOptions.agent.options.rejectUnauthorized).be.exactly(true);
+    });
+
+    it('test get http transfer options - no agent when http endpoint with strictSSL=false', function() {
+      const uploadOptions = getTestUploadOptions()
+          .withUrl('http://localhost/content/dam');
+
+      const httpTransfer = getHttpTransferOptions(getTestOptions({ strictSSL: false }), uploadOptions);
+      should(httpTransfer.requestOptions).not.be.ok();
     });
 
 

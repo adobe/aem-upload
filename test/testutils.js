@@ -13,6 +13,7 @@ governing permissions and limitations under the License.
 require('core-js');
 require('regenerator-runtime');
 
+const DirectBinaryUploadOptions = importFile('direct-binary-upload-options');
 const proxyquire = require('proxyquire').noCallThru();
 const should = require('should');
 
@@ -33,7 +34,7 @@ module.exports.getImportPath = getImportPath;
  *  is in the project, the name should be the relative path to the file from the src/ directory (such
  *  as "./upload-file").
  */
-module.exports.importFile = (file, fileMocks) => {
+function importFile(file, fileMocks) {
     const requirePath = getImportPath(file);
     let required;
     if (fileMocks) {
@@ -46,6 +47,7 @@ module.exports.importFile = (file, fileMocks) => {
     }
     return required;
 }
+module.exports.importFile = importFile;
 
 function getConsoleLogger() {
     return {
@@ -75,6 +77,34 @@ module.exports.getTestOptions = (addlOptions = {}) => {
         }
     }
     return addlOptions;
+}
+
+/**
+ * Retrieves high level direct binary upload options common for many tests.
+ * @returns {object} Options for a direct binary upload operation.
+ */
+module.exports.getTestUploadOptions = () => {
+    return new DirectBinaryUploadOptions()
+        .withConcurrent(false)
+        .withHeaders({
+            hello: 'world!'
+        })
+        .withUploadFiles([{
+            fileSize: 1024,
+            fileName: 'file.jpg',
+            filePath: '/my/test/file.jpg',
+            createVersion: true,
+            versionComment: 'My Comment',
+            versionLabel: 'Version Label',
+            replace: true,
+            partHeaders: {
+                part: 'header'
+            }
+        }, {
+            fileSize: 2048,
+            fileName: 'blob-file.jpg',
+            blob: [1, 2, 3]
+        }]);
 }
 
 // stores events for monitorEvents().
