@@ -58,9 +58,9 @@ describe('HttpUtilsTest', () => {
                 should(requestOptions.httpsAgent).not.be.ok();
                 should(requestOptions.httpAgent).be.ok();
                 should(requestOptions.httpAgent.proxy).be.ok();
-                should(requestOptions.httpAgent.proxy.host).equal('myproxy');
-                should(requestOptions.httpAgent.proxy.port).equal(8080);
-                should(requestOptions.httpAgent.proxy.protocol).equal('http');
+                should(requestOptions.httpAgent.proxy.hostname).equal('myproxy');
+                should(requestOptions.httpAgent.proxy.port).equal('8080');
+                should(requestOptions.httpAgent.proxy.protocol).equal('http:');
                 return new Promise(resolve => {
                     setTimeout(() => {
                         resolve([200, { success: true }]);
@@ -78,14 +78,14 @@ describe('HttpUtilsTest', () => {
             }, {});
         });
 
-        it('proxy to https endpoint (requests made with axios)', async () => {
+        it.('proxy to https endpoint (requests made with axios)', async () => {
             MockRequest.onGet('https://timedrequestunittest').reply((requestOptions) => {
                 should(requestOptions.httpAgent).not.be.ok();
                 should(requestOptions.httpsAgent).be.ok();
                 should(requestOptions.httpsAgent.proxy).be.ok();
-                should(requestOptions.httpsAgent.proxy.host).equal('myproxy');
-                should(requestOptions.httpsAgent.proxy.port).equal(8080);
-                should(requestOptions.httpsAgent.proxy.protocol).equal('http');
+                should(requestOptions.httpsAgent.proxy.hostname).equal('myproxy');
+                should(requestOptions.httpsAgent.proxy.port).equal('8080');
+                should(requestOptions.httpsAgent.proxy.protocol).equal('http:');
                 return new Promise(resolve => {
                     setTimeout(() => {
                         resolve([200, { success: true }]);

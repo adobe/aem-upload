@@ -184,7 +184,7 @@ describe('FileSystemUpload Tests', () => {
             const uploadOptions = new FileSystemUploadOptions()
                 .withUrl(MockRequest.getUrl('/folder/structure'))
                 .withBasicAuth('testauth')
-                .withHttpProxy(new HttpProxy('http://somereallyfakeproxyhost'));
+                .withHttpProxy(new HttpProxy('http://somereallyfakeproxyhost:3128'));
             const path1Dir = new FileSystemUploadDirectory(uploadOptions, '/prefix/path1', 'path1');
             const fsUpload = new FileSystemUpload(getTestOptions());
             await fsUpload.createUploadDirectories(uploadOptions, httpClient, [
@@ -200,15 +200,15 @@ describe('FileSystemUpload Tests', () => {
             // confirm proxy details - requests made with axios
             should(posts[0].proxy).equal(false);
             should(posts[0].httpAgent).be.ok();
-            should(posts[0].httpAgent.proxy.host).be.exactly('somereallyfakeproxyhost');
+            should(posts[0].httpAgent.proxy.hostname).be.exactly('somereallyfakeproxyhost');
             should(posts[1].url).be.exactly(MockRequest.getApiUrl('/folder/structure/path1/dir1'))
             should(posts[1].proxy).equal(false);
             should(posts[1].httpAgent).be.ok();
-            should(posts[1].httpAgent.proxy.host).be.exactly('somereallyfakeproxyhost');
+            should(posts[1].httpAgent.proxy.hostname).be.exactly('somereallyfakeproxyhost');
             should(posts[2].url).be.exactly(MockRequest.getApiUrl('/folder/structure/path1/dir2'))
             should(posts[2].proxy).equal(false);
             should(posts[2].httpAgent).be.ok();
-            should(posts[2].httpAgent.proxy.host).be.exactly('somereallyfakeproxyhost');
+            should(posts[2].httpAgent.proxy.hostname).be.exactly('somereallyfakeproxyhost');
         });
 
         function buildPostLookup() {

@@ -13,7 +13,8 @@ governing permissions and limitations under the License.
 import axios, { CancelToken } from 'axios';
 import cookie from 'cookie';
 import URL from 'url';
-const { HttpProxyAgent, HttpsProxyAgent } = require('hpagent');
+import https from 'https';
+import { HttpProxyAgent, HttpsProxyAgent } from 'hpagent';
 
 import { exponentialRetry } from './utils';
 import UploadFile from './upload-file';
@@ -60,26 +61,31 @@ async function timedRequest(requestOptions, retryOptions, cancelToken) {
 
     // assemble http(s) agent options, which can contain entries for proxy,
     //  strictSSL/rejectUnauthorized, or both
-    const agentOptions = {};
+    const { protocol = 'http:' } = URL.parse(options.url);
     if (options.proxy) {
+      const agentOptions = {};
+
       // TODO: figure out how to assemble proxy url
       agentOptions.proxy = `${options.proxy.protocol}://${options.proxy.host}:${options.proxy.port}/`;
-      // need to clear this property since it does not work (see https://github.com/axios/axios/issues/2072)
-      options.proxy = false;
-    }
-    if (typeof options.strictSSL !== 'undefined') {
-      agentOptions.rejectUnauthorized = options.strictSSL;
-    }
 
-    // add http(s) agent for axios requests to httpAgent or httpsAgent property as mentioned
-    //  in this issue: https://github.com/axios/axios/issues/2072
-    if (Object.keys(agentOptions).length) {
-      const { protocol = 'http:' } = URL.parse(options.url);
+      // need to clear this property since it does not work for axios (see https://github.com/axios/axios/issues/2072)
+      options.proxy = false;
+
+      if (typeof options.strictSSL !== 'undefined') {
+        agentOptions.rejectUnauthorized = options.strictSSL;
+      }
+
+      // add http(s) agent for axios requests to httpAgent or httpsAgent property as mentioned
+      //  in this issue: https://github.com/axios/axios/issues/2072
       if (protocol === 'https:') {
         options.httpsAgent = new HttpsProxyAgent(agentOptions);
       } else {
         options.httpAgent = new HttpProxyAgent(agentOptions);
       }
+    } else if (typeof options.strictSSL !== 'undefined' && protocol === 'https:') {
+      options.httpsAgent = new https.Agent({
+        rejectUnauthorized: options.strictSSL,
+      });
     }
 
     await exponentialRetry(retryOptions, async () => {
@@ -193,22 +199,27 @@ function getHttpTransferOptions(options, directBinaryUploadOptions) {
 
     // assemble http(s) agent options, which can contain entries for proxy,
     //  strictSSL/rejectUnauthorized, or both
-    const agentOptions = {};
+    const { protocol = 'http:' } = URL.parse(directBinaryUploadOptions.getUrl());
     const proxyOptions = getProxyAgentOptions(directBinaryUploadOptions);
     if (proxyOptions) {
+      const agentOptions = {};
+
       // TODO: figure out how to assemble proxy url
       const proxy = proxyOptions.href ? proxyOptions.href : `${proxyOptions.protocol}://${proxyOptions.host}:${proxyOptions.port}/`;
       agentOptions.proxy = proxy;
-    }
-    if (typeof options.strictSSL !== 'undefined') {
-      agentOptions.rejectUnauthorized = options.strictSSL;
-    }
 
-    // add http(s) agent to agent property for node-fetch requests
-    if (Object.keys(agentOptions).length) {
-      const { protocol = 'http:' } = URL.parse(directBinaryUploadOptions.getUrl());
+      if (typeof options.strictSSL !== 'undefined') {
+        agentOptions.rejectUnauthorized = options.strictSSL;
+      }
+
       transferOptions.requestOptions = {
         agent: protocol === 'https:' ? new HttpsProxyAgent(agentOptions) : new HttpProxyAgent(agentOptions)
+      };
+    } else if (typeof options.strictSSL !== 'undefined' && protocol === 'https:') {
+      transferOptions.requestOptions = {
+        agent: new https.Agent({
+          rejectUnauthorized: options.strictSSL,
+        })
       };
     }
 
