@@ -59,33 +59,22 @@ async function timedRequest(requestOptions, retryOptions, cancelToken) {
 
     let response;
 
-    // assemble http(s) agent options, which can contain entries for proxy,
-    //  strictSSL/rejectUnauthorized, or both
     const { protocol = 'http:' } = URL.parse(options.url);
-    if (options.proxy) {
-      const agentOptions = {};
 
-      // TODO: figure out how to assemble proxy url
-      agentOptions.proxy = `${options.proxy.protocol}://${options.proxy.host}:${options.proxy.port}/`;
-
+    let proxyUrl;
+    if (options.proxy && options.proxy.protocol && options.proxy.host && options.proxy.port) {
+      proxyUrl = `${options.proxy.protocol}://${options.proxy.host}:${options.proxy.port}/`;
       // need to clear this property since it does not work for axios (see https://github.com/axios/axios/issues/2072)
       options.proxy = false;
+    }
 
-      if (typeof options.strictSSL !== 'undefined') {
-        agentOptions.rejectUnauthorized = options.strictSSL;
-      }
-
-      // add http(s) agent for axios requests to httpAgent or httpsAgent property as mentioned
-      //  in this issue: https://github.com/axios/axios/issues/2072
+    const agent = getHttpAgent(protocol, proxyUrl, options.strictSSL);
+    if (agent) {
       if (protocol === 'https:') {
-        options.httpsAgent = new HttpsProxyAgent(agentOptions);
+        options.httpsAgent = agent;
       } else {
-        options.httpAgent = new HttpProxyAgent(agentOptions);
+        options.httpAgent = agent;
       }
-    } else if (typeof options.strictSSL !== 'undefined' && protocol === 'https:') {
-      options.httpsAgent = new https.Agent({
-        rejectUnauthorized: options.strictSSL,
-      });
     }
 
     await exponentialRetry(retryOptions, async () => {
@@ -197,32 +186,46 @@ function getHttpTransferOptions(options, directBinaryUploadOptions) {
         maxConcurrent: directBinaryUploadOptions.getMaxConcurrent(),
     };
 
-    // assemble http(s) agent options, which can contain entries for proxy,
-    //  strictSSL/rejectUnauthorized, or both
     const { protocol = 'http:' } = URL.parse(directBinaryUploadOptions.getUrl());
     const proxyOptions = getProxyAgentOptions(directBinaryUploadOptions);
-    if (proxyOptions && proxyOptions.href) {
-      const agentOptions = {};
+    const proxyUrl = proxyOptions && proxyOptions.href ? proxyOptions.href : undefined;
 
-      // TODO: figure out how to assemble proxy url
-      agentOptions.proxy = proxyOptions.href;
-
-      if (typeof options.strictSSL !== 'undefined') {
-        agentOptions.rejectUnauthorized = options.strictSSL;
-      }
-
-      transferOptions.requestOptions = {
-        agent: protocol === 'https:' ? new HttpsProxyAgent(agentOptions) : new HttpProxyAgent(agentOptions)
-      };
-    } else if (typeof options.strictSSL !== 'undefined' && protocol === 'https:') {
-      transferOptions.requestOptions = {
-        agent: new https.Agent({
-          rejectUnauthorized: options.strictSSL,
-        })
-      };
+    const agent = getHttpAgent(protocol, proxyUrl, options.strictSSL);
+    if (agent) {
+      transferOptions.requestOptions = { agent };
     }
 
     return transferOptions;
+}
+
+/**
+ * Assembles an http(s) agent that supports both proxies and/or self-signed certificates.
+ * @param {string} protocol Protocol of the request URL. Expecting either 'https:' or 'http:'.
+ * @param {string} proxyUrl (optional) URL pointing to the proxy server, e.g. 'http://192.167.0.100:3128/'.
+ * @param {boolean} strictSSL (optional) Option dictating if strict SSL enforcement should be configured
+ *  for requests using this agent. Enforced by setting Node's 'rejectUnauthorized' agent option.
+ * @returns {http.Agent} http(s) agent with proxy and/or SSL enforcement configured; Depending on supplied
+ *  arguments, no agent may be returned (e.g. if no proxyUrl or strictSSL are provided).
+ */
+function getHttpAgent(protocol, proxyUrl, strictSSL) {
+  if (protocol) {
+    // if proxy is defined, agent will have 'proxy' and optionally 'rejectUnauthorized' set
+    if (proxyUrl) {
+      const agentOptions = {};
+      agentOptions.proxy = proxyUrl;
+      if (typeof strictSSL !== 'undefined') {
+        agentOptions.rejectUnauthorized = strictSSL;
+      }
+      return protocol === 'https:' ? new HttpsProxyAgent(agentOptions) : new HttpProxyAgent(agentOptions);
+    }
+
+    // if no proxy, requests to https endpoints may have 'rejectUnauthorized' set using a node https agent
+    if (typeof strictSSL !== 'undefined' && protocol === 'https:') {
+      return new https.Agent({
+        rejectUnauthorized: strictSSL,
+      });
+    }
+  }
 }
 
 export {
