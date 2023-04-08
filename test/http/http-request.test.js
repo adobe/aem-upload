@@ -62,7 +62,7 @@ describe('HTTP Request Tests', function() {
     });
 
     it('test accessors', function() {
-        const request = new HttpRequest(getTestOptions(), HOST)
+        const request = new HttpRequest(getTestOptions({ strictSSL: false }), HOST)
         .withUploadOptions(new DirectBinaryUploadOptions()
             .withHeaders({
                 uploadHeader: 'upload',
@@ -91,7 +91,8 @@ describe('HTTP Request Tests', function() {
             data,
             responseType,
             timeout,
-            proxy
+            proxy,
+            strictSSL
         } = options;
 
         should(url).be.exactly(HOST);
@@ -104,6 +105,7 @@ describe('HTTP Request Tests', function() {
             protocol: 'http',
             port: 1234
         });
+        should(strictSSL).be.exactly(false);
 
         const {
             header1,
