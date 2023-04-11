@@ -320,10 +320,8 @@ export default class FileSystemUpload extends DirectBinaryUpload {
                     targetFolder
                 });
             } catch (e) {
-                if (e && e.response) {
-                    createResult.setCreateResponse(e.response);
-                }
                 const uploadError = UploadError.fromError(e);
+                createResult.setCreateError(uploadError);
                 if (uploadError.code == ErrorCodes.ALREADY_EXISTS) {
                     this.logInfo(`AEM folder '${targetFolder}' already exists`);
                 } else {

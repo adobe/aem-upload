@@ -18,6 +18,8 @@ const {
 const FileSystemUploadOptions = require('../src/filesystem-upload-options').default;
 const CreateDirectoryResult = require('../src/create-directory-result').default;
 const HttpResponse = require('../src/http/http-response').default;
+const UploadError = require('../src/upload-error').default;
+const ErrorCodes = require('../src/error-codes').default;
 
 describe('Create Directy Result Tests', () => {
     it('test result with response', function () {
@@ -36,13 +38,11 @@ describe('Create Directy Result Tests', () => {
         should(directoryResult.getFolderPath()).be.exactly('/testing');
         should(directoryResult.getFolderTitle()).be.exactly('testing');
         should(directoryResult.getCreateTime()).be.exactly(100);
-        should(directoryResult.getStatus()).be.exactly(201);
         should(directoryResult.toJSON()).deepEqual({
             elapsedTime: 100,
             folderPath: '/testing',
             folderTitle: 'testing',
             retryErrors: [],
-            status: 201,
         });
     });
 
@@ -56,13 +56,36 @@ describe('Create Directy Result Tests', () => {
         should(directoryResult.getFolderPath()).be.exactly('/testing');
         should(directoryResult.getFolderTitle()).be.exactly('testing');
         should(directoryResult.getCreateTime()).be.exactly(0);
-        should(directoryResult.getStatus()).be.exactly(0);
         should(directoryResult.toJSON()).deepEqual({
             elapsedTime: 0,
             folderPath: '/testing',
             folderTitle: 'testing',
             retryErrors: [],
-            status: 0,
+        });
+    });
+
+    it('test result with error', function () {
+        const directoryResult = new CreateDirectoryResult(
+            getTestOptions(),
+            new FileSystemUploadOptions(),
+            '/testing',
+            'testing',
+        );
+        const uploadError = new UploadError('unit test error', ErrorCodes.ALREADY_EXISTS);
+        directoryResult.setCreateError(uploadError);
+
+        should(directoryResult.getFolderPath()).be.exactly('/testing');
+        should(directoryResult.getFolderTitle()).be.exactly('testing');
+        should(directoryResult.getCreateTime()).be.exactly(0);
+        should(directoryResult.toJSON()).deepEqual({
+            elapsedTime: 0,
+            folderPath: '/testing',
+            folderTitle: 'testing',
+            retryErrors: [],
+            error: {
+                code: ErrorCodes.ALREADY_EXISTS,
+                message: 'unit test error',
+            },
         });
     });
 });

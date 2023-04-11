@@ -120,6 +120,8 @@ describe('FileSystemUpload end-to-end tests', function() {
         should(uploadResult.getAverageCompleteTime()).be.ok();
         should(uploadResult.getNinetyPercentileTotal()).be.ok();
         should(uploadResult.getFileUploadResults().length).be.exactly(uploadResult.getTotalFiles());
+        should(uploadResult.getCreateDirectoryResults().length).be.exactly(2);
+        should(uploadResult.getCreateDirectoryResults()[1].getFolderPath()).be.exactly(new URL(targetFolder).pathname);
 
         await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/climber-ferrata-la-torre-di-toblin.jpg');
         await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/skiing_1.jpg');

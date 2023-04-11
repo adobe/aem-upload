@@ -122,7 +122,6 @@ describe('FileSystemUpload Tests', () => {
             should(createResults.length).be.exactly(1);
             should(createResults[0].getFolderPath()).be.exactly('/content/dam/target');
             should(createResults[0].getFolderTitle()).be.exactly('target');
-            should(createResults[0].getStatus()).be.exactly(201);
 
             const fileLookup = {};
             uploadFiles.forEach(uploadFile => {

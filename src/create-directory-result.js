@@ -32,7 +32,8 @@ export default class CreateDirectoryResult extends HttpResult {
 
         this.folderPath = folderPath;
         this.folderTitle = folderTitle;
-        this.response = {};
+        this.response = false;
+        this.error = false;
     }
 
     /**
@@ -42,6 +43,15 @@ export default class CreateDirectoryResult extends HttpResult {
      */
     setCreateResponse(response) {
         this.response = response;
+    }
+
+    /**
+     * Sets the error that was the result of the create request.
+     *
+     * @param {import('./upload-error').default} error Error to the create request.
+     */
+    setCreateError(error) {
+        this.error = error;
     }
 
     /**
@@ -68,18 +78,8 @@ export default class CreateDirectoryResult extends HttpResult {
      * @returns {number} Time span in milliseconds.
      */
     getCreateTime() {
-        if (this.response.getElapsedTime) {
+        if (this.response && this.response.getElapsedTime) {
             return this.response.getElapsedTime();
-        }
-        return 0;
-    }
-
-    /**
-     * Retrieves the HTTP status code of the create request's response.
-     */
-    getStatus() {
-        if (this.response.getStatusCode) {
-            return this.response.getStatusCode();
         }
         return 0;
     }
@@ -90,12 +90,16 @@ export default class CreateDirectoryResult extends HttpResult {
      * @returns {object} Result data in a simple format.
      */
     toJSON() {
-        return {
-            status: this.getStatus(),
+        const json = {
             elapsedTime: this.getCreateTime(),
             folderPath: this.getFolderPath(),
             folderTitle: this.getFolderTitle(),
             ...super.toJSON(),
         };
+
+        if (this.error) {
+            json.error = this.error.toJSON();
+        }
+        return json;
     }
 }
