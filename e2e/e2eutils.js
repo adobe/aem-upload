@@ -24,7 +24,7 @@ const HttpRequest = importFile('http/http-request');
 module.exports = testutils;
 
 /**
- * Retrieves the root URL of the AEM endpoint that the test's should
+ * Retrieves the root URL of the AEM endpoint that the tests should
  * use.
  * @returns {string} URL for an AEM instance.
  */

@@ -36,6 +36,7 @@ import {
     getMaxFileCount,
 } from './filesystem-upload-utils';
 import FileSystemUploadItemManager from './filesystem-upload-item-manager';
+import CreateDirectoryResult from './create-directory-result';
 
 /**
  * Uploads one or more files from the local file system to a target AEM instance using direct binary access.
@@ -58,7 +59,7 @@ export default class FileSystemUpload extends DirectBinaryUpload {
         const concurrentQueue = new ConcurrentQueue(uploadOptions, fileSystemUploadOptions);
         const partUploader = new PartUploader(uploadOptions, fileSystemUploadOptions, httpClient, concurrentQueue);
         const uploadResult = new UploadResult(uploadOptions, fileSystemUploadOptions);
-        await this.createTargetFolder(fileSystemUploadOptions, httpClient);
+        await this.createTargetFolder(fileSystemUploadOptions, uploadResult, httpClient);
         const {
             directories,
             files,
@@ -77,7 +78,7 @@ export default class FileSystemUpload extends DirectBinaryUpload {
         const uploadProcess = new DirectBinaryUploadProcess(this.getOptions(), fileUploadOptions, httpClient, partUploader);
 
         this.beforeUploadProcess(uploadProcess, directories.length);
-        await this.createUploadDirectories(fileSystemUploadOptions, httpClient, directories);
+        await this.createUploadDirectories(fileSystemUploadOptions, uploadResult, httpClient, directories);
 
         if (uploadFiles.length) {
             this.logInfo(`Uploading ${uploadFiles.length} files`);
@@ -228,24 +229,26 @@ export default class FileSystemUpload extends DirectBinaryUpload {
      * create the path itself if it's a directory, and create all of of descendent directories.
      * @param {DirectBinaryUploadOptions} options Target folder information used to determine
      *  location where directories should be created.
+     * @param {UploadResult} uploadResult Statistics about the upload process.
      * @param {HttpClient} httpClient Client to use to submit HTTP requests.
      * @param {Array} directories An array of FileSystemUploadDirectory instances for the
      *  directories to be created.
      */
-    async createUploadDirectories(options, httpClient, directories) {
+    async createUploadDirectories(options, uploadResult, httpClient, directories) {
         for (let i = 0; i < directories.length; i++) {
-            await this.createAemFolderFromFileSystemInfo(options, httpClient, directories[i]);
+            await this.createAemFolderFromFileSystemInfo(options, uploadResult, httpClient, directories[i]);
         }
     }
 
     /**
      * Creates the target folder from upload options and all of its parents if they do not already exist.
      * @param {DirectBinaryUploadOptions} options Options controlling how the upload process behaves.
+     * @param {UploadResult} uploadResult Various statistics about the upload operation.
      * @param {HttpClient} httpClient Client to use to submit HTTP requests.
      * @returns {Promise} Will be resolved if the folders are created successfully, otherwise will be
      *  rejected with an error.
      */
-    async createTargetFolder(options, httpClient) {
+    async createTargetFolder(options, uploadResult, httpClient) {
         const targetFolder = options.getTargetFolderPath();
         const trimmedFolder = trimContentDam(targetFolder);
 
@@ -255,7 +258,7 @@ export default class FileSystemUpload extends DirectBinaryUpload {
 
             for (let i = 0; i < paths.length; i += 1) {
                 currPath += `/${paths[i]}`;
-                await this.createAemFolder(options, httpClient, currPath);
+                await this.createAemFolder(options, uploadResult, httpClient, currPath);
             }
         }
     }
@@ -264,20 +267,22 @@ export default class FileSystemUpload extends DirectBinaryUpload {
      * Creates a folder in AEM if it does not already exist.
      *
      * @param {DirectBinaryUploadOptions} options Options controlling how the upload process behaves.
+     * @param {UploadResult} uploadResult Statistics about the upload process.
      * @param {HttpClient} httpClient Client to use to submit HTTP requests.
      * @param {FileSystemUploadDirectory} uploadDirectory Information about the directory
      *  to be created. The instance's remote URL will be used for creation.
      * @returns {Promise} Will be resolved if the folder is created successfully, otherwise will be rejected
      *  with an error.
      */
-    async createAemFolderFromFileSystemInfo(options, httpClient, uploadDirectory) {
-        return this.createAemFolder(options, httpClient, uploadDirectory.getRemotePath(), uploadDirectory.getName());
+    async createAemFolderFromFileSystemInfo(options, uploadResult, httpClient, uploadDirectory) {
+        return this.createAemFolder(options, uploadResult, httpClient, uploadDirectory.getRemotePath(), uploadDirectory.getName());
     }
 
     /**
      * Creates a folder in AEM if it does not already exist.
      *
      * @param {DirectBinaryUploadOptions} options Options controlling how the upload process behaves.
+     * @param {UploadResult} uploadResult Statistics about the upload process.
      * @param {HttpClient} httpClient Client to use to submit HTTP requests.
      * @param {string} [folderPath] If specified, the path of the folder to create. If not specified, the
      *  target folder in the provided options will be used.
@@ -286,12 +291,13 @@ export default class FileSystemUpload extends DirectBinaryUpload {
      * @returns {Promise} Will be resolved if the folder is created successfully, otherwise will be rejected
      *  with an error.
      */
-    async createAemFolder(options, httpClient, folderPath = '', folderTitle = '') {
+    async createAemFolder(options, uploadResult, httpClient, folderPath = '', folderTitle = '') {
         const targetFolder = folderPath ? folderPath : options.getTargetFolderPath();
         const trimmedFolder = trimContentDam(targetFolder);
 
         if (trimmedFolder) {
             const folderName = folderTitle ? folderTitle : Path.basename(trimmedFolder);
+            const createResult = new CreateDirectoryResult(this.getOptions(), options, targetFolder, folderName);
             try {
                 this.logInfo(`Creating AEM directory ${folderPath} with title '${folderTitle}'`);
                 const createFolderRequest = new HttpRequest(this.getOptions(),
@@ -306,20 +312,25 @@ export default class FileSystemUpload extends DirectBinaryUpload {
                     .withUploadOptions(options);
                 const response = await httpClient.submit(createFolderRequest);
                 updateOptionsWithResponse(options, response);
+                createResult.setCreateResponse(response);
+                this.logInfo(`AEM folder '${targetFolder}' is created`);
                 this.emit('foldercreated', {
                     folderName: folderName,
                     targetParent: Path.dirname(targetFolder).replaceAll(/\\/g, '/'),
                     targetFolder
                 });
             } catch (e) {
-                if (e && e.code == ErrorCodes.ALREADY_EXISTS) {
-                    this.logInfo(`AEM folder '${targetFolder}' already exists`);
-                    return;
+                if (e && e.response) {
+                    createResult.setCreateResponse(e.response);
                 }
-                throw e;
+                const uploadError = UploadError.fromError(e);
+                if (uploadError.code == ErrorCodes.ALREADY_EXISTS) {
+                    this.logInfo(`AEM folder '${targetFolder}' already exists`);
+                } else {
+                    throw uploadError;
+                }
             }
+            uploadResult.addCreateDirectoryResult(createResult);
         }
-
-        this.logInfo(`AEM folder '${targetFolder}' is created`);
     }
 }

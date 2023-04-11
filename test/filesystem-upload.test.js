@@ -24,6 +24,7 @@ const MockRequest = require('./mock-request');
 const HttpClient = importFile('http/http-client');
 const FileSystemUploadDirectory = importFile('filesystem-upload-directory');
 const HttpProxy = importFile('http-proxy');
+const UploadResult = importFile('upload-result');
 
 function MockDirectBinaryUpload() {
 
@@ -43,15 +44,16 @@ const SUBDIR = 'sub吏dir';
 const SUBDIR_ENCODED = encodeURI(SUBDIR);
 
 const ASSET1 = '吏';
-const ASSET1_ENCODED = encodeURI(ASSET1);
 
 describe('FileSystemUpload Tests', () => {
     let httpClient;
+    let uploadResult;
 
     beforeEach(() => {
         MockRequest.reset();
 
         httpClient = new HttpClient(getTestOptions(), new FileSystemUploadOptions());
+        uploadResult = new UploadResult(getTestOptions(), new FileSystemUploadOptions());
     });
 
     afterEach(() => {
@@ -116,6 +118,12 @@ describe('FileSystemUpload Tests', () => {
             const uploadFiles = result.getFileUploadResults();
             should(uploadFiles.length).be.exactly(4);
 
+            const createResults = result.getCreateDirectoryResults();
+            should(createResults.length).be.exactly(1);
+            should(createResults[0].getFolderPath()).be.exactly('/content/dam/target');
+            should(createResults[0].getFolderTitle()).be.exactly('target');
+            should(createResults[0].getStatus()).be.exactly(201);
+
             const fileLookup = {};
             uploadFiles.forEach(uploadFile => {
                 fileLookup[uploadFile.getFileName()] = uploadFile;
@@ -141,7 +149,7 @@ describe('FileSystemUpload Tests', () => {
                 .withHttpRetryDelay(10)
                 .withBasicAuth('testauth');
             const fsUpload = new FileSystemUpload(getTestOptions());
-            return fsUpload.createAemFolder(uploadOptions, httpClient);
+            return fsUpload.createAemFolder(uploadOptions, uploadResult, httpClient);
         });
 
         it('test directory not found', async () => {
@@ -154,7 +162,7 @@ describe('FileSystemUpload Tests', () => {
             const fsUpload = new FileSystemUpload(getTestOptions());
             let threw = false;
             try {
-                await fsUpload.createAemFolder(uploadOptions, httpClient);
+                await fsUpload.createAemFolder(uploadOptions, uploadResult, httpClient);
             } catch (e) {
                 threw = true;
             }
@@ -169,7 +177,7 @@ describe('FileSystemUpload Tests', () => {
                 .withUrl(MockRequest.getUrl('/folder/structure'))
                 .withBasicAuth('testauth');
             const fsUpload = new FileSystemUpload(getTestOptions());
-            await fsUpload.createTargetFolder(uploadOptions, httpClient);
+            await fsUpload.createTargetFolder(uploadOptions, uploadResult, httpClient);
             const { post: posts = [] } = MockRequest.history;
             should(posts.length).be.exactly(2);
             should(posts[0].url).be.exactly(MockRequest.getApiUrl('/folder'));
@@ -187,7 +195,7 @@ describe('FileSystemUpload Tests', () => {
                 .withHttpProxy(new HttpProxy('http://somereallyfakeproxyhost'));
             const path1Dir = new FileSystemUploadDirectory(uploadOptions, '/prefix/path1', 'path1');
             const fsUpload = new FileSystemUpload(getTestOptions());
-            await fsUpload.createUploadDirectories(uploadOptions, httpClient, [
+            await fsUpload.createUploadDirectories(uploadOptions, uploadResult, httpClient, [
                     path1Dir,
                     new FileSystemUploadDirectory(uploadOptions, '/prefix/path1/dir1/', 'dir1', path1Dir),
                     new FileSystemUploadDirectory(uploadOptions, '/prefix/path1/dir2', 'dir2', path1Dir),

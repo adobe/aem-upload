@@ -13,6 +13,7 @@ governing permissions and limitations under the License.
 import { getAverage } from './utils';
 import HttpResult from './http-result';
 import UploadError from './upload-error';
+import CreateDirectoryResult from './create-directory-result';
 
 /**
  * Retrieves a list of all file results that were successful.
@@ -48,6 +49,7 @@ export default class UploadResult extends HttpResult {
         this.totalTime = 0;
         this.totalFiles = 0;
         this.fileUploadResults = [];
+        this.createDirectoryResults = [];
         this.errors = [];
     }
 
@@ -66,6 +68,35 @@ export default class UploadResult extends HttpResult {
         if (this.start) {
             this.totalTime += new Date().getTime() - this.start;
         }
+    }
+
+    /**
+     * Adds a new create directory to the overall result. Will be used to calculate various overall metrics.
+     *
+     * @param {CreateDirectoryResult} createDirectoryResult Result whose metrics will be included in the overall result.
+     */
+    addCreateDirectoryResult(createDirectoryResult) {
+        this.createDirectoryResults.push(createDirectoryResult);
+    }
+
+    /**
+     * Retrieves all results for directories that were created as part of the upload.
+     *
+     * @returns {Array<CreateDirectoryResult>} Directory results.
+     */
+    getCreateDirectoryResults() {
+        return this.createDirectoryResults;
+    }
+
+    /**
+     * Retrieves the amount of time, in milliseconds, that it took to create any directories for the upload.
+     */
+    getTotalFolderCreateTime() {
+        let createTime = 0;
+        this.getCreateDirectoryResults().forEach((directoryResult) => {
+            createTime += directoryResult.getCreateTime();
+        });
+        return createTime;
     }
 
     /**
@@ -278,6 +309,8 @@ export default class UploadResult extends HttpResult {
             avgPutSpent: this.getAveragePartUploadTime(),
             avgCompleteSpent: this.getAverageCompleteTime(),
             nintyPercentileTotal: this.getNinetyPercentileTotal(),
+            folderCreateSpent: this.getTotalFolderCreateTime(),
+            createdFolders: this.getCreateDirectoryResults().map(result => result.toJSON()),
             detailedResult: this.fileUploadResults.map(result => result.toJSON()),
             errors: this.errors,
             ...super.toJSON(),
