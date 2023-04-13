@@ -11,15 +11,13 @@ governing permissions and limitations under the License.
 */
 
 const should = require('should');
-const querystring = require('querystring');
 
-const { importFile, getTestOptions } = require('./testutils');
+const { importFile, getTestOptions, verifyResult } = require('./testutils');
 const MockRequest = require('./mock-request');
 const MockBlob = require('./mock-blob');
 
 const DirectBinaryUpload = importFile('direct-binary-upload');
 const DirectBinaryUploadOptions = importFile('direct-binary-upload-options');
-const ErrorCodes = importFile('error-codes');
 
 let blob1, blob2, events;
 function getTestUploadFiles() {
@@ -128,79 +126,40 @@ describe('DirectBinaryUploadTest', () => {
             should(uploadFile2.fileSize).be.exactly(1999);
 
             // verify return value
-            should(result.getTotalFiles()).be.exactly(2);
-            should(result.getTotalCompletedFiles()).be.exactly(2);
-            should(result.getElapsedTime()).be.greaterThan(0);
-            should(result.getTotalSize()).be.exactly(3023);
-            should(result.getAverageFileSize()).be.exactly(1512);
-            should(result.getAverageFileUploadTime()).be.greaterThan(0);
-            should(result.getAveragePartUploadTime()).be.greaterThan(0);
-            should(result.getAverageCompleteTime()).be.greaterThan(0);
-            should(result.getNinetyPercentileTotal()).be.greaterThan(0);
-            should(result.getErrors().length).be.exactly(0);
-
-            const fileResults = result.getFileUploadResults();
-            should(fileResults.length).be.exactly(2);
-
-            let file1 = fileResults[0];
-            let file2 = fileResults[1];
-
-            if (file1.getFileName() !== 'targetfile.jpg') {
-                let tempFile = file1;
-                file1 = file2;
-                file2 = tempFile;
-            }
-
-            should(file1.getFileName()).be.exactly('targetfile.jpg');
-            should(file1.getFileSize()).be.exactly(1024);
-            should(file1.getPartCount()).be.exactly(1);
-            should(file1.getTotalUploadTime()).be.greaterThan(0);
-            should(file1.getFastestPartUploadTime()).be.greaterThan(0);
-            should(file1.getSlowestPartUploadTime()).be.greaterThan(0);
-            should(file1.getSlowestPartUploadTime()).be.greaterThanOrEqual(file1.getFastestPartUploadTime());
-            should(file1.getAveragePartUploadTime()).be.greaterThan(0);
-            should(file1.getTotalCompleteTime()).be.greaterThan(0);
-            should(file1.isSuccessful()).be.ok();
-            should(file1.getErrors().length).not.be.ok();
-            should(file1.isCancelled()).not.be.ok();
-
-            const file1Parts = file1.getPartUploadResults();
-            should(file1Parts.length).be.exactly(1);
-
-            const file1Part1 = file1Parts[0];
-
-            should(file1Part1.getStartOffset()).be.exactly(0);
-            should(file1Part1.getEndOffset()).be.exactly(1024);
-            should(file1Part1.getUrl()).be.exactly('<handled by httptransfer>');
-            should(file1Part1.getUploadTime()).be.greaterThan(0);
-            should(file1Part1.isSuccessful()).be.ok();
-            should(file1Part1.getError()).not.be.ok();
-
-            // verify second file
-            should(file2.getFileName()).be.exactly('targetfile2.jpg');
-            should(file2.getFileSize()).be.exactly(1999);
-            should(file2.getPartCount()).be.exactly(1);
-            should(file2.getTotalUploadTime()).be.greaterThan(0);
-            should(file2.getFastestPartUploadTime()).be.greaterThan(0);
-            should(file2.getSlowestPartUploadTime()).be.greaterThan(0);
-            should(file2.getSlowestPartUploadTime()).be.greaterThanOrEqual(file2.getFastestPartUploadTime());
-            should(file2.getAveragePartUploadTime()).be.greaterThan(0);
-            should(file2.getTotalCompleteTime()).be.greaterThan(0);
-            should(file2.isSuccessful()).be.ok();
-            should(file2.getErrors().length).not.be.ok();
-            should(file2.isCancelled()).not.be.ok();
-
-            const file2Parts = file2.getPartUploadResults();
-            should(file2Parts.length).be.exactly(1);
-
-            const file2Part1 = file2Parts[0];
-
-            should(file2Part1.getStartOffset()).be.exactly(0);
-            should(file2Part1.getEndOffset()).be.exactly(1999);
-            should(file2Part1.getUrl()).be.exactly('<handled by httptransfer>');
-            should(file2Part1.getUploadTime()).be.greaterThan(0);
-            should(file2Part1.isSuccessful()).be.ok();
-            should(file2Part1.getError()).not.be.ok();
+            verifyResult(result, {
+                host: 'http://localhost',
+                totalFiles: 2,
+                totalTime: result.totalTime,
+                totalCompleted: 2,
+                totalFileSize: 3023,
+                folderCreateSpent: 0,
+                createdFolders: [],
+                detailedResult: [{
+                    fileUrl: 'http://localhost/content/dam/target/folder/targetfile.jpg',
+                    fileSize: 1024,
+                    blob: '<provided>',
+                    result: {
+                        fileName: 'targetfile.jpg',
+                        fileSize: 1024,
+                        targetFolder: '/content/dam/target/folder',
+                        targetFile: '/content/dam/target/folder/targetfile.jpg',
+                        mimeType: 'image/jpeg',
+                    },
+                }, {
+                    fileUrl: 'http://localhost/content/dam/target/folder/targetfile2.jpg',
+                    fileSize: 1999,
+                    blob: '<provided>',
+                    result: {
+                        fileName: 'targetfile2.jpg',
+                        fileSize: 1999,
+                        targetFolder: '/content/dam/target/folder',
+                        targetFile: '/content/dam/target/folder/targetfile2.jpg',
+                        mimeType: 'image/jpeg',
+                    },
+                }],
+                errors: [],
+                retryErrors: [],
+            })
 
             // verify that events are correct
             should(events.length).be.exactly(8);

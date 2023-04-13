@@ -18,7 +18,8 @@ const {
     getTestOptions,
     monitorEvents,
     getEvent,
-    getFolderEvent
+    getFolderEvent,
+    verifyResult,
 } = require('./testutils');
 const MockRequest = require('./mock-request');
 const HttpClient = importFile('http/http-client');
@@ -63,7 +64,7 @@ describe('FileSystemUpload Tests', () => {
     describe('upload', () => {
         function validateUploadFile(uploadFile, fileSize) {
             should(uploadFile).be.ok();
-            should(uploadFile.getFileSize()).be.exactly(fileSize);
+            should(uploadFile.fileSize).be.exactly(fileSize);
         }
 
         function createFsStructure() {
@@ -111,33 +112,83 @@ describe('FileSystemUpload Tests', () => {
                 '/test/file/2',
                 '/test/dir',
             ]);
-
-            should(result).be.ok();
-            should(result.getErrors().length).be.exactly(0);
-
-            const uploadFiles = result.getFileUploadResults();
-            should(uploadFiles.length).be.exactly(4);
-
-            const createResults = result.getCreateDirectoryResults();
-            should(createResults.length).be.exactly(1);
-            should(createResults[0].getFolderPath()).be.exactly('/content/dam/target');
-            should(createResults[0].getFolderTitle()).be.exactly('target');
-
-            const fileLookup = {};
-            uploadFiles.forEach(uploadFile => {
-                fileLookup[uploadFile.getFileName()] = uploadFile;
+            verifyResult(result, {
+                host: 'http://localhost',
+                totalFiles: 4,
+                totalTime: result.totalTime,
+                totalCompleted: 4,
+                totalFileSize: 34,
+                folderCreateSpent: result.folderCreateSpent,
+                errors: [],
+                retryErrors: [],
+                createdFolders: [{
+                    elapsedTime: result.createdFolders[0].elapsedTime,
+                    folderPath: '/content/dam/target',
+                    folderTitle: 'target',
+                    retryErrors: [],
+                }],
+                detailedResult: [{
+                    fileUrl: 'http://localhost/content/dam/target/%E5%90%8F',
+                    fileSize: 9,
+                    createVersion: true,
+                    versionComment: 'test version comment',
+                    versionLabel: 'test version label',
+                    replace: true,
+                    filePath: '/test/file/吏',
+                    result: {
+                        fileName: '吏',
+                        fileSize: 9,
+                        targetFolder: '/content/dam/target',
+                        targetFile: '/content/dam/target/吏',
+                        mimeType: null,
+                    }
+                }, {
+                    fileUrl: 'http://localhost/content/dam/target/2',
+                    fileSize: 10,
+                    createVersion: true,
+                    versionComment: 'test version comment',
+                    versionLabel: 'test version label',
+                    replace: true,
+                    filePath: '/test/file/2',
+                    result: {
+                        fileName: '2',
+                        fileSize: 10,
+                        targetFolder: '/content/dam/target',
+                        targetFile: '/content/dam/target/2',
+                        mimeType: null,
+                    }
+                }, {
+                    fileUrl: 'http://localhost/content/dam/target/3',
+                    fileSize: 8,
+                    createVersion: true,
+                    versionComment: 'test version comment',
+                    versionLabel: 'test version label',
+                    replace: true,
+                    filePath: '/test/dir/3',
+                    result: {
+                        fileName: '3',
+                        fileSize: 8,
+                        targetFolder: '/content/dam/target',
+                        targetFile: '/content/dam/target/3',
+                        mimeType: null,
+                    }
+                }, {
+                    fileUrl: 'http://localhost/content/dam/target/4',
+                    fileSize: 7,
+                    createVersion: true,
+                    versionComment: 'test version comment',
+                    versionLabel: 'test version label',
+                    replace: true,
+                    filePath: '/test/dir/4',
+                    result: {
+                        fileName: '4',
+                        fileSize: 7,
+                        targetFolder: '/content/dam/target',
+                        targetFile: '/content/dam/target/4',
+                        mimeType: null,
+                    }
+                }],
             });
-
-            validateUploadFile(fileLookup[ASSET1], 9);
-            validateUploadFile(fileLookup['2'], 10);
-            validateUploadFile(fileLookup['3'], 8);
-            validateUploadFile(fileLookup['4'], 7);
-
-            const addlOptions = fileLookup['2'].toJSON();
-            should(addlOptions.createVersion).be.ok();
-            should(addlOptions.versionLabel).be.exactly('test version label');
-            should(addlOptions.versionComment).be.exactly('test version comment');
-            should(addlOptions.replace).be.ok();
         });
 
         it('test directory already exists', async () => {
@@ -261,11 +312,147 @@ describe('FileSystemUpload Tests', () => {
                 `/test/file/${ASSET1}`
             ]);
 
-            should(result).be.ok();
-            should(result.getTotalFiles()).be.exactly(9);
-            should(result.getTotalCompletedFiles()).be.exactly(result.getTotalFiles());
-            should(result.getTotalSize()).be.exactly(59);
-            should(result.getErrors().length).be.exactly(0);
+            verifyResult(result, {
+                host: 'http://localhost',
+                totalFiles: 9,
+                totalCompleted: 9,
+                totalTime: result.totalTime,
+                totalFileSize: 59,
+                folderCreateSpent: result.folderCreateSpent,
+                retryErrors: [],
+                errors: [],
+                createdFolders: [{
+                    elapsedTime: result.createdFolders[0].elapsedTime,
+                    folderPath: '/content/dam/target',
+                    folderTitle: 'target',
+                    retryErrors: [],
+                }, {
+                    elapsedTime: result.createdFolders[1].elapsedTime,
+                    folderPath: '/content/dam/target/test',
+                    folderTitle: 'test',
+                    retryErrors: [],
+                }, {
+                    elapsedTime: result.createdFolders[2].elapsedTime,
+                    folderPath: '/content/dam/target/test/dir',
+                    folderTitle: 'dir',
+                    retryErrors: [],
+                }, {
+                    elapsedTime: result.createdFolders[3].elapsedTime,
+                    folderPath: '/content/dam/target/test/file',
+                    folderTitle: 'file',
+                    retryErrors: [],
+                }, {
+                    elapsedTime: result.createdFolders[4].elapsedTime,
+                    folderPath: '/content/dam/target/test/dir/sub吏dir',
+                    folderTitle: 'sub吏dir',
+                    retryErrors: [],
+                }, {
+                    elapsedTime: result.createdFolders[5].elapsedTime,
+                    folderPath: '/content/dam/target/test/dir/sub吏dir/subsubdir',
+                    folderTitle: 'subsubdir',
+                    retryErrors: [],
+                }],
+                detailedResult: [{
+                    fileUrl: 'http://localhost/content/dam/target/test/dir/3',
+                    fileSize: 8,
+                    filePath: '/test/dir/3',
+                    result: {
+                        fileName: '3',
+                        fileSize: 8,
+                        targetFolder: '/content/dam/target/test/dir',
+                        targetFile: '/content/dam/target/test/dir/3',
+                        mimeType: null,
+                    }
+                }, {
+                    fileUrl: 'http://localhost/content/dam/target/test/dir/4',
+                    fileSize: 7,
+                    filePath: '/test/dir/4',
+                    result: {
+                        fileName: '4',
+                        fileSize: 7,
+                        targetFolder: '/content/dam/target/test/dir',
+                        targetFile: '/content/dam/target/test/dir/4',
+                        mimeType: null,
+                    }
+                }, {
+                    fileUrl: 'http://localhost/content/dam/target/test/file/2',
+                    fileSize: 10,
+                    filePath: '/test/file/2',
+                    result: {
+                        fileName: '2',
+                        fileSize: 10,
+                        targetFolder: '/content/dam/target/test/file',
+                        targetFile: '/content/dam/target/test/file/2',
+                        mimeType: null,
+                    }
+                }, {
+                    fileUrl: 'http://localhost/content/dam/target/test/file/%E5%90%8F',
+                    fileSize: 9,
+                    filePath: '/test/file/吏',
+                    result: {
+                        fileName: '吏',
+                        fileSize: 9,
+                        targetFolder: '/content/dam/target/test/file',
+                        targetFile: '/content/dam/target/test/file/吏',
+                        mimeType: null,
+                    }
+                }, {
+                    fileUrl: 'http://localhost/content/dam/target/test/dir/sub%E5%90%8Fdir/5',
+                    fileSize: 5,
+                    filePath: '/test/dir/sub吏dir/5',
+                    result: {
+                        fileName: '5',
+                        fileSize: 5,
+                        targetFolder: '/content/dam/target/test/dir/sub吏dir',
+                        targetFile: '/content/dam/target/test/dir/sub吏dir/5',
+                        mimeType: null,
+                    }
+                }, {
+                    fileUrl: 'http://localhost/content/dam/target/test/dir/sub%E5%90%8Fdir/6',
+                    fileSize: 6,
+                    filePath: '/test/dir/sub吏dir/6',
+                    result: {
+                        fileName: '6',
+                        fileSize: 6,
+                        targetFolder: '/content/dam/target/test/dir/sub吏dir',
+                        targetFile: '/content/dam/target/test/dir/sub吏dir/6',
+                        mimeType: null,
+                    }
+                }, {
+                    fileUrl: 'http://localhost/content/dam/target/test/dir/sub%E5%90%8Fdir/subsubdir/7',
+                    fileSize: 3,
+                    filePath: '/test/dir/sub吏dir/subsubdir/7',
+                    result: {
+                        fileName: '7',
+                        fileSize: 3,
+                        targetFolder: '/content/dam/target/test/dir/sub吏dir/subsubdir',
+                        targetFile: '/content/dam/target/test/dir/sub吏dir/subsubdir/7',
+                        mimeType: null,
+                    }
+                }, {
+                    fileUrl: 'http://localhost/content/dam/target/test/dir/sub%E5%90%8Fdir/subsubdir/8',
+                    fileSize: 2,
+                    filePath: '/test/dir/sub吏dir/subsubdir/8',
+                    result: {
+                        fileName: '8',
+                        fileSize: 2,
+                        targetFolder: '/content/dam/target/test/dir/sub吏dir/subsubdir',
+                        targetFile: '/content/dam/target/test/dir/sub吏dir/subsubdir/8',
+                        mimeType: null,
+                    }
+                }, {
+                    fileUrl: 'http://localhost/content/dam/target/%E5%90%8F',
+                    fileSize: 9,
+                    filePath: '/test/file/吏',
+                    result: {
+                        fileName: '吏',
+                        fileSize: 9,
+                        targetFolder: '/content/dam/target',
+                        targetFile: '/content/dam/target/吏',
+                        mimeType: null,
+                    }
+                }]
+            });
 
             const postedUrls = buildPostLookup();
             should(Object.keys(postedUrls).length).be.exactly(6);

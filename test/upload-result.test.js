@@ -36,10 +36,5 @@ describe('UploadResult Tests', function() {
         this.clock.tick(20);
         uploadResult.stopTimer();
         should(uploadResult.getElapsedTime() >= 40).be.ok();
-
-        uploadResult.addInitTime(20);
-        should(uploadResult.getInitTime()).be.exactly(20);
-        uploadResult.addInitTime(20);
-        should(uploadResult.getInitTime()).be.exactly(40);
     });
 });

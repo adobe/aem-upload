@@ -37,7 +37,7 @@ export default class DirectBinaryUpload extends UploadBase {
         await this.executeUploadProcess(uploadProcess, uploadResult);
         this.afterUploadProcess(uploadProcess, uploadResult);
 
-        return uploadResult;
+        return uploadResult.toJSON();
     }
 
     /**

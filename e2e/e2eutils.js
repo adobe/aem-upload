@@ -159,3 +159,40 @@ module.exports.createAemFolder = async function(httpClient, uploadOptions, folde
 
     return httpClient.submit(request);
 }
+
+/**
+ * Validates that the result of an upload operation is expected, given an e2e upload
+ * process.
+ * @param {string} targetFolder Full URL of the target directory in AEM to which the
+ *  upload was targeted.
+ * @param {*} result Result as provided by the upload process.
+ * @param {*} expected Expected data that should be in the result.
+ */
+module.exports.verifyE2eResult = function (targetFolder, result, expected) {
+    const targetFolderPath = new URL(targetFolder).pathname;
+    const rootFolderPath = Path.posix.dirname(targetFolderPath);
+    const toVerify = { ...result };
+    const { createdFolders = [] } = expected;
+    createdFolders.splice(0, 0, {
+        elapsedTime: toVerify.createdFolders[0].elapsedTime,
+        folderPath: rootFolderPath,
+        folderTitle: Path.basename(rootFolderPath),
+        retryErrors: [],
+    });
+    createdFolders.splice(0, 0, {
+        elapsedTime: toVerify.createdFolders[1].elapsedTime,
+        folderPath: targetFolderPath,
+        folderTitle: Path.basename(targetFolderPath),
+        retryErrors: [],
+    });
+
+    if (toVerify.createdFolders[0].error) {
+        should(toVerify.createdFolders[0].error.code).be.exactly('EALREADYEXISTS');
+        delete toVerify.createdFolders[0].error;
+    }
+
+    testutils.verifyResult(toVerify, {
+        ...expected,
+        createdFolders,
+    });
+}
