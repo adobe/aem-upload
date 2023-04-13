@@ -20,28 +20,28 @@ governing permissions and limitations under the License.
 import FileSystemUploadDirectory from './filesystem-upload-directory';
 
 export default class FileSystemUploadAsset extends FileSystemUploadDirectory {
-    /**
-     * Constructs a new instance of the class using the given values.
-     * @param {FileSystemUploadOptions} uploadOptions URL of the options
-     *  will be used to build the asset's remote path.
-     * @param {string} localPath Full path to the local asset.
-     * @param {string} remoteNodeName Name of the asset's node as it should
-     *  appear in AEM.
-     * @param {number} size Size, in bytes, of the asset.
-     * @param {FileSystemUploadDirectory} [directory] If provided, the
-     *  directory to which the asset belongs. If not provided then the
-     *  asset will be treated as the root.
-     */
-    constructor(uploadOptions, localPath, remoteNodeName, size, directory) {
-        super(uploadOptions, localPath, remoteNodeName, directory);
-        this.size = size;
-    }
+  /**
+   * Constructs a new instance of the class using the given values.
+   * @param {FileSystemUploadOptions} uploadOptions URL of the options
+   *  will be used to build the asset's remote path.
+   * @param {string} localPath Full path to the local asset.
+   * @param {string} remoteNodeName Name of the asset's node as it should
+   *  appear in AEM.
+   * @param {number} size Size, in bytes, of the asset.
+   * @param {FileSystemUploadDirectory} [directory] If provided, the
+   *  directory to which the asset belongs. If not provided then the
+   *  asset will be treated as the root.
+   */
+  constructor(uploadOptions, localPath, remoteNodeName, size, directory) {
+    super(uploadOptions, localPath, remoteNodeName, directory);
+    this.size = size;
+  }
 
-    /**
-     * Retrieves the size of the asset, as provided in the constructor.
-     * @returns {number} Size in bytes.
-     */
-    getSize() {
-        return this.size;
-    }
+  /**
+   * Retrieves the size of the asset, as provided in the constructor.
+   * @returns {number} Size in bytes.
+   */
+  getSize() {
+    return this.size;
+  }
 }

@@ -14,82 +14,118 @@ import { getAverage } from './utils';
 import UploadOptionsBase from './upload-options-base';
 
 export default class FileUploadResults extends UploadOptionsBase {
-    /**
-     * Constructs a new instance using the provided information.
-     *
-     * @param {object} options Options as provided when the direct binary object was instantiated.
-     * @param {import('./direct-binary-upload-options').default} uploadOptions Options as provided
-     *  when the direct binary upload process was initiated.
-     */
-    constructor(options, uploadOptions) {
-        super(options, uploadOptions);
-        this.fileLookup = {};
+  /**
+   * Constructs a new instance using the provided information.
+   *
+   * @param {object} options Options as provided when the direct binary object was instantiated.
+   * @param {import('./direct-binary-upload-options').default} uploadOptions Options as provided
+   *  when the direct binary upload process was initiated.
+   */
+  constructor(options, uploadOptions) {
+    super(options, uploadOptions);
+    this.fileLookup = {};
+  }
+
+  /**
+   * Retrieves the total number of files that were included in the upload.
+   * @returns {number} File count.
+   */
+  getTotalFileCount() {
+    return Object.keys(this.fileLookup).length;
+  }
+
+  /**
+   * Sets the node-httptransfer options that were used to upload a given file.
+   * @param {*} transferOptions Options for node-httptransfer.
+   */
+  addHttpTransferOptions(transferOptions) {
+    transferOptions.uploadFiles.forEach((uploadFile) => {
+      const { fileUrl } = uploadFile;
+      const targetPath = decodeURI(new URL(fileUrl).pathname);
+
+      const fileInfo = { ...uploadFile };
+      if (fileInfo.blob) {
+        fileInfo.blob = '<provided>';
+      }
+      this.fileLookup[targetPath] = fileInfo;
+    });
+  }
+
+  /**
+   * Adds the result of a file transfer. Will be associated with the options
+   * previously specified for a file through addHttpTransferOptions().
+   * @param {*} data Event data as received from a node-httptransfer event.
+   */
+  addFileEventResult(data) {
+    const { targetFile } = data;
+    if (this.fileLookup[targetFile]) {
+      this.fileLookup[targetFile].result = data;
     }
+  }
 
-    getTotalFileCount() {
-        return Object.keys(this.fileLookup).length;
-    }
+  /**
+   * Retrieves the total size, in bytes, of all files that were uploaded.
+   * @returns {number} Size, in bytes.
+   */
+  getTotalSize() {
+    return Object.keys(this.fileLookup)
+      .map((file) => this.fileLookup[file].fileSize)
+      .reduce((a, b) => a + b);
+  }
 
-    addHttpTransferOptions(transferOptions) {
-        transferOptions.uploadFiles.forEach((uploadFile) => {
-            const { fileUrl } = uploadFile;
-            const targetPath = decodeURI(new URL(fileUrl).pathname);
+  /**
+   * Retrieves the average size, in bytes, of all files that were
+   * uploaded.
+   * @returns {number} Size, in bytes.
+   */
+  getAverageSize() {
+    return getAverage(
+      Object.keys(this.fileLookup)
+        .map((file) => this.fileLookup[file].fileSize),
+    );
+  }
 
-            const fileInfo = { ...uploadFile };
-            if (fileInfo.blob) {
-                fileInfo.blob = '<provided>';
-            }
-            this.fileLookup[targetPath] = fileInfo;
-        });
-    }
-
-    addFileEventResult(data) {
-        const { targetFile } = data;
-        if (this.fileLookup[targetFile]) {
-            this.fileLookup[targetFile].result = data;
+  /**
+   * Retrieves the total number of files that uploaded successfully.
+   * @returns {number} File count.
+   */
+  getSuccessCount() {
+    let count = 0;
+    Object.keys(this.fileLookup).forEach((file) => {
+      const { result } = this.fileLookup[file];
+      if (result) {
+        const { errors } = result;
+        if (errors === undefined) {
+          count += 1;
         }
-    }
+      }
+    });
+    return count;
+  }
 
-    getTotalSize() {
-        return Object.keys(this.fileLookup)
-            .map((file) => this.fileLookup[file].fileSize)
-            .reduce((a, b) => a + b);
-    }
+  /**
+   * Retrieves an array of _all_ errors that were encountered as
+   * files were transferred.
+   * @returns {Array} Array of error information.
+   */
+  getErrors() {
+    const allErrors = [];
+    Object.keys(this.fileLookup).forEach((file) => {
+      const { result } = file;
+      if (result) {
+        const { errors = [] } = result;
+        errors.forEach((error) => allErrors.push(error));
+      }
+    });
+    return allErrors;
+  }
 
-    getAverageSize() {
-        return getAverage(
-            Object.keys(this.fileLookup)
-                .map((file) => this.fileLookup[file].fileSize),
-        );
-    }
-
-    getSuccessCount() {
-        let count = 0;
-        Object.keys(this.fileLookup).forEach((file) => {
-            const { result } = this.fileLookup[file];
-            if (result) {
-                const { errors } = result;
-                if (errors === undefined) {
-                    count += 1;
-                }
-            }
-        });
-        return count;
-    }
-
-    getErrors() {
-        let allErrors = [];
-        Object.keys(this.fileLookup).forEach((file) => {
-            const { result } = file;
-            if (result) {
-                const { errors = [] } = result;
-                errors.forEach((error) => allErrors.push(error));
-            }
-        });
-        return allErrors;
-    }
-
-    toJSON() {
-        return Object.keys(this.fileLookup).map((path) => this.fileLookup[path]);
-    }
+  /**
+   * Converts the result into a simple javascript object containing all
+   * of the result's information.
+   * @returns Simple object.
+   */
+  toJSON() {
+    return Object.keys(this.fileLookup).map((path) => this.fileLookup[path]);
+  }
 }

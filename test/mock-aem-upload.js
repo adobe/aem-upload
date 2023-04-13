@@ -17,41 +17,39 @@ const Path = require('path');
 let directUploads = [];
 
 class MockAemUpload extends EventEmitter {
+  static reset() {
+    directUploads = [];
+  }
 
-    static reset() {
-        directUploads = [];
-    }
+  static getDirectUploads() {
+    return directUploads;
+  }
 
-    static getDirectUploads() {
-        return directUploads;
-    }
+  uploadFiles(options) {
+    directUploads.push(options);
 
-    uploadFiles(options) {
-        directUploads.push(options);
+    options.uploadFiles.forEach((uploadFile) => {
+      const { fileUrl, fileSize } = uploadFile;
+      const parsedUrl = new URL(fileUrl);
+      const eventData = {
+        fileName: decodeURIComponent(Path.basename(parsedUrl.pathname)),
+        fileSize,
+        targetFolder: `${decodeURI(Path.dirname(parsedUrl.pathname).replaceAll('\\', '/'))}`,
+        targetFile: decodeURI(parsedUrl.pathname),
+        mimeType: mime.getType(fileUrl),
+      };
+      this.emit('filestart', eventData);
+      this.emit('fileprogress', {
+        ...eventData,
+        transferred: 512,
+      });
+      this.emit('fileend', eventData);
+    });
 
-        options.uploadFiles.forEach((uploadFile) => {
-            const { fileUrl, fileSize } = uploadFile;
-            const parsedUrl = new URL(fileUrl);
-            const eventData = {
-                fileName: decodeURIComponent(Path.basename(parsedUrl.pathname)),
-                fileSize: fileSize,
-                targetFolder: `${decodeURI(Path.dirname(parsedUrl.pathname).replaceAll('\\', '/'))}`,
-                targetFile: decodeURI(parsedUrl.pathname),
-                mimeType: mime.getType(fileUrl)
-            };
-            this.emit('filestart', eventData);
-            this.emit('fileprogress', {
-                ...eventData,
-                transferred: 512
-            });
-            this.emit('fileend', eventData);
-        });
-
-        return new Promise(resolve => {
-            setTimeout(resolve, 5);
-        });
-    }
-
+    return new Promise((resolve) => {
+      setTimeout(resolve, 5);
+    });
+  }
 }
 
 module.exports = MockAemUpload;

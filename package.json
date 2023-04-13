@@ -12,6 +12,7 @@
     "prepublishOnly": "npm test && npm run build",
     "coverage": "./node_modules/.bin/nyc npm run test",
     "lint": "./node_modules/.bin/eslint .",
+    "lint:fix": "./node_modules/.bin/eslint . --fix",
     "e2e": "./node_modules/.bin/mocha --recursive --require @babel/register ./e2e",
     "semantic-release": "semantic-release"
   },

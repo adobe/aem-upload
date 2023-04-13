@@ -14,50 +14,50 @@ import UploadOptionsBase from './upload-options-base';
 import UploadError from './upload-error';
 
 export default class HttpResult extends UploadOptionsBase {
-    /**
-     * Constructs a new instance of the results, which can be used to add more information.
-     */
-    constructor(options, uploadOptions) {
-        super(options, uploadOptions);
+  /**
+   * Constructs a new instance of the results, which can be used to add more information.
+   */
+  constructor(options, uploadOptions) {
+    super(options, uploadOptions);
 
-        this.retryErrors = [];
-    }
+    this.retryErrors = [];
+  }
 
-    /**
-     * Adds an error to the result's list of retry errors.
-     *
-     * @param {Error|string} e An error that occurred.
-     */
-    addRetryError(e) {
-        this.retryErrors.push(UploadError.fromError(e));
-    }
+  /**
+   * Adds an error to the result's list of retry errors.
+   *
+   * @param {Error|string} e An error that occurred.
+   */
+  addRetryError(e) {
+    this.retryErrors.push(UploadError.fromError(e));
+  }
 
-    /**
-     * Retrieves the list of retry errors that occurred within the result's scope.
-     *
-     * @returns {Array} List of UploadError instances.
-     */
-    getRetryErrors() {
-        return this.retryErrors;
-    }
+  /**
+   * Retrieves the list of retry errors that occurred within the result's scope.
+   *
+   * @returns {Array} List of UploadError instances.
+   */
+  getRetryErrors() {
+    return this.retryErrors;
+  }
 
-    /**
-     * Converts the result to its JSON string representation.
-     *
-     * @returns {string} The result as a string.
-     */
-    toString() {
-        return JSON.stringify(this.toJSON());
-    }
+  /**
+   * Converts the result to its JSON string representation.
+   *
+   * @returns {string} The result as a string.
+   */
+  toString() {
+    return JSON.stringify(this.toJSON());
+  }
 
-    /**
-     * Converts the result to a simple object.
-     *
-     * @returns {object} Result information.
-     */
-    toJSON() {
-        return {
-            retryErrors: this.retryErrors,
-        };
-    }
+  /**
+   * Converts the result to a simple object.
+   *
+   * @returns {object} Result information.
+   */
+  toJSON() {
+    return {
+      retryErrors: this.retryErrors,
+    };
+  }
 }

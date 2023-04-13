@@ -10,6 +10,8 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
+/* eslint-env mocha */
+
 const should = require('should');
 
 const { importFile } = require('./testutils');
@@ -17,14 +19,14 @@ const { importFile } = require('./testutils');
 const FileSystemUploadDirectory = importFile('filesystem-upload-directory');
 const DirectBinaryUploadOptions = importFile('direct-binary-upload-options');
 
-describe('FileSystemUploadDirectory Tests', function() {
-    it('test get remote path', function() {
-        const options = new DirectBinaryUploadOptions()
-            .withUrl('http://somereallyfakeunittesturl/content/dam/test%20path');
-        const directory = new FileSystemUploadDirectory(options, '/local/directory', 'remote-name');
-        should(directory.getRemotePath()).be.exactly('/content/dam/test path/remote-name');
+describe('FileSystemUploadDirectory Tests', () => {
+  it('test get remote path', () => {
+    const options = new DirectBinaryUploadOptions()
+      .withUrl('http://somereallyfakeunittesturl/content/dam/test%20path');
+    const directory = new FileSystemUploadDirectory(options, '/local/directory', 'remote-name');
+    should(directory.getRemotePath()).be.exactly('/content/dam/test path/remote-name');
 
-        const child = new FileSystemUploadDirectory(options, '/local/directory/child', 'child-name', directory);
-        should(child.getRemotePath()).be.exactly('/content/dam/test path/remote-name/child-name');
-    });
+    const child = new FileSystemUploadDirectory(options, '/local/directory/child', 'child-name', directory);
+    should(child.getRemotePath()).be.exactly('/content/dam/test path/remote-name/child-name');
+  });
 });

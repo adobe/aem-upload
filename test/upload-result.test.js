@@ -10,6 +10,8 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
+/* eslint-env mocha */
+
 const should = require('should');
 const Sinon = require('sinon');
 
@@ -17,24 +19,27 @@ const { importFile } = require('./testutils');
 
 const UploadResult = importFile('upload-result');
 
-describe('UploadResult Tests', function() {
-    before(function() {
-        this.clock = Sinon.useFakeTimers(10);
-    });
+describe('UploadResult Tests', () => {
+  // eslint-disable-next-line func-names
+  before(function () {
+    this.clock = Sinon.useFakeTimers(10);
+  });
 
-    after(function() {
-        this.clock.restore();
-    });
+  // eslint-disable-next-line func-names
+  after(function () {
+    this.clock.restore();
+  });
 
-    it('test timer', async function() {
-        const uploadResult = new UploadResult();
-        uploadResult.startTimer();
-        this.clock.tick(20);
-        uploadResult.stopTimer();
-        should(uploadResult.getElapsedTime() >= 20).be.ok();
-        uploadResult.startTimer();
-        this.clock.tick(20);
-        uploadResult.stopTimer();
-        should(uploadResult.getElapsedTime() >= 40).be.ok();
-    });
+  // eslint-disable-next-line func-names
+  it('test timer', async function () {
+    const uploadResult = new UploadResult();
+    uploadResult.startTimer();
+    this.clock.tick(20);
+    uploadResult.stopTimer();
+    should(uploadResult.getElapsedTime() >= 20).be.ok();
+    uploadResult.startTimer();
+    this.clock.tick(20);
+    uploadResult.stopTimer();
+    should(uploadResult.getElapsedTime() >= 40).be.ok();
+  });
 });

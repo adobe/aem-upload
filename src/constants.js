@@ -14,52 +14,52 @@ governing permissions and limitations under the License.
  * Constant values that are used as defaults.
  */
 export const DefaultValues = {
-    /**
-     * The default number of maximum concurrent HTTP requests allowed by the library.
-     */
-    MAX_CONCURRENT: 5,
+  /**
+   * The default number of maximum concurrent HTTP requests allowed by the library.
+   */
+  MAX_CONCURRENT: 5,
 
-    /**
-     * The default number of times the process will attempt submitting an HTTP request
-     * before giving up and reporting a failure.
-     */
-    RETRY_COUNT: 3,
+  /**
+   * The default number of times the process will attempt submitting an HTTP request
+   * before giving up and reporting a failure.
+   */
+  RETRY_COUNT: 3,
 
-    /**
-     * The amount of time, in milliseconds, that the process will wait between retries
-     * of the same HTTP request. The delay will increase itself by this value for
-     * each retry.
-     */
-    RETRY_DELAY: 5000,
+  /**
+   * The amount of time, in milliseconds, that the process will wait between retries
+   * of the same HTTP request. The delay will increase itself by this value for
+   * each retry.
+   */
+  RETRY_DELAY: 5000,
 
-    /**
-     * Default timeout for HTTP requests: 1 minute.
-     */
-    REQUEST_TIMEOUT: 60000,
+  /**
+   * Default timeout for HTTP requests: 1 minute.
+   */
+  REQUEST_TIMEOUT: 60000,
 
-    /**
-     * Maximum number of files allowed to be uploaded as part of the file system
-     * upload process.
-     */
-    MAX_FILE_UPLOAD: 1000
-}
+  /**
+   * Maximum number of files allowed to be uploaded as part of the file system
+   * upload process.
+   */
+  MAX_FILE_UPLOAD: 1000,
+};
 
 export const RegularExpressions = {
-    /**
-     * Will match values that contain characters that are invalid in AEM node
-     * names.
-     */
-    INVALID_CHARACTERS_REGEX: /[/:[\]|*\\]/g,
+  /**
+   * Will match values that contain characters that are invalid in AEM node
+   * names.
+   */
+  INVALID_CHARACTERS_REGEX: /[/:[\]|*\\]/g,
 
-    /**
-     * Will match values that contain characters that are invalid in AEM folder node
-     * names.
-     */
-    INVALID_FOLDER_CHARACTERS_REGEX: /[.%;#+?^{}\s"&]/g,
+  /**
+   * Will match values that contain characters that are invalid in AEM folder node
+   * names.
+   */
+  INVALID_FOLDER_CHARACTERS_REGEX: /[.%;#+?^{}\s"&]/g,
 
-    /**
-     * Will match values that contain characters that are invalid in AEM asset node
-     * names.
-     */
-    INVALID_ASSET_CHARACTERS_REGEX: /[#%{}?&]/g,
-}
+  /**
+   * Will match values that contain characters that are invalid in AEM asset node
+   * names.
+   */
+  INVALID_ASSET_CHARACTERS_REGEX: /[#%{}?&]/g,
+};

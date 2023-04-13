@@ -10,6 +10,8 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
+/* eslint-env mocha */
+
 const should = require('should');
 const cookie = require('cookie');
 
@@ -18,59 +20,58 @@ const { importFile } = require('./testutils');
 const DirectBinaryUploadOptions = importFile('direct-binary-upload-options');
 
 describe('DirectBinaryUploadOptionsTest', () => {
-    it('test url slashes', () => {
-        const options = new DirectBinaryUploadOptions()
-            .withUrl('/');
+  it('test url slashes', () => {
+    const options = new DirectBinaryUploadOptions()
+      .withUrl('/');
 
-        should(options.getUrl()).be.exactly('/');
-        options.withUrl('/trailing/');
-        should(options.getUrl()).be.exactly('/trailing');
+    should(options.getUrl()).be.exactly('/');
+    options.withUrl('/trailing/');
+    should(options.getUrl()).be.exactly('/trailing');
+  });
+
+  it('test cookies', () => {
+    let options = new DirectBinaryUploadOptions()
+      .withCookies({ cookie: 'value' });
+
+    let cookies = cookie.parse(options.getHeaders().Cookie);
+    should(cookies).be.ok();
+    should(cookies.cookie).be.exactly('value');
+
+    options = options.withCookies({ cookie: 'value2', anotherCookie: 'another' });
+    cookies = cookie.parse(options.getHeaders().Cookie);
+    should(cookies).be.ok();
+    should(cookies.cookie).be.exactly('value2');
+    should(cookies.anotherCookie).be.exactly('another');
+  });
+
+  it('test withAddContentLengthHeader', () => {
+    const options = new DirectBinaryUploadOptions()
+      .withAddContentLengthHeader(true);
+    should(options).be.ok();
+  });
+
+  it('test getTargetFolderPath', () => {
+    const options = new DirectBinaryUploadOptions()
+      .withUrl('http://somereallyfakeurlhopefully/content/dam/test%20path/asset.jpg');
+    should(options.getTargetFolderPath()).be.exactly('/content/dam/test path/asset.jpg');
+  });
+
+  it('test withHttpProxy', () => {
+    const options = new DirectBinaryUploadOptions()
+      .withUrl('http://somereallyfakeurlhopefully/content/dam/test%20path/asset.jpg')
+      .withMaxConcurrent(2);
+    let proxy = options.getHttpProxy();
+    should(proxy).not.be.ok();
+    options.withHttpProxy({
+      host: 'somereallyfakeurlhopefully',
+      port: 1234,
     });
-
-    it('test cookies', () => {
-        let options = new DirectBinaryUploadOptions()
-            .withCookies({ cookie: 'value' });
-
-        let cookies = cookie.parse(options.getHeaders()['Cookie']);
-        should(cookies).be.ok();
-        should(cookies.cookie).be.exactly('value');
-
-        options = options.withCookies({ cookie: 'value2', anotherCookie: 'another' });
-        cookies = cookie.parse(options.getHeaders()['Cookie']);
-        should(cookies).be.ok();
-        should(cookies.cookie).be.exactly('value2');
-        should(cookies.anotherCookie).be.exactly('another');
+    proxy = options.getHttpProxy();
+    should(options.getUrl()).be.exactly('http://somereallyfakeurlhopefully/content/dam/test%20path/asset.jpg');
+    should(options.getMaxConcurrent()).be.exactly(2);
+    should(proxy).deepEqual({
+      host: 'somereallyfakeurlhopefully',
+      port: 1234,
     });
-
-    it('test withAddContentLengthHeader', () => {
-        let options = new DirectBinaryUploadOptions()
-            .withAddContentLengthHeader(true);
-        should(options).be.ok();
-    });
-
-    it('test getTargetFolderPath', () => {
-        const options = new DirectBinaryUploadOptions()
-            .withUrl('http://somereallyfakeurlhopefully/content/dam/test%20path/asset.jpg');
-        should(options.getTargetFolderPath()).be.exactly('/content/dam/test path/asset.jpg');
-    });
-
-    it('test withHttpProxy', () => {
-        const options = new DirectBinaryUploadOptions()
-            .withUrl('http://somereallyfakeurlhopefully/content/dam/test%20path/asset.jpg')
-            .withMaxConcurrent(2);
-        let proxy = options.getHttpProxy();
-        should(proxy).not.be.ok();
-        options.withHttpProxy({
-                host: 'somereallyfakeurlhopefully',
-                port: 1234
-            });
-        proxy = options.getHttpProxy();
-        should(options.getUrl()).be.exactly('http://somereallyfakeurlhopefully/content/dam/test%20path/asset.jpg');
-        should(options.getMaxConcurrent()).be.exactly(2);
-        should(proxy).deepEqual({
-            host: 'somereallyfakeurlhopefully',
-            port: 1234
-        });
-    });
-
+  });
 });

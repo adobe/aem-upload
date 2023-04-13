@@ -15,7 +15,7 @@ import UploadError from './upload-error';
 import ErrorCodes from './error-codes';
 
 const unsupportedError = () => {
-    throw new UploadError('filesystem operations are not permitted in a browser', ErrorCodes.INVALID_OPTIONS);
+  throw new UploadError('filesystem operations are not permitted in a browser', ErrorCodes.INVALID_OPTIONS);
 };
 
 let stat = unsupportedError;
@@ -24,35 +24,31 @@ let createReadStream = unsupportedError;
 
 // fs module is not supported in browsers
 if (fs) {
-    // doing this manually and not using promisify to support older
-    // versions of node
-    stat = (path) => {
-        return new Promise((res, rej) => {
-            fs.stat(path, (err, stats) => {
-                if (err) {
-                    rej(err);
-                    return;
-                }
-                res(stats);
-            })
-        });
-    };
-    readdir = (path) => {
-        return new Promise((res, rej) => {
-            fs.readdir(path, (err, result) => {
-                if (err) {
-                    rej(err);
-                    return;
-                }
-                res(result);
-            })
-        });
-    };
-    createReadStream = fs.createReadStream;
+  // doing this manually and not using promisify to support older
+  // versions of node
+  stat = (path) => new Promise((res, rej) => {
+    fs.stat(path, (err, stats) => {
+      if (err) {
+        rej(err);
+        return;
+      }
+      res(stats);
+    });
+  });
+  readdir = (path) => new Promise((res, rej) => {
+    fs.readdir(path, (err, result) => {
+      if (err) {
+        rej(err);
+        return;
+      }
+      res(result);
+    });
+  });
+  createReadStream = fs.createReadStream;
 }
 
 export default {
-    stat,
-    readdir,
-    createReadStream,
+  stat,
+  readdir,
+  createReadStream,
 };

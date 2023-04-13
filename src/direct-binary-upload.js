@@ -19,41 +19,41 @@ import UploadResult from './upload-result';
  * direct binary access.
  */
 export default class DirectBinaryUpload extends UploadBase {
-    /**
-     * Uploads multiple files to a target AEM instance. Through configuration,
-     * supports various potential sources, including a node.js process or a
-     * browser.
-     *
-     * @param {DirectBinaryUploadOptions} options Controls how the upload will behave. See class
-     *  documentation for more details.
-     * @returns {Promise} Will be resolved when all the files have been uploaded. The data
-     *  passed in successful resolution will be an instance of UploadResult.
-     */
-    async uploadFiles(options) {
-        const uploadProcess = new DirectBinaryUploadProcess(this.getOptions(), options);
-        const uploadResult = new UploadResult(this.getOptions(), options);
+  /**
+   * Uploads multiple files to a target AEM instance. Through configuration,
+   * supports various potential sources, including a node.js process or a
+   * browser.
+   *
+   * @param {DirectBinaryUploadOptions} options Controls how the upload will behave. See class
+   *  documentation for more details.
+   * @returns {Promise} Will be resolved when all the files have been uploaded. The data
+   *  passed in successful resolution will be an instance of UploadResult.
+   */
+  async uploadFiles(options) {
+    const uploadProcess = new DirectBinaryUploadProcess(this.getOptions(), options);
+    const uploadResult = new UploadResult(this.getOptions(), options);
 
-        this.beforeUploadProcess(uploadProcess);
-        await this.executeUploadProcess(uploadProcess, uploadResult);
-        this.afterUploadProcess(uploadProcess, uploadResult);
+    this.beforeUploadProcess(uploadProcess);
+    await this.executeUploadProcess(uploadProcess, uploadResult);
+    this.afterUploadProcess(uploadProcess, uploadResult);
 
-        return uploadResult.toJSON();
-    }
+    return uploadResult.toJSON();
+  }
 
-    /**
-     * Determines whether a given upload can be performed. If the upload is not possible then
-     * the method will throw an UploadError whose code specifies the reason why the upload
-     * cannot happen.
-     * @param {DirectBinaryUploadOptions} options Options for the proposed upload. See module
-     *  documentation for details.
-     */
-    // eslint-disable-next-line no-unused-vars
-    async canUpload(options) {
-        // this is a legacy option, but leaving the method in place for backward compatibility. The library
-        // previously only worked if direct binary upload was enabled on AEM. However, the capabilities
-        // of node-httptransfer were updated so that it could upload using the create asset servlet if
-        // direct binary upload is not available. So the upload process will now work with any AEM instance,
-        // regardless of its configuration
-        return true;
-    }
+  /**
+   * Determines whether a given upload can be performed. If the upload is not possible then
+   * the method will throw an UploadError whose code specifies the reason why the upload
+   * cannot happen.
+   * @param {DirectBinaryUploadOptions} options Options for the proposed upload. See module
+   *  documentation for details.
+   */
+  // eslint-disable-next-line no-unused-vars, class-methods-use-this
+  async canUpload(options) {
+    // this is a legacy option, but leaving the method in place for backward compatibility.
+    // The library previously only worked if direct binary upload was enabled on AEM. However,
+    // the capabilities of node-httptransfer were updated so that it could upload using the
+    // create asset servlet if direct binary upload is not available. So the upload process
+    // will now work with any AEM instance, regardless of its configuration
+    return true;
+  }
 }
