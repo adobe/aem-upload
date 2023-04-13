@@ -13,7 +13,6 @@ governing permissions and limitations under the License.
 import { getAverage } from './utils';
 import HttpResult from './http-result';
 import UploadError from './upload-error';
-import CreateDirectoryResult from './create-directory-result';
 
 /**
  * Retrieves a list of all file results that were successful.
@@ -73,7 +72,8 @@ export default class UploadResult extends HttpResult {
     /**
      * Adds a new create directory to the overall result. Will be used to calculate various overall metrics.
      *
-     * @param {CreateDirectoryResult} createDirectoryResult Result whose metrics will be included in the overall result.
+     * @param {import('./create-directory-result').default} createDirectoryResult Result whose metrics will
+     *   be included in the overall result.
      */
     addCreateDirectoryResult(createDirectoryResult) {
         this.createDirectoryResults.push(createDirectoryResult);
@@ -82,7 +82,7 @@ export default class UploadResult extends HttpResult {
     /**
      * Retrieves all results for directories that were created as part of the upload.
      *
-     * @returns {Array<CreateDirectoryResult>} Directory results.
+     * @returns {Array<import('./create-directory-result').default>} Directory results.
      */
     getCreateDirectoryResults() {
         return this.createDirectoryResults;
