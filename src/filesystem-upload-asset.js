@@ -17,9 +17,9 @@ governing permissions and limitations under the License.
  * of the upload.
  */
 
-import FileSystemUploadDirectory from './filesystem-upload-directory';
+const FileSystemUploadDirectory = require('./filesystem-upload-directory');
 
-export default class FileSystemUploadAsset extends FileSystemUploadDirectory {
+class FileSystemUploadAsset extends FileSystemUploadDirectory {
   /**
    * Constructs a new instance of the class using the given values.
    * @param {FileSystemUploadOptions} uploadOptions URL of the options
@@ -45,3 +45,5 @@ export default class FileSystemUploadAsset extends FileSystemUploadDirectory {
     return this.size;
   }
 }
+
+module.exports = FileSystemUploadAsset;

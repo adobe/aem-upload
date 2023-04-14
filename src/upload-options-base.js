@@ -10,13 +10,13 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import UploadBase from './upload-base';
+const UploadBase = require('./upload-base');
 
 /**
  * Common base class for all classes that work with a DirectBinaryUploadOptions
  * instance.
  */
-export default class UploadOptionsBase extends UploadBase {
+class UploadOptionsBase extends UploadBase {
   /**
    * Constructs a new instance using the provided information.
    *
@@ -38,3 +38,5 @@ export default class UploadOptionsBase extends UploadBase {
     return this.uploadOptions;
   }
 }
+
+module.exports = UploadOptionsBase;

@@ -16,13 +16,13 @@ const should = require('should');
 const { EventEmitter } = require('events');
 const Sinon = require('sinon');
 
-const { importFile, getTestOptions } = require('../testutils');
+const { getTestOptions } = require('../testutils');
 const MockRequest = require('../mock-request');
 
-const HttpClient = importFile('http/http-client');
-const HttpRequest = importFile('http/http-request');
-const DirectBinaryUploadOptions = importFile('direct-binary-upload-options');
-const HttpResult = importFile('http-result');
+const HttpClient = require('../../src/http/http-client');
+const HttpRequest = require('../../src/http/http-request');
+const DirectBinaryUploadOptions = require('../../src/direct-binary-upload-options');
+const HttpResult = require('../../src/http-result');
 
 const HOST = 'http://adobe-aem-upload-unit-test';
 

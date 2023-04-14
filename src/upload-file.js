@@ -10,12 +10,12 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import fs from 'fs';
-import Path from 'path';
+const fs = require('fs');
+const Path = require('path');
 
-import UploadOptionsBase from './upload-options-base';
-import UploadError from './upload-error';
-import ErrorCodes from './error-codes';
+const UploadOptionsBase = require('./upload-options-base');
+const UploadError = require('./upload-error');
+const ErrorCodes = require('./error-codes');
 
 /**
  * Analyzes the given file options and determines if there is sufficient information
@@ -38,7 +38,7 @@ function ensureRequiredOptions(options) {
  * Represents a file to upload, as provided in upload options. Includes information like the file's
  * name and size. Also provide capabilities for reading chunks of the file.
  */
-export default class UploadFile extends UploadOptionsBase {
+class UploadFile extends UploadOptionsBase {
   /**
    * Constructs a new instance based on the given information.
    *
@@ -214,3 +214,5 @@ export default class UploadFile extends UploadOptionsBase {
     return json;
   }
 }
+
+module.exports = UploadFile;

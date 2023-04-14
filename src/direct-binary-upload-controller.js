@@ -10,13 +10,13 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import UploadBase from './upload-base';
+const UploadBase = require('./upload-base');
 
 /**
  * Provides various capabilities for interacting with and controlling an in-progress
  * upload.
  */
-export default class DirectBinaryUploadController extends UploadBase {
+class DirectBinaryUploadController extends UploadBase {
   /**
    * Instructs the upload to cancel the entire upload process.
    */
@@ -31,3 +31,5 @@ export default class DirectBinaryUploadController extends UploadBase {
     this.sendEvent('cancel', { fileName: targetFilePath });
   }
 }
+
+module.exports = DirectBinaryUploadController;

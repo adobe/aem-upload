@@ -10,15 +10,15 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import UploadBase from './upload-base';
-import DirectBinaryUploadProcess from './direct-binary-upload-process';
-import UploadResult from './upload-result';
+const UploadBase = require('./upload-base');
+const DirectBinaryUploadProcess = require('./direct-binary-upload-process');
+const UploadResult = require('./upload-result');
 
 /**
  * Provides capabilities for uploading assets to an AEM instance configured with
  * direct binary access.
  */
-export default class DirectBinaryUpload extends UploadBase {
+class DirectBinaryUpload extends UploadBase {
   /**
    * Uploads multiple files to a target AEM instance. Through configuration,
    * supports various potential sources, including a node.js process or a
@@ -57,3 +57,5 @@ export default class DirectBinaryUpload extends UploadBase {
     return true;
   }
 }
+
+module.exports = DirectBinaryUpload;

@@ -10,17 +10,17 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import URL from 'url';
+const URL = require('url');
 
-import UploadError from './upload-error';
-import ErrorCodes from './error-codes';
+const UploadError = require('./upload-error');
+const ErrorCodes = require('./error-codes');
 
 const PRIVATE = Symbol('PRIVATE');
 
 /**
  * Represents information about the proxy to use when sending HTTP requests.
  */
-export default class HttpProxy {
+class HttpProxy {
   /**
    * Constructs new proxy information using the given proxy URL. By default, authentication will
    * not be used with the proxy.
@@ -124,3 +124,5 @@ export default class HttpProxy {
     return options;
   }
 }
+
+module.exports = HttpProxy;

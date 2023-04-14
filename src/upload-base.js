@@ -10,13 +10,13 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import { EventEmitter } from 'events';
+const { EventEmitter } = require('events');
 
 /**
  * Base class providing common functionality for an upload based on options
  * provided to a direct binary access-related instance.
  */
-export default class UploadBase extends EventEmitter {
+class UploadBase extends EventEmitter {
   /**
    * Initializes a new upload instance with the given options.
    *
@@ -90,7 +90,7 @@ export default class UploadBase extends EventEmitter {
    * Builds information about an upload, which will be included in upload-level
    * events sent by the uploader process.
    *
-   * @param {import('./direct-binary-upload-process').default} uploadProcess The
+   * @param {import('./direct-binary-upload-process')} uploadProcess The
    *  upload process that will be performing the work of the upload.
    * @param {number} [directoryCount=0] If specified, the number of directories
    *  that will be created by the upload process.
@@ -108,7 +108,7 @@ export default class UploadBase extends EventEmitter {
   /**
    * Sends an event that will inform consumers that items are about to be uploaded.
    *
-   * @param {import('./direct-binary-upload-process').default} uploadProcess The
+   * @param {import('./direct-binary-upload-process')} uploadProcess The
    *  upload process that will be performing the work of the upload.
    * @param {number} [directoryCount=0] If specified, the number of directories
    *  that will be created by the upload process.
@@ -120,9 +120,9 @@ export default class UploadBase extends EventEmitter {
   /**
    * Sends an event that will inform consumers that items have finished uploading.
    *
-   * @param {import('./direct-binary-upload-process').default} uploadProcess The
+   * @param {import('./direct-binary-upload-process')} uploadProcess The
    *  upload process that will be performing the work of the upload.
-   * @param {import('./upload-result').default} uploadResult Result information
+   * @param {import('./upload-result')} uploadResult Result information
    *  about the upload.
    * @param {number} [directoryCount=0] If specified, the number of directories
    *  that will be created by the upload process.
@@ -137,9 +137,9 @@ export default class UploadBase extends EventEmitter {
   /**
    * Does the work of executing an upload of one or more files to AEM.
    *
-   * @param {import('./direct-binary-upload-process').default} uploadProcess The
+   * @param {import('./direct-binary-upload-process')} uploadProcess The
    *  upload process that will be performing the work of the upload.
-   * @param {import('./upload-result').default} uploadResult Result information
+   * @param {import('./upload-result')} uploadResult Result information
    *  about the upload.
    * @returns {Promise} Resolves when the upload has finished.
    */
@@ -157,3 +157,5 @@ export default class UploadBase extends EventEmitter {
     }
   }
 }
+
+module.exports = UploadBase;

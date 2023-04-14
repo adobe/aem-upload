@@ -10,13 +10,13 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import HttpResult from './http-result';
+const HttpResult = require('./http-result');
 
 /**
  * Represents the results of the creation of a directory. These results contain information such as
  * the amount of time it took to create, and any error that may have occurred.
  */
-export default class CreateDirectoryResult extends HttpResult {
+class CreateDirectoryResult extends HttpResult {
   /**
    * Constructs a new instance using the provided information. Can then be used to provide
    * additional details as needed.
@@ -49,7 +49,7 @@ export default class CreateDirectoryResult extends HttpResult {
   /**
    * Sets the error that was the result of the create request.
    *
-   * @param {import('./upload-error').default} error Error to the create request.
+   * @param {import('./upload-error')} error Error to the create request.
    */
   setCreateError(error) {
     this.error = error;
@@ -104,3 +104,5 @@ export default class CreateDirectoryResult extends HttpResult {
     return json;
   }
 }
+
+module.exports = CreateDirectoryResult;

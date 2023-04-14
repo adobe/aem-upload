@@ -14,12 +14,12 @@ governing permissions and limitations under the License.
 
 const should = require('should');
 
-const { importFile, getTestOptions, verifyResult } = require('./testutils');
+const { getTestOptions, verifyResult } = require('./testutils');
 const MockRequest = require('./mock-request');
 const MockBlob = require('./mock-blob');
 
-const DirectBinaryUpload = importFile('direct-binary-upload');
-const DirectBinaryUploadOptions = importFile('direct-binary-upload-options');
+const DirectBinaryUpload = require('../src/direct-binary-upload');
+const DirectBinaryUploadOptions = require('../src/direct-binary-upload-options');
 
 let blob1; let blob2; let
   events;

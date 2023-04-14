@@ -10,45 +10,7 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-require('core-js');
-require('regenerator-runtime');
-
-const proxyquire = require('proxyquire').noCallThru();
 const should = require('should');
-
-function getImportPath(file) {
-  return `../src/${file}`;
-}
-
-module.exports.getImportPath = getImportPath;
-
-/**
- * Requires a file from the project's src directory, applying a given set of
- * Mock objects to it.
- *
- * @param {string} file The path to the file to import, from the src/ directory. For
- *  example, "http-utils".
- * @param {object} fileMocks A lookup containing objects that should be mocked. The
- *  key should be the name of the module to Mock, and the value is the object to
- *  return when the mocked module is required. If the module is installed, the name
- *  can simply be the name of the module (such as "fs"). If the module is in the
- *  project, the name should be the relative path to the file from the src/ directory
- *  (such as "./upload-file").
- */
-module.exports.importFile = (file, fileMocks) => {
-  const requirePath = getImportPath(file);
-  let required;
-  if (fileMocks) {
-    required = proxyquire(requirePath, fileMocks);
-  } else {
-    // eslint-disable-next-line import/no-dynamic-require, global-require
-    required = require(requirePath);
-  }
-  if (required && required.default) {
-    return required.default;
-  }
-  return required;
-};
 
 function getConsoleLogger() {
   return {

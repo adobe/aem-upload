@@ -17,11 +17,11 @@ const should = require('should');
 const {
   getTestOptions,
 } = require('./testutils');
-const FileSystemUploadOptions = require('../src/filesystem-upload-options').default;
-const CreateDirectoryResult = require('../src/create-directory-result').default;
-const HttpResponse = require('../src/http/http-response').default;
-const UploadError = require('../src/upload-error').default;
-const ErrorCodes = require('../src/error-codes').default;
+const FileSystemUploadOptions = require('../src/filesystem-upload-options');
+const CreateDirectoryResult = require('../src/create-directory-result');
+const HttpResponse = require('../src/http/http-response');
+const UploadError = require('../src/upload-error');
+const ErrorCodes = require('../src/error-codes');
 
 describe('Create Directy Result Tests', () => {
   it('test result with response', () => {

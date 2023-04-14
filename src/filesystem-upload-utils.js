@@ -14,8 +14,8 @@ const Path = require('path');
 
 const { DefaultValues, RegularExpressions } = require('./constants');
 const { normalizePath } = require('./utils');
-const { default: UploadError } = require('./upload-error');
-const { default: ErrorCodes } = require('./error-codes');
+const UploadError = require('./upload-error');
+const ErrorCodes = require('./error-codes');
 
 /**
  * Retrieves the option indicating whether or not the upload is deep. Takes

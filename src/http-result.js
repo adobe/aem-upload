@@ -10,10 +10,10 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import UploadOptionsBase from './upload-options-base';
-import UploadError from './upload-error';
+const UploadOptionsBase = require('./upload-options-base');
+const UploadError = require('./upload-error');
 
-export default class HttpResult extends UploadOptionsBase {
+class HttpResult extends UploadOptionsBase {
   /**
    * Constructs a new instance of the results, which can be used to add more information.
    */
@@ -61,3 +61,5 @@ export default class HttpResult extends UploadOptionsBase {
     };
   }
 }
+
+module.exports = HttpResult;

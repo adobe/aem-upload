@@ -18,11 +18,11 @@ const fs = require('fs');
 const MockFs = require('mock-fs');
 const Sinon = require('sinon');
 
-const { importFile, getTestOptions } = require('../testutils');
+const { getTestOptions } = require('../testutils');
 
-const HttpRequest = importFile('http/http-request');
-const DirectBinaryUploadOptions = importFile('direct-binary-upload-options');
-const HttpProxy = importFile('http-proxy');
+const HttpRequest = require('../../src/http/http-request');
+const DirectBinaryUploadOptions = require('../../src/direct-binary-upload-options');
+const HttpProxy = require('../../src/http-proxy');
 
 const HOST = 'http://adobe-aem-upload-unit-test';
 

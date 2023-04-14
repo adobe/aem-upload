@@ -409,7 +409,7 @@ options.withUploadFiles([
                 <br/>
                 <b>Example</b>
                 <br/>
-                <code>import { HttpProxy } from '@adobe/aem-upload';</code>
+                <code>const { HttpProxy } = require('@adobe/aem-upload');</code>
                 <br/>
                 <code>options.withHttpProxy(</code>
                 <br/>

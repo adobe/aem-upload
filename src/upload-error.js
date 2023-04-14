@@ -10,7 +10,7 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import errorCodes from './error-codes';
+const errorCodes = require('./error-codes');
 
 /**
  * Concatenates to message values together if both are provided.
@@ -33,7 +33,7 @@ function getFullMessage(overallMessage, specificMessage) {
  * primarily consists of an error code, which can be used by consumers to provide more specific
  * information about the nature of an error.
  */
-export default class UploadError extends Error {
+class UploadError extends Error {
   /**
    * Constructs a new UploadError instance out of a given error message. The method will attempt
    * to create the most specific type of error it can based on what it receives.
@@ -200,3 +200,5 @@ export default class UploadError extends Error {
     return JSON.stringify(this);
   }
 }
+
+module.exports = UploadError;

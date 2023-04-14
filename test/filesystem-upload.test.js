@@ -16,7 +16,6 @@ const should = require('should');
 const MockFs = require('mock-fs');
 
 const {
-  importFile,
   getTestOptions,
   monitorEvents,
   getEvent,
@@ -25,10 +24,10 @@ const {
 } = require('./testutils');
 const MockRequest = require('./mock-request');
 
-const HttpClient = importFile('http/http-client');
-const FileSystemUploadDirectory = importFile('filesystem-upload-directory');
-const HttpProxy = importFile('http-proxy');
-const UploadResult = importFile('upload-result');
+const HttpClient = require('../src/http/http-client');
+const FileSystemUploadDirectory = require('../src/filesystem-upload-directory');
+const HttpProxy = require('../src/http-proxy');
+const UploadResult = require('../src/upload-result');
 
 function MockDirectBinaryUpload() {
 
@@ -38,9 +37,9 @@ MockDirectBinaryUpload.prototype.uploadFiles = (uploadOptions) => new Promise((r
   resolve(uploadOptions);
 });
 
-const FileSystemUploadOptions = importFile('filesystem-upload-options');
+const FileSystemUploadOptions = require('../src/filesystem-upload-options');
 
-const FileSystemUpload = importFile('filesystem-upload');
+const FileSystemUpload = require('../src/filesystem-upload');
 
 const SUBDIR = 'sub吏dir';
 const SUBDIR_ENCODED = encodeURI(SUBDIR);

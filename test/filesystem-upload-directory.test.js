@@ -14,10 +14,8 @@ governing permissions and limitations under the License.
 
 const should = require('should');
 
-const { importFile } = require('./testutils');
-
-const FileSystemUploadDirectory = importFile('filesystem-upload-directory');
-const DirectBinaryUploadOptions = importFile('direct-binary-upload-options');
+const FileSystemUploadDirectory = require('../src/filesystem-upload-directory');
+const DirectBinaryUploadOptions = require('../src/direct-binary-upload-options');
 
 describe('FileSystemUploadDirectory Tests', () => {
   it('test get remote path', () => {

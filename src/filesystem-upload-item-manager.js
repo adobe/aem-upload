@@ -10,16 +10,16 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import Path from 'path';
+const Path = require('path');
 
-import { normalizePath } from './utils';
-import FileSystemUploadDirectory from './filesystem-upload-directory';
-import FileSystemUploadAsset from './filesystem-upload-asset';
-import {
+const { normalizePath } = require('./utils');
+const FileSystemUploadDirectory = require('./filesystem-upload-directory');
+const FileSystemUploadAsset = require('./filesystem-upload-asset');
+const {
   cleanFolderName,
   cleanAssetName,
   getItemManagerParent,
-} from './filesystem-upload-utils';
+} = require('./filesystem-upload-utils');
 
 /**
  * Keeps track of FileSystemUploadDirectory and FileSystemUploadAsset
@@ -29,7 +29,7 @@ import {
  * create necessary instances for parent directories up until the
  * manager's root path.
  */
-export default class FileSystemUploadItemManager {
+class FileSystemUploadItemManager {
   /**
    * Constructs a new, empty instance of the manager that will use
    * a the given information.
@@ -131,3 +131,5 @@ export default class FileSystemUploadItemManager {
     return this.assets.has(normalizePath(localPath));
   }
 }
+
+module.exports = FileSystemUploadItemManager;

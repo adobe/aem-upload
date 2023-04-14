@@ -14,10 +14,8 @@ governing permissions and limitations under the License.
 
 const should = require('should');
 
-const { importFile } = require('./testutils');
-
-const { cleanFolderName, cleanAssetName } = importFile('filesystem-upload-utils');
-const FileSystemUploadOptions = importFile('filesystem-upload-options');
+const { cleanFolderName, cleanAssetName } = require('../src/filesystem-upload-utils');
+const FileSystemUploadOptions = require('../src/filesystem-upload-options');
 
 describe('FileSystemUploadUtils Tests', () => {
   let options;

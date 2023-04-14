@@ -14,10 +14,10 @@ governing permissions and limitations under the License.
 
 const should = require('should');
 
-const { importFile, getTestOptions } = require('./testutils');
+const { getTestOptions } = require('./testutils');
 
-const DirectBinaryUploadOptions = importFile('direct-binary-upload-options');
-const UploadFile = importFile('upload-file');
+const DirectBinaryUploadOptions = require('../src/direct-binary-upload-options');
+const UploadFile = require('../src/upload-file');
 
 describe('UploadFile Tests', () => {
   function ensureFailure(options, uploadOptions, fileOptions) {

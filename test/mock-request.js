@@ -14,7 +14,7 @@ const querystring = require('querystring');
 const URL = require('url');
 const axios = require('axios');
 const MockAdapter = require('axios-mock-adapter');
-const HttpTransfer = require('@adobe/httptransfer/es2015');
+const HttpTransfer = require('@adobe/httptransfer');
 const mime = require('mime');
 const should = require('should');
 

@@ -10,11 +10,11 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import { Readable } from 'stream';
-import UploadBase from '../upload-base';
-import { DefaultValues } from '../constants';
-import UploadError from '../upload-error';
-import ErrorCodes from '../error-codes';
+const { Readable } = require('stream');
+const UploadBase = require('../upload-base');
+const { DefaultValues } = require('../constants');
+const UploadError = require('../upload-error');
+const ErrorCodes = require('../error-codes');
 
 /**
  * Represents a request that can be sent via HTTP using the HttpClient. Options on
@@ -255,4 +255,4 @@ HttpRequest.ResponseType = {
   BLOB: 'blob',
 };
 
-export default HttpRequest;
+module.exports = HttpRequest;

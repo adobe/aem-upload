@@ -10,37 +10,37 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import Path from 'path';
-import fs from './fs-promise';
+const Path = require('path');
+const fs = require('./fs-promise');
 
-import DirectBinaryUpload from './direct-binary-upload';
-import DirectBinaryUploadProcess from './direct-binary-upload-process';
-import FileSystemUploadOptions from './filesystem-upload-options';
-import {
+const DirectBinaryUpload = require('./direct-binary-upload');
+const DirectBinaryUploadProcess = require('./direct-binary-upload-process');
+const FileSystemUploadOptions = require('./filesystem-upload-options');
+const {
   trimContentDam,
   walkDirectory,
   isTempPath,
-} from './utils';
-import {
+} = require('./utils');
+const {
   updateOptionsWithResponse,
-} from './http-utils';
-import UploadError from './upload-error';
-import ErrorCodes from './error-codes';
-import UploadResult from './upload-result';
-import HttpClient from './http/http-client';
-import HttpRequest from './http/http-request';
-import {
+} = require('./http-utils');
+const UploadError = require('./upload-error');
+const ErrorCodes = require('./error-codes');
+const UploadResult = require('./upload-result');
+const HttpClient = require('./http/http-client');
+const HttpRequest = require('./http/http-request');
+const {
   isDeepUpload,
   getMaxFileCount,
-} from './filesystem-upload-utils';
-import FileSystemUploadItemManager from './filesystem-upload-item-manager';
-import CreateDirectoryResult from './create-directory-result';
+} = require('./filesystem-upload-utils');
+const FileSystemUploadItemManager = require('./filesystem-upload-item-manager');
+const CreateDirectoryResult = require('./create-directory-result');
 
 /**
  * Uploads one or more files from the local file system to a target AEM instance using direct
  * binary access.
  */
-export default class FileSystemUpload extends DirectBinaryUpload {
+class FileSystemUpload extends DirectBinaryUpload {
   /**
    * Retrieves information from the local file system for a list of files, creates a new directory
    * in AEM, then uploads each of the local files to the new directory using direct binary access.
@@ -369,3 +369,5 @@ export default class FileSystemUpload extends DirectBinaryUpload {
     }
   }
 }
+
+module.exports = FileSystemUpload;

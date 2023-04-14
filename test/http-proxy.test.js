@@ -14,11 +14,7 @@ governing permissions and limitations under the License.
 
 const should = require('should');
 
-const {
-  importFile,
-} = require('./testutils');
-
-const HttpProxy = importFile('http-proxy');
+const HttpProxy = require('../src/http-proxy');
 
 describe('HTTP proxy tests', () => {
   it('test accessors', () => {

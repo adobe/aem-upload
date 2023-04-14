@@ -10,9 +10,9 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import fs from 'fs';
-import UploadError from './upload-error';
-import ErrorCodes from './error-codes';
+const fs = require('fs');
+const UploadError = require('./upload-error');
+const ErrorCodes = require('./error-codes');
 
 const unsupportedError = () => {
   throw new UploadError('filesystem operations are not permitted in a browser', ErrorCodes.INVALID_OPTIONS);
@@ -47,7 +47,7 @@ if (fs) {
   createReadStream = fs.createReadStream;
 }
 
-export default {
+module.exports = {
   stat,
   readdir,
   createReadStream,

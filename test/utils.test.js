@@ -13,14 +13,7 @@ governing permissions and limitations under the License.
 /* eslint-env mocha */
 
 const should = require('should');
-const Path = require('path');
-
-const {
-  importFile,
-} = require('./testutils');
-
-let dirs = {};
-let stats = {};
+const mock = require('mock-fs');
 
 const {
   concurrentLoop,
@@ -30,42 +23,16 @@ const {
   joinUrlPath,
   trimContentDam,
   walkDirectory,
-} = importFile('utils', {
-  './fs-promise': {
-    async stat(path) {
-      if (Path.basename(path) === 'error.jpg') {
-        throw new Error('unit test stat error');
-      }
-      return stats[path];
-    },
-    async readdir(path) {
-      if (Path.basename(path) === 'error') {
-        throw new Error('unit test readdir error');
-      }
-      return dirs[path];
-    },
-  },
-});
-const { DefaultValues } = importFile('constants');
+} = require('../src/utils');
+const { DefaultValues } = require('../src/constants');
 
 describe('UtilsTest', () => {
-  function addFileSystem(fullPath, isDir, size = 0) {
-    stats[fullPath] = {
-      isDirectory: () => isDir,
-      isFile: () => !isDir,
-      size,
-    };
-
-    const parent = Path.dirname(fullPath);
-    if (!dirs[parent]) {
-      dirs[parent] = [];
-    }
-    dirs[parent].push(Path.basename(fullPath));
-  }
-
   beforeEach(() => {
-    dirs = {};
-    stats = {};
+    mock.restore();
+  });
+
+  afterEach(() => {
+    mock.restore();
   });
 
   describe('concurrentLoop tests', () => {
@@ -195,25 +162,38 @@ describe('UtilsTest', () => {
   }
 
   function createDirectoryStructure() {
-    addFileSystem('/root', true);
-    addFileSystem('/root/file1.jpg', false, 1024);
-    addFileSystem('/root/file2.jpg', false, 1024);
-    addFileSystem('/root/dir1', true);
-    addFileSystem('/root/dir1/file3.jpg', false, 1024);
-    addFileSystem('/root/dir1/file4.jpg', false, 1024);
-    addFileSystem('/root/dir1/dir2', true);
-    addFileSystem('/root/dir1/dir2/dir3', true);
-    addFileSystem('/root/dir1/dir2/dir3/file5.jpg', false, 1024);
-    addFileSystem('/root/dir1/dir2/dir3/file6.jpg', false, 1024);
-    addFileSystem('/root/.tempdir', true);
-    addFileSystem('/root/.tempfile.jpg', false, 1024);
-    addFileSystem('/root/error', true);
-    addFileSystem('/root/error.jpg', false, 1024);
-    addFileSystem('/root/emptydir', true);
-    addFileSystem('/root/emptydir/emptysubdir', true);
+    mock({
+      '/root': {
+        'file1.jpg': '1234',
+        'file2.jpg': '1234',
+        dir1: {
+          'file3.jpg': '1234',
+          'file4.jpg': '1234',
+          dir2: {
+            dir3: {
+              'file5.jpg': '1234',
+              'file6.jpg': '1234',
+            },
+          },
+        },
+        '.tempdir': {},
+        '.tempfile.jpg': '1234',
+        error: mock.directory({
+          uid: 'invalid',
+          gid: 'invalid',
+          mode: 0,
+        }),
+        'error.jpg': mock.symlink({
+          path: '/invalid-path',
+        }),
+        emptydir: {
+          emptysubdir: {},
+        },
+      },
+    });
   }
 
-  it('test walk directory', async () => {
+  it('test walk directory with descendents', async () => {
     createDirectoryStructure();
 
     const {
@@ -221,7 +201,7 @@ describe('UtilsTest', () => {
     } = await walkDirectory('/root');
     should(directories.length).be.exactly(6);
     should(files.length).be.exactly(6);
-    should(totalSize).be.exactly(files.length * 1024);
+    should(totalSize).be.exactly(files.length * 4);
     should(errors.length).be.exactly(2);
 
     const dir1 = getPathIndex(directories, '/root/dir1');
@@ -269,7 +249,7 @@ describe('UtilsTest', () => {
     should(dir3 >= 0);
 
     should(files.length).be.exactly(2);
-    should(totalSize).be.exactly(files.length * 1024);
+    should(totalSize).be.exactly(files.length * 4);
     should(errors.length).be.exactly(1);
 
     const file1 = getPathIndex(files, '/root/file1.jpg');

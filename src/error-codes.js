@@ -13,7 +13,7 @@ governing permissions and limitations under the License.
 /**
  * The error codes that the upload process might provide to the consumer.
  */
-export default {
+module.exports = {
   /**
    * The "catch all" error code that is used in cases where the specific error type cannot
    * be determined.

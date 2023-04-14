@@ -10,7 +10,4 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-require('core-js');
-require('regenerator-runtime');
-
-module.exports = require('./dist/exports');
+module.exports = require('./src/exports');

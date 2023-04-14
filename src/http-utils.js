@@ -10,14 +10,14 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import axios, { CancelToken } from 'axios';
-import cookie from 'cookie';
-import URL from 'url';
-import HttpProxyAgent from 'http-proxy-agent';
-import HttpsProxyAgent from 'https-proxy-agent';
+const axios = require('axios');
+const cookie = require('cookie');
+const URL = require('url');
+const HttpProxyAgent = require('http-proxy-agent');
+const HttpsProxyAgent = require('https-proxy-agent');
 
-import { exponentialRetry } from './utils';
-import UploadFile from './upload-file';
+const { exponentialRetry } = require('./utils');
+const UploadFile = require('./upload-file');
 
 /**
  * Retrieves a token that can be used to cancel an http request.
@@ -25,7 +25,7 @@ import UploadFile from './upload-file';
  * @returns {Object} Used to cancel an HTTP request.
  */
 function createCancelToken() {
-  return CancelToken.source();
+  return axios.CancelToken.source();
 }
 
 /**
@@ -197,7 +197,7 @@ function getHttpTransferOptions(options, directBinaryUploadOptions) {
   return transferOptions;
 }
 
-export {
+module.exports = {
   createCancelToken,
   timedRequest,
   isRetryableError,

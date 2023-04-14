@@ -13,7 +13,7 @@ governing permissions and limitations under the License.
 /**
  * Constant values that are used as defaults.
  */
-export const DefaultValues = {
+module.exports.DefaultValues = {
   /**
    * The default number of maximum concurrent HTTP requests allowed by the library.
    */
@@ -44,7 +44,7 @@ export const DefaultValues = {
   MAX_FILE_UPLOAD: 1000,
 };
 
-export const RegularExpressions = {
+module.exports.RegularExpressions = {
   /**
    * Will match values that contain characters that are invalid in AEM node
    * names.
