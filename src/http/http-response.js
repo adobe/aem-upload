@@ -10,13 +10,13 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import UploadBase from '../upload-base';
+const UploadBase = require('../upload-base');
 
 /**
  * Represents a response received from the HttpClient after submitting a request. Provides
  * various accessors for retrieving information from the response.
  */
-export default class HttpResponse extends UploadBase {
+class HttpResponse extends UploadBase {
   /**
    * Constructs a new response, which will use raw response values from the underlying
    * module that performs HTTP communication.
@@ -79,3 +79,5 @@ export default class HttpResponse extends UploadBase {
     return this.rawResponse ? this.rawResponse.elapsedTime : 0;
   }
 }
+
+module.exports = HttpResponse;

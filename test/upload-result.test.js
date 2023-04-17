@@ -15,9 +15,7 @@ governing permissions and limitations under the License.
 const should = require('should');
 const Sinon = require('sinon');
 
-const { importFile } = require('./testutils');
-
-const UploadResult = importFile('upload-result');
+const UploadResult = require('../src/upload-result');
 
 describe('UploadResult Tests', () => {
   // eslint-disable-next-line func-names

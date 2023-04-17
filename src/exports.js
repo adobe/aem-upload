@@ -1,7 +1,7 @@
 /*
 Copyright 2019 Adobe. All rights reserved.
-This file is licensed to you under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License. You may obtain a copy
+This file is licensed to you under the Apache License, Version 2.0 (the "License");
 of the License at http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software distributed under
@@ -10,25 +10,18 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import DirectBinaryUploadImport from './direct-binary-upload';
-import DirectBinaryUploadOptionsImport from './direct-binary-upload-options';
-import DirectBinaryUploadErrorCodesImport from './error-codes';
-import FileSystemUploadImport from './filesystem-upload';
-import FileSystemUploadOptionsImport from './filesystem-upload-options';
-import HttpProxyImport from './http-proxy';
+const DirectBinaryUpload = require('./direct-binary-upload');
+const DirectBinaryUploadOptions = require('./direct-binary-upload-options');
+const DirectBinaryUploadErrorCodes = require('./error-codes');
+const FileSystemUpload = require('./filesystem-upload');
+const FileSystemUploadOptions = require('./filesystem-upload-options');
+const HttpProxy = require('./http-proxy');
 
-export default {
-  DirectBinaryUpload: DirectBinaryUploadImport,
-  DirectBinaryUploadOptions: DirectBinaryUploadOptionsImport,
-  DirectBinaryUploadErrorCodes: DirectBinaryUploadErrorCodesImport,
-  FileSystemUpload: FileSystemUploadImport,
-  FileSystemUploadOptions: FileSystemUploadOptionsImport,
-  HttpProxy: HttpProxyImport,
+module.exports = {
+  DirectBinaryUpload,
+  DirectBinaryUploadOptions,
+  DirectBinaryUploadErrorCodes,
+  FileSystemUpload,
+  FileSystemUploadOptions,
+  HttpProxy,
 };
-
-export const DirectBinaryUpload = DirectBinaryUploadImport;
-export const DirectBinaryUploadOptions = DirectBinaryUploadOptionsImport;
-export const DirectBinaryUploadErrorCodes = DirectBinaryUploadErrorCodesImport;
-export const FileSystemUpload = FileSystemUploadImport;
-export const FileSystemUploadOptions = FileSystemUploadOptionsImport;
-export const HttpProxy = HttpProxyImport;

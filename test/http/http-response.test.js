@@ -14,9 +14,7 @@ governing permissions and limitations under the License.
 
 const should = require('should');
 
-const { importFile } = require('../testutils');
-
-const HttpResponse = importFile('http/http-response');
+const HttpResponse = require('../../src/http/http-response');
 
 describe('HTTP Response Tests', () => {
   it('test accessors', () => {

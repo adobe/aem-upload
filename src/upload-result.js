@@ -10,14 +10,14 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import HttpResult from './http-result';
-import UploadError from './upload-error';
+const HttpResult = require('./http-result');
+const UploadError = require('./upload-error');
 
 /**
  * Represents results for the upload process as a whole, which might include multiple files. Results
  * include information such as total upload time, total file size, total number of files, etc.
  */
-export default class UploadResult extends HttpResult {
+class UploadResult extends HttpResult {
   /**
    * Constructs a new instance of the results, which can be used to add more information.
    *
@@ -55,7 +55,7 @@ export default class UploadResult extends HttpResult {
    * Adds a new create directory to the overall result. Will be used to calculate various overall
    * metrics.
    *
-   * @param {import('./create-directory-result').default} createDirectoryResult Result whose
+   * @param {import('./create-directory-result')} createDirectoryResult Result whose
    *   metrics will be included in the overall result.
    */
   addCreateDirectoryResult(createDirectoryResult) {
@@ -65,7 +65,7 @@ export default class UploadResult extends HttpResult {
   /**
    * Retrieves all results for directories that were created as part of the upload.
    *
-   * @returns {Array<import('./create-directory-result').default>} Directory results.
+   * @returns {Array<import('./create-directory-result')>} Directory results.
    */
   getCreateDirectoryResults() {
     return this.createDirectoryResults;
@@ -86,7 +86,7 @@ export default class UploadResult extends HttpResult {
   /**
    * Sets information the individual file upload results that will be included in the final
    * output.
-   * @param {import('./file-upload-results').default} fileUploadResults File upload information.
+   * @param {import('./file-upload-results')} fileUploadResults File upload information.
    */
   setFileUploadResults(fileUploadResults) {
     this.fileUploadResults = fileUploadResults;
@@ -206,3 +206,5 @@ export default class UploadResult extends HttpResult {
     };
   }
 }
+
+module.exports = UploadResult;

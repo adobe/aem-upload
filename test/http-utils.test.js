@@ -15,11 +15,11 @@ governing permissions and limitations under the License.
 const should = require('should');
 const cookie = require('cookie');
 
-const { importFile, getTestOptions } = require('./testutils');
+const { getTestOptions } = require('./testutils');
 const MockRequest = require('./mock-request');
-const { default: HttpResponse } = require('../src/http/http-response');
+const HttpResponse = require('../src/http/http-response');
 
-const DirectBinaryUploadOptions = importFile('direct-binary-upload-options');
+const DirectBinaryUploadOptions = require('../src/direct-binary-upload-options');
 
 const {
   timedRequest,
@@ -27,8 +27,8 @@ const {
   isRetryableError,
   getProxyAgentOptions,
   getHttpTransferOptions,
-} = importFile('http-utils');
-const HttpProxy = importFile('http-proxy');
+} = require('../src/http-utils');
+const HttpProxy = require('../src/http-proxy');
 
 describe('HttpUtilsTest', () => {
   beforeEach(() => {

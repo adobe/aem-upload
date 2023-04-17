@@ -10,12 +10,12 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import { v4 as uuid } from 'uuid';
-import { timedRequest, createCancelToken, isRetryableError } from '../http-utils';
-import ErrorCodes from '../error-codes';
-import UploadOptionsBase from '../upload-options-base';
-import UploadError from '../upload-error';
-import HttpResponse from './http-response';
+const { v4: uuid } = require('uuid');
+const { timedRequest, createCancelToken, isRetryableError } = require('../http-utils');
+const ErrorCodes = require('../error-codes');
+const UploadOptionsBase = require('../upload-options-base');
+const UploadError = require('../upload-error');
+const HttpResponse = require('./http-response');
 
 /**
  * Invoked when there is an immediate retry error. Handles special cases and adds the
@@ -115,7 +115,7 @@ function cancelFromController(cancelEventData) {
  * client include retrying failed requests, timing request duration, and canceling
  * in-progress requests.
  */
-export default class HttpClient extends UploadOptionsBase {
+class HttpClient extends UploadOptionsBase {
   /**
    * Constructs a new instance of an HTTP request client using the given
    * information.
@@ -223,3 +223,5 @@ export default class HttpClient extends UploadOptionsBase {
     }
   }
 }
+
+module.exports = HttpClient;

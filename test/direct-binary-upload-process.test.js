@@ -15,15 +15,12 @@ governing permissions and limitations under the License.
 const should = require('should');
 const { Readable } = require('stream');
 
-const { importFile, getTestOptions } = require('./testutils');
+const { getTestOptions } = require('./testutils');
 const MockRequest = require('./mock-request');
 const MockBlob = require('./mock-blob');
-
-const UploadResult = importFile('upload-result');
-
-const DirectBinaryUploadProcess = importFile('direct-binary-upload-process');
-
-const DirectBinaryUploadOptions = importFile('direct-binary-upload-options');
+const UploadResult = require('../src/upload-result');
+const DirectBinaryUploadProcess = require('../src/direct-binary-upload-process');
+const DirectBinaryUploadOptions = require('../src/direct-binary-upload-options');
 
 describe('DirectBinaryUploadProcessTest', () => {
   beforeEach(() => {

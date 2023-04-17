@@ -12,17 +12,16 @@ governing permissions and limitations under the License.
 
 /* eslint-env mocha */
 
-import should from 'should';
-import Exports, { DirectBinaryUploadOptions } from '../src/exports';
+const should = require('should');
+const Exports = require('../src/exports');
+const { DirectBinaryUploadOptions } = require('../src/exports');
 
 describe('Exports Tests', () => {
   it('test exports smoke test', () => {
     should(Exports).be.ok();
-    // eslint-disable-next-line import/no-named-as-default-member
     should(Exports.DirectBinaryUploadOptions).be.ok();
     should(DirectBinaryUploadOptions).be.ok();
 
-    // eslint-disable-next-line import/no-named-as-default-member
     should(new Exports.DirectBinaryUploadOptions()).be.ok();
     should(new DirectBinaryUploadOptions()).be.ok();
   });

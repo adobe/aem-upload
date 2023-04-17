@@ -10,14 +10,14 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import Async from 'async';
-import Path from 'path';
-import AsyncLock from 'async-lock';
-import fs from './fs-promise';
+const Async = require('async');
+const Path = require('path');
+const AsyncLock = require('async-lock');
+const fs = require('./fs-promise');
 
-import { DefaultValues } from './constants';
-import UploadError from './upload-error';
-import ErrorCodes from './error-codes';
+const { DefaultValues } = require('./constants');
+const UploadError = require('./upload-error');
+const ErrorCodes = require('./error-codes');
 
 const lock = new AsyncLock();
 
@@ -53,7 +53,7 @@ const TEMP_NAME_PATTERNS = [
  * @returns {Promise} Will be resolved when all Promises returned by the callback have been
  *  resolved. Will be resolved with an Array of all resolve values from the callback's Promises.
  */
-export function concurrentLoop(loopArray, maxConcurrent, itemCallback) {
+function concurrentLoop(loopArray, maxConcurrent, itemCallback) {
   let theMaxConcurrent = maxConcurrent;
   let theItemCallback = itemCallback;
   if (typeof maxConcurrent === 'function') {
@@ -62,21 +62,18 @@ export function concurrentLoop(loopArray, maxConcurrent, itemCallback) {
   }
 
   return new Promise((resolve, reject) => {
-    Async.eachOfLimit(loopArray, theMaxConcurrent, async (loopItem, index, itemDone) => {
-      try {
-        await theItemCallback(loopItem, index);
-      } catch (e) {
-        itemDone(e);
-        return;
-      }
-      itemDone();
-    }, (err) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-      resolve();
-    });
+    Async.eachOfLimit(
+      loopArray,
+      theMaxConcurrent,
+      async (loopItem, index) => theItemCallback(loopItem, index),
+      (err) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve();
+      },
+    );
   });
 }
 
@@ -86,7 +83,7 @@ export function concurrentLoop(loopArray, maxConcurrent, itemCallback) {
  * @param {Array} values List of numbers for which to calculate an average.
  * @returns {number} The average value, rounded to zero decimal places.
  */
-export function getAverage(values) {
+function getAverage(values) {
   if (values.length) {
     const sum = values.reduce((x, y) => x + y);
     return Math.round(sum / values.length);
@@ -100,7 +97,7 @@ export function getAverage(values) {
  * @param {number} delay The amount of time, in milliseconds, to wait before the method resolves.
  * @returns {Promise} Will be resolved when the specified delay has elapsed.
  */
-export function setTimeoutPromise(delay) {
+function setTimeoutPromise(delay) {
   return new Promise((res) => {
     setTimeout(res, delay);
   });
@@ -126,7 +123,7 @@ export function setTimeoutPromise(delay) {
  *  withing the specified number of tries. Will be rejected with the last error if all retries
  *  fail.
  */
-export async function exponentialRetry(options, toRetry) {
+async function exponentialRetry(options, toRetry) {
   let theOptions = options;
   let theToRetry = toRetry;
   if (typeof options === 'function') {
@@ -184,7 +181,7 @@ function buildCharRegex(charArray) {
  * @param {string} toTrim The value to be trimmed.
  * @param {Array} charArray An array of single characters to trim.
  */
-export function trimRight(toTrim, charArray) {
+function trimRight(toTrim, charArray) {
   if (toTrim && toTrim.replace) {
     return toTrim.replace(new RegExp(`${buildCharRegex(charArray)}*$`, 'g'), '');
   }
@@ -197,7 +194,7 @@ export function trimRight(toTrim, charArray) {
  * @param {string} toTrim The value to be trimmed.
  * @param {Array} charArray An array of single characters to trim.
  */
-export function trimLeft(toTrim, charArray) {
+function trimLeft(toTrim, charArray) {
   if (toTrim && toTrim.replace) {
     return toTrim.replace(new RegExp(`^${buildCharRegex(charArray)}*`, 'g'), '');
   }
@@ -210,7 +207,7 @@ export function trimLeft(toTrim, charArray) {
  *
  * @param  {...string} theArguments Any number of parameters to join.
  */
-export function joinUrlPath(...theArguments) {
+function joinUrlPath(...theArguments) {
   let path = '';
 
   theArguments.forEach((arg) => {
@@ -231,7 +228,7 @@ export function joinUrlPath(...theArguments) {
  *
  * @param {string} path The path to trim.
  */
-export function trimContentDam(path) {
+function trimContentDam(path) {
   if (!path) {
     return path;
   }
@@ -254,7 +251,7 @@ export function trimContentDam(path) {
  * @param {string} path An item's full path.
  * @returns {string} Normalized version of a path.
  */
-export function normalizePath(path) {
+function normalizePath(path) {
   let normPath = path;
   if (normPath) {
     normPath = normPath.replace(/\\/g, '/');
@@ -270,7 +267,7 @@ export function normalizePath(path) {
  * @param {string} path A file system-like path.
  * @returns {boolean} True if the path is a temp file, false otherwise.
  */
-export function isTempPath(path) {
+function isTempPath(path) {
   const tempPath = normalizePath(path);
 
   if (tempPath === '/') {
@@ -350,7 +347,7 @@ async function processDirectory(directoryPath, directories, files, errors) {
  *  descendent directories. If false, the method will only include files
  *  immediately below the given directory. Default value is true.
  */
-export async function walkDirectory(directoryPath, maximumPaths = 5000, includeDescendents = true) {
+async function walkDirectory(directoryPath, maximumPaths = 5000, includeDescendents = true) {
   let processDirectories = [{ path: directoryPath }];
   let allDirectories = [];
   const allFiles = [];
@@ -398,6 +395,21 @@ export async function walkDirectory(directoryPath, maximumPaths = 5000, includeD
  * @returns {Promise} Resolves after a lock has been obtained and the given
  *  callback has finished executing.
  */
-export async function getLock(lockId, callback) {
+async function getLock(lockId, callback) {
   return lock.acquire(lockId, callback);
 }
+
+module.exports = {
+  concurrentLoop,
+  getAverage,
+  setTimeoutPromise,
+  exponentialRetry,
+  trimRight,
+  trimLeft,
+  joinUrlPath,
+  trimContentDam,
+  normalizePath,
+  isTempPath,
+  walkDirectory,
+  getLock,
+};

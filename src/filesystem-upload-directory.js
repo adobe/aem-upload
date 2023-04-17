@@ -10,7 +10,7 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import Path from 'path';
+const Path = require('path');
 
 /**
  * Represents a directory that will be created in the target AEM
@@ -18,7 +18,7 @@ import Path from 'path';
  * remote path of the folder is consistent with the configuration
  * of the upload.
  */
-export default class FileSystemUploadDirectory {
+class FileSystemUploadDirectory {
   /**
    * Constructs a new directory instance with the given values.
    * @param {FileSystemUploadOptions} uploadOptions The URL from
@@ -94,3 +94,5 @@ export default class FileSystemUploadDirectory {
     return Path.basename(this.localPath);
   }
 }
+
+module.exports = FileSystemUploadDirectory;

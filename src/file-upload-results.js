@@ -10,15 +10,15 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import { getAverage } from './utils';
-import UploadOptionsBase from './upload-options-base';
+const { getAverage } = require('./utils');
+const UploadOptionsBase = require('./upload-options-base');
 
-export default class FileUploadResults extends UploadOptionsBase {
+class FileUploadResults extends UploadOptionsBase {
   /**
    * Constructs a new instance using the provided information.
    *
    * @param {object} options Options as provided when the direct binary object was instantiated.
-   * @param {import('./direct-binary-upload-options').default} uploadOptions Options as provided
+   * @param {import('./direct-binary-upload-options')} uploadOptions Options as provided
    *  when the direct binary upload process was initiated.
    */
   constructor(options, uploadOptions) {
@@ -129,3 +129,5 @@ export default class FileUploadResults extends UploadOptionsBase {
     return Object.keys(this.fileLookup).map((path) => this.fileLookup[path]);
   }
 }
+
+module.exports = FileUploadResults;

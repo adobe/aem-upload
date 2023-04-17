@@ -10,15 +10,17 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import { AEMUpload } from '@adobe/httptransfer/es2015';
-import httpTransferLogger from '@adobe/httptransfer/es2015/logger';
-import { v4 as uuid } from 'uuid';
+const {
+  AEMUpload,
+  logger: httpTransferLogger,
+} = require('@adobe/httptransfer');
+const { v4: uuid } = require('uuid');
 
-import UploadOptionsBase from './upload-options-base';
-import FileUploadResults from './file-upload-results';
-import {
+const UploadOptionsBase = require('./upload-options-base');
+const FileUploadResults = require('./file-upload-results');
+const {
   getHttpTransferOptions,
-} from './http-utils';
+} = require('./http-utils');
 
 /**
  * Contains all logic for the process that uploads a set of files using direct binary access.
@@ -47,7 +49,7 @@ import {
  *   will include these additional elements:
  *   * {Array} errors: List of errors that occurred to prevent the upload.
  */
-export default class DirectBinaryUploadProcess extends UploadOptionsBase {
+class DirectBinaryUploadProcess extends UploadOptionsBase {
   /**
    * Constructs a new instance of the upload process for a single directory.
    * @param {object} options Overall direct binary process options.
@@ -101,7 +103,7 @@ export default class DirectBinaryUploadProcess extends UploadOptionsBase {
   /**
    * Does the work of uploading all files based on the upload options provided to the process.
    *
-   * @param {import('./upload-result').default} uploadResult Result to which information about
+   * @param {import('./upload-result')} uploadResult Result to which information about
    *  the upload will be added.
    * @returns {Promise} Resolves when all files have been uploaded.
    */
@@ -144,3 +146,5 @@ export default class DirectBinaryUploadProcess extends UploadOptionsBase {
     this.logInfo(`Uploading result in JSON: ${JSON.stringify(uploadResult, null, 4)}`);
   }
 }
+
+module.exports = DirectBinaryUploadProcess;

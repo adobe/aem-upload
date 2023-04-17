@@ -14,10 +14,8 @@ governing permissions and limitations under the License.
 
 const should = require('should');
 
-const { importFile } = require('./testutils');
-
-const FileSystemUploadOptions = importFile('filesystem-upload-options');
-const HttpProxy = importFile('http-proxy');
+const FileSystemUploadOptions = require('../src/filesystem-upload-options');
+const HttpProxy = require('../src/http-proxy');
 
 describe('FileSystemUploadOptions Tests', () => {
   let options;

@@ -15,9 +15,7 @@ governing permissions and limitations under the License.
 const should = require('should');
 const cookie = require('cookie');
 
-const { importFile } = require('./testutils');
-
-const DirectBinaryUploadOptions = importFile('direct-binary-upload-options');
+const DirectBinaryUploadOptions = require('../src/direct-binary-upload-options');
 
 describe('DirectBinaryUploadOptionsTest', () => {
   it('test url slashes', () => {

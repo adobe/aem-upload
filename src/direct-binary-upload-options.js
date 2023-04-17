@@ -10,13 +10,13 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import URL from 'url';
-import cookie from 'cookie';
-import util from 'util';
+const URL = require('url');
+const cookie = require('cookie');
+const util = require('util');
 
-import DirectBinaryUploadController from './direct-binary-upload-controller';
-import { trimRight } from './utils';
-import { DefaultValues } from './constants';
+const DirectBinaryUploadController = require('./direct-binary-upload-controller');
+const { trimRight } = require('./utils');
+const { DefaultValues } = require('./constants');
 
 /**
  * Options that generally control how a direct binary upload will behave. The class contains
@@ -394,4 +394,4 @@ class DirectBinaryUploadOptions {
   }
 }
 
-export default DirectBinaryUploadOptions;
+module.exports = DirectBinaryUploadOptions;

@@ -10,16 +10,16 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import DirectBinaryUploadOptions from './direct-binary-upload-options';
-import { DefaultValues, RegularExpressions } from './constants';
-import UploadError from './upload-error';
-import ErrorCodes from './error-codes';
+const DirectBinaryUploadOptions = require('./direct-binary-upload-options');
+const { DefaultValues, RegularExpressions } = require('./constants');
+const UploadError = require('./upload-error');
+const ErrorCodes = require('./error-codes');
 
 /**
  * Options specific to a file system upload. Also supports all options defined by
  * DirectBinaryUploadOptions.
  */
-export default class FileSystemUploadOptions extends DirectBinaryUploadOptions {
+class FileSystemUploadOptions extends DirectBinaryUploadOptions {
   constructor() {
     super();
     this.replaceValue = '-';
@@ -225,3 +225,5 @@ export default class FileSystemUploadOptions extends DirectBinaryUploadOptions {
     return this.uploadFileOptions || {};
   }
 }
+
+module.exports = FileSystemUploadOptions;
