@@ -440,26 +440,24 @@ const upload = new DirectBinary.DirectBinaryUpload();
 upload.uploadFiles(options) // assume that options is defined previously
     .then(result => {
         // use this method to retrieve ALL errors during the process
-        result.getErrors().forEach(error => {
-            if (error.getCode() === codes.ALREADY_EXISTS) {
+        const { errors = [] } = result;
+        errors.forEach(error => {
+            if (error.code === codes.ALREADY_EXISTS) {
                 // handle case where a file already exists
             }
         });
-
+        const { detailedResult = [] } = result;
         // or retrieve individual file errors
-        result.getFileUploadResults().forEach(fileResult => {
-            fileResult.getErrors().forEach(fileErr => {
-                if (fileErr.getCode() === codes.ALREADY_EXISTS) {
-                    // "fileResult" contains information about the file
-                    const fileName = fileResult.getFileName();
-
-                    // handle case where file already exists
-                }
+        detailedResult.forEach((fileResult) => {
+            const { result = {} } = fileResult;
+            const { errors = [] } = result;
+            errors.forEach((fileErr) => {
+                // content of fileErr may vary
             });
         });
     })
     .catch(err => {
-        if (err.getCode() === codes.NOT_SUPPORTED) {
+        if (err.code === codes.NOT_SUPPORTED) {
             // handle case where direct binary access is not enabled
             // on the target instance
         }

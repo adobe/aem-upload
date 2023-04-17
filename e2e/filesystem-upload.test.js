@@ -24,6 +24,7 @@ const {
     getPathTitle,
     createAemFolder,
     getAemEndpoint,
+    verifyE2eResult,
 } = require('./e2eutils');
 
 const DirectBinaryUploadOptions = importFile('direct-binary-upload-options');
@@ -88,6 +89,36 @@ describe('FileSystemUpload end-to-end tests', function() {
         events = [];
     });
 
+    function buildFileResult(targetFolder, remotePath, localPath, fileSize) {
+        const remoteDirectory = Path.posix.dirname(remotePath);
+        const localDirectory = Path.dirname(localPath);
+        const targetFolderPath = new URL(targetFolder).pathname;
+        return {
+            fileUrl: `${targetFolder}${encodeURI(remotePath)}`,
+            fileSize,
+            filePath: Path.join(__dirname, localPath),
+            result: {
+                fileName: Path.basename(remotePath),
+                fileSize,
+                targetFolder: `${targetFolderPath}${remoteDirectory !== '/' ? remoteDirectory : ''}`,
+                targetFile: `${targetFolderPath}${remotePath}`,
+                sourceFolder: Path.join(__dirname, localDirectory),
+                sourceFile: Path.join(__dirname, localPath),
+                mimeType: 'image/jpeg',
+            }
+        };
+    }
+
+    function buildFolderResult(targetFolder, folderPath, folderTitle, elapsedTime) {
+        const targetFolderPath = new URL(targetFolder).pathname;
+        return {
+            elapsedTime,
+            folderPath: `${targetFolderPath}${folderPath}`,
+            folderTitle: folderTitle,
+            retryErrors: [],
+        };
+    }
+
     it('shallow upload test', async function() {
         const targetFolder = getTargetFolder();
         const uploadOptions = new DirectBinaryUploadOptions()
@@ -106,22 +137,25 @@ describe('FileSystemUpload end-to-end tests', function() {
             Path.join(__dirname, 'images/Dir 1/subdir1/skiing_1.jpg'),
         ]);
 
-        should(uploadResult).be.ok();
-        should(uploadResult.getErrors().length).be.exactly(0);
-        should(uploadResult.getUploadErrors().length).be.exactly(0);
-        should(uploadResult.getInitTime()).be.ok();
-        should(uploadResult.getTotalFiles()).be.exactly(6);
-        should(uploadResult.getTotalCompletedFiles()).be.exactly(uploadResult.getTotalFiles());
-        should(uploadResult.getElapsedTime()).be.ok();
-        should(uploadResult.getTotalSize()).be.exactly(1860489);
-        should(uploadResult.getAverageFileSize()).be.exactly(310082);
-        should(uploadResult.getAverageFileUploadTime()).be.ok();
-        should(uploadResult.getAveragePartUploadTime()).be.ok();
-        should(uploadResult.getAverageCompleteTime()).be.ok();
-        should(uploadResult.getNinetyPercentileTotal()).be.ok();
-        should(uploadResult.getFileUploadResults().length).be.exactly(uploadResult.getTotalFiles());
-        should(uploadResult.getCreateDirectoryResults().length).be.exactly(2);
-        should(uploadResult.getCreateDirectoryResults()[1].getFolderPath()).be.exactly(new URL(targetFolder).pathname);
+        verifyE2eResult(targetFolder, uploadResult, {
+            host: getAemEndpoint(),
+            totalFiles: 6,
+            totalTime: uploadResult.totalTime,
+            totalCompleted: 6,
+            totalFileSize: 1860489,
+            folderCreateSpent: uploadResult.folderCreateSpent,
+            errors: [],
+            retryErrors: [],
+            createdFolders: [],
+            detailedResult: [
+                buildFileResult(targetFolder, '/climber-ferrata-la-torre-di-toblin.jpg', '/images/climber-ferrata-la-torre-di-toblin.jpg', 414164),
+                buildFileResult(targetFolder, '/skiing_1.jpg', '/images/Dir 1/subdir1/skiing_1.jpg', 561767),
+                buildFileResult(targetFolder, '/freeride-steep.jpg', '/images/Dir 1/freeride-steep.jpg', 320669),
+                buildFileResult(targetFolder, '/freeride.jpg', '/images/Dir 1/freeride.jpg', 102189),
+                buildFileResult(targetFolder, '/ice-climbing.jpg', '/images/Dir 1/ice-climbing.jpg', 166077),
+                buildFileResult(targetFolder, `/${ENCODED_ASSET1}`, `/images/Dir 1/${ENCODED_ASSET1}`, 295623),
+            ],
+        });
 
         await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/climber-ferrata-la-torre-di-toblin.jpg');
         await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/skiing_1.jpg');
@@ -153,20 +187,38 @@ describe('FileSystemUpload end-to-end tests', function() {
             Path.join(__dirname, 'images/Dir 1/subdir1/skiing_1.jpg'),
         ]);
 
-        should(uploadResult).be.ok();
-        should(uploadResult.getErrors().length).be.exactly(0);
-        should(uploadResult.getUploadErrors().length).be.exactly(0);
-        should(uploadResult.getInitTime()).be.ok();
-        should(uploadResult.getTotalFiles()).be.exactly(13);
-        should(uploadResult.getTotalCompletedFiles()).be.exactly(uploadResult.getTotalFiles());
-        should(uploadResult.getElapsedTime()).be.ok();
-        should(uploadResult.getTotalSize()).be.exactly(3968893);
-        should(uploadResult.getAverageFileSize()).be.exactly(305299);
-        should(uploadResult.getAverageFileUploadTime()).be.ok();
-        should(uploadResult.getAveragePartUploadTime()).be.ok();
-        should(uploadResult.getAverageCompleteTime()).be.ok();
-        should(uploadResult.getNinetyPercentileTotal()).be.ok();
-        should(uploadResult.getFileUploadResults().length).be.exactly(uploadResult.getTotalFiles());
+        verifyE2eResult(targetFolder, uploadResult, {
+            host: getAemEndpoint(),
+            totalFiles: 13,
+            totalTime: uploadResult.totalTime,
+            totalCompleted: 13,
+            totalFileSize: 3968893,
+            folderCreateSpent: uploadResult.folderCreateSpent,
+            errors: [],
+            retryErrors: [],
+            createdFolders: [
+                buildFolderResult(targetFolder, '/images', 'images', uploadResult.createdFolders[2].elapsedTime),
+                buildFolderResult(targetFolder, '/images/dir-1', 'Dir 1', uploadResult.createdFolders[3].elapsedTime),
+                buildFolderResult(targetFolder, '/images/dir-1/folder_♂♀°′″℃＄￡‰§№￠℡㈱', 'folder_♂♀°′″℃＄￡‰§№￠℡㈱', uploadResult.createdFolders[4].elapsedTime),
+                buildFolderResult(targetFolder, '/images/dir-1/subdir1', 'subdir1', uploadResult.createdFolders[5].elapsedTime),
+                buildFolderResult(targetFolder, '/images/dir-1/subdir2', 'subdir2', uploadResult.createdFolders[6].elapsedTime),
+            ],
+            detailedResult: [
+                buildFileResult(targetFolder, '/images/Freeride-extreme.jpg', '/images/Freeride#extreme.jpg', 246578),
+                buildFileResult(targetFolder, '/images/climber-ferrata-la-torre-di-toblin.jpg', 'images/climber-ferrata-la-torre-di-toblin.jpg', 414164),
+                buildFileResult(targetFolder, '/images/freeride-siberia.jpg', 'images/freeride-siberia.jpg', 282584),
+                buildFileResult(targetFolder, '/images/dir-1/freeride-steep.jpg', '/images/Dir 1/freeride-steep.jpg', 320669),
+                buildFileResult(targetFolder, '/images/dir-1/freeride.jpg', '/images/Dir 1/freeride.jpg', 102189),
+                buildFileResult(targetFolder, '/images/dir-1/ice-climbing.jpg', '/images/Dir 1/ice-climbing.jpg', 166077),
+                buildFileResult(targetFolder, '/images/dir-1/이두吏讀.jpg', '/images/Dir 1/이두吏讀.jpg', 295623),
+                buildFileResult(targetFolder, '/images/dir-1/folder_♂♀°′″℃＄￡‰§№￠℡㈱/郎礼.jpg', '/images/Dir 1/folder_♂♀°′″℃＄￡‰§№￠℡㈱/郎礼.jpg', 161221),
+                buildFileResult(targetFolder, '/images/dir-1/subdir1/ski touring.jpg', '/images/Dir 1/subdir1/ski touring.jpg', 196310),
+                buildFileResult(targetFolder, '/images/dir-1/subdir1/skiing_2.jpg', '/images/Dir 1/subdir1/skiing_2.jpg', 245780),
+                buildFileResult(targetFolder, '/images/dir-1/subdir1/skiing_1.jpg', '/images/Dir 1/subdir1/skiing_1.jpg', 561767),
+                buildFileResult(targetFolder, '/climber-ferrata-la-torre-di-toblin.jpg', '/images/climber-ferrata-la-torre-di-toblin.jpg', 414164),
+                buildFileResult(targetFolder, '/skiing_1.jpg', 'images/Dir 1/subdir1/skiing_1.jpg', 561767),
+            ],
+        });
 
         // files supplied directly
         await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/climber-ferrata-la-torre-di-toblin.jpg');

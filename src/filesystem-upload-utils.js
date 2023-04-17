@@ -34,31 +34,6 @@ function isDeepUpload(uploadOptions) {
 }
 
 /**
- * Separates a list of files into a lookup based on its target remote path.
- *
- * @param {Array} files List of simple objects representing files. Is
- *  expected to at least have a "remoteUrl" element, which is expected
- *  to be normalized and not end with a forward slash. For example:
- *  http://adobe.com/myfile.jpg is valid, whereas http://adobe.com/myfile.jpg/
- *  is not valid.
- * @returns {object} Simple object whose keys are directory paths; values
- *  are an Array of objects as-is from the files parameter.
- */
-function aggregateByRemoteDirectory(files) {
-    const directoryAggregate = {};
-
-    files.forEach(file => {
-        const remoteDirectory = file.getParentRemoteUrl();
-
-        if (!directoryAggregate[remoteDirectory]) {
-            directoryAggregate[remoteDirectory] = new Set();
-        }
-        directoryAggregate[remoteDirectory].add(file);
-    });
-    return directoryAggregate;
-}
-
-/**
  * Retrieves the option specifying the maximum number of files that can be
  * uploaded at once. Takes into account that the options might not be
  * FileSystemUploadOptions.
@@ -134,7 +109,6 @@ async function getItemManagerParent(itemManager, rootPath, localPath) {
 }
 
 module.exports = {
-    aggregateByRemoteDirectory,
     isDeepUpload,
     getMaxFileCount,
     cleanFolderName,

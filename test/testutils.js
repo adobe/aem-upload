@@ -148,3 +148,45 @@ module.exports.getFolderEvent = (eventName, targetFolder) => {
     }
     return false;
 }
+
+function buildLookup(data, keyField) {
+    const lookup = {};
+    data.forEach((item) => {
+        lookup[item[keyField]] = item;
+    });
+    return lookup;
+}
+
+/**
+ * Does the work of verifying the full result output of an upload. Strictly compares all values
+ * in the result, while ensuring that the order in which folders or files were created will
+ * not fail the comparison.
+ * @param {*} result Upload result as provided by the module.
+ * @param {*} expected Full expected output of the result.
+ */
+module.exports.verifyResult = (result, expected) => {
+    const toVerify = { ...result };
+    const toCompare = { ...expected };
+
+    // this is special logic to ensure that order doesn't matter when comparing folder
+    // and file data. the arrays will be converted into simple objects using a key
+    // from each item in the array, then the lookups will be compared instead of
+    // the arrays.
+    const compareDirLookup = buildLookup(toCompare.createdFolders || [], 'folderPath');
+    const compareFileLookup = buildLookup(toCompare.detailedResult || [], 'fileUrl');
+    const verifyDirLookup = buildLookup(toVerify.createdFolders || [], 'folderPath');
+    const verifyFileLookup = buildLookup(toVerify.detailedResult || [], 'fileUrl');
+    delete toCompare.createdFolders;
+    delete toCompare.detailedResult;
+    delete toVerify.createdFolders;
+    delete toVerify.detailedResult;
+
+    should(toVerify).deepEqual(toCompare);
+    should(toVerify.totalTime !== undefined).be.ok();
+    should(toVerify.folderCreateSpent !== undefined).be.ok();
+    should(verifyDirLookup).deepEqual(compareDirLookup);
+    should(verifyFileLookup).deepEqual(compareFileLookup);
+
+    const { createdFolders = [] } = toVerify;
+    createdFolders.forEach((folder) => should(folder.elapsedTime !== undefined).be.ok());
+}

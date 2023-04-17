@@ -10,25 +10,8 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-import { getAverage } from './utils';
 import HttpResult from './http-result';
 import UploadError from './upload-error';
-
-/**
- * Retrieves a list of all file results that were successful.
- *
- * @param {Array} fileResults List of FileUploadResult instance to analyze.
- * @returns {Array} Contains only those FileUploadResult instance from fileResults that were successful.
- */
-function getSuccessfulFileResults(fileResults) {
-    const success = [];
-    fileResults.forEach(result => {
-        if (result.isSuccessful()) {
-            success.push(result);
-        }
-    });
-    return success;
-}
 
 /**
  * Represents results for the upload process as a whole, which might include multiple files. Results
@@ -44,10 +27,8 @@ export default class UploadResult extends HttpResult {
     constructor(options, uploadOptions) {
         super(options, uploadOptions);
 
-        this.initTime = 0;
         this.totalTime = 0;
-        this.totalFiles = 0;
-        this.fileUploadResults = [];
+        this.fileUploadResults = false;
         this.createDirectoryResults = [];
         this.errors = [];
     }
@@ -100,41 +81,11 @@ export default class UploadResult extends HttpResult {
     }
 
     /**
-     * Adds new individual file results to the overall result. Will be used to calculate various overall metrics.
-     *
-     * @param {FileUploadResult} fileUploadResult Result whose metrics will be included in the overall result.
+     * Sets information the individual file upload results that will be included in the final output.
+     * @param {import('./file-upload-results').default} fileUploadResults File upload information.
      */
-    addFileUploadResult(fileUploadResult) {
-        this.fileUploadResults.push(fileUploadResult);
-    }
-
-    /**
-     * Adds an amount of time, in milliseconds, to the result's total time it's taken for initiate upload requests
-     * to complete.
-     *
-     * @param {number} elapsedTime Time span in milliseconds.
-     */
-    addInitTime(elapsedTime) {
-        this.initTime += elapsedTime;
-    }
-
-    /**
-     * Retrieves the amount of time, in milliseconds, that it took the direct binary upload initiate request
-     * to complete.
-     *
-     * @returns {number} Time span in milliseconds.
-     */
-    getInitTime() {
-        return this.initTime;
-    }
-
-    /**
-     * Sets the total number of files that are initially included in the overall upload.
-     *
-     * @param {number} totalFiles Number of files.
-     */
-    addTotalFiles(totalFiles) {
-        this.totalFiles += totalFiles;
+    setFileUploadResults(fileUploadResults) {
+        this.fileUploadResults = fileUploadResults;
     }
 
     /**
@@ -143,7 +94,7 @@ export default class UploadResult extends HttpResult {
      * @returns {number} Number of files.
      */
     getTotalFiles() {
-        return this.totalFiles;
+        return this.fileUploadResults ? this.fileUploadResults.getTotalFileCount() : 0;
     }
 
     /**
@@ -152,7 +103,7 @@ export default class UploadResult extends HttpResult {
      * @returns {number} Number of files.
      */
     getTotalCompletedFiles() {
-        return getSuccessfulFileResults(this.fileUploadResults).length;
+        return this.fileUploadResults ? this.fileUploadResults.getSuccessCount() : 0;
     }
 
     /**
@@ -179,11 +130,7 @@ export default class UploadResult extends HttpResult {
      * @returns {number} Size in bytes.
      */
     getTotalSize() {
-        let size = 0;
-        this.fileUploadResults.forEach(result => {
-            size += result.getFileSize();
-        });
-        return size;
+        return this.fileUploadResults ? this.fileUploadResults.getTotalSize() : 0;
     }
 
     /**
@@ -192,67 +139,16 @@ export default class UploadResult extends HttpResult {
      * @returns {number} Size in bytes.
      */
     getAverageFileSize() {
-        return getAverage(this.fileUploadResults.map(result => result.getFileSize()));
-    }
-
-    /**
-     * Retrieves the average amount of time, in milliseconds, it took for all files that were
-     * uploaded successfully to fully transfer.
-     *
-     * @returns {number} Time span in milliseconds.
-     */
-    getAverageFileUploadTime() {
-        return getAverage(getSuccessfulFileResults(this.fileUploadResults)
-            .map(result => result.getTotalUploadTime()));
-    }
-
-    /**
-     * Retrieves the average amount of time, in milliseconds, it took for individual file parts
-     * to fully transfer.
-     *
-     * @returns {number} Time span in milliseconds.
-     */
-    getAveragePartUploadTime() {
-        return getAverage(getSuccessfulFileResults(this.fileUploadResults)
-            .map(result => result.getAveragePartUploadTime()));
-    }
-
-    /**
-     * Retrieves the average amount of time, in milliseconds, it took for the direct binary
-     * access complete request to finish.
-     *
-     * @returns {number} Time span in milliseconds.
-     */
-    getAverageCompleteTime() {
-        return getAverage(getSuccessfulFileResults(this.fileUploadResults)
-            .map(result => result.getTotalCompleteTime()));
-    }
-
-    /**
-     * Retrieves the total time to upload that was in the 90th percentile for the upload process.
-     *
-     * @returns {number} Time span in milliseconds.
-     */
-    getNinetyPercentileTotal() {
-        const totalSpentArr = getSuccessfulFileResults(this.fileUploadResults)
-            .map(result => {
-                return result.getTotalUploadTime() + result.getTotalCompleteTime();
-            });
-        if (totalSpentArr.length > 0) {
-            const sortedTotalSpentArr = totalSpentArr.sort((x, y) => x - y);
-            const nintyPercentileIndex = Math.round(this.getTotalCompletedFiles() * 0.9) - 1;
-            return sortedTotalSpentArr[nintyPercentileIndex];
-        }
-        return 0;
+        return this.fileUploadResults ? this.fileUploadResults.getAverageSize() : 0;
     }
 
     /**
      * Retrieves all the individual file upload results contained in the overall result.
      *
-     * @returns {Array} List of FileUploadResult instances.
+     * @returns {Array} List of file event infos.
      */
     getFileUploadResults() {
-        return this.fileUploadResults;
+        return this.fileUploadResults ? this.fileUploadResults.toJSON() : [];
     }
 
     /**
@@ -262,14 +158,8 @@ export default class UploadResult extends HttpResult {
      */
     getErrors() {
         const errors = [...this.getUploadErrors()];
-
-        this.getFileUploadResults().forEach(result => {
-            result.getErrors().forEach(error => {
-                errors.push(error);
-            });
-        });
-
-        return errors;
+        const fileErrors = this.fileUploadResults ? this.fileUploadResults.getErrors() : [];
+        return errors.concat(fileErrors);
     }
 
     /**
@@ -299,20 +189,14 @@ export default class UploadResult extends HttpResult {
     toJSON() {
         return {
             host: this.getUploadOptions().getUrlPrefix(),
-            initSpent: this.getInitTime(),
             totalFiles: this.getTotalFiles(),
             totalTime: this.getElapsedTime(),
             totalCompleted: this.getTotalCompletedFiles(),
-            finalSpent: this.getElapsedTime(),
             totalFileSize: this.getTotalSize(),
-            avgFileSize: this.getAverageFileSize(),
-            avgPutSpent: this.getAveragePartUploadTime(),
-            avgCompleteSpent: this.getAverageCompleteTime(),
-            nintyPercentileTotal: this.getNinetyPercentileTotal(),
             folderCreateSpent: this.getTotalFolderCreateTime(),
             createdFolders: this.getCreateDirectoryResults().map(result => result.toJSON()),
-            detailedResult: this.fileUploadResults.map(result => result.toJSON()),
-            errors: this.errors,
+            detailedResult: this.fileUploadResults ? this.fileUploadResults.toJSON() : [],
+            errors: this.getUploadErrors().map((error) => error.toJSON()),
             ...super.toJSON(),
         };
     }

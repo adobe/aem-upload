@@ -28,8 +28,6 @@ import UploadError from './upload-error';
 import ErrorCodes from './error-codes';
 import UploadResult from './upload-result';
 import HttpClient from './http/http-client';
-import ConcurrentQueue from './concurrent-queue';
-import PartUploader from './part-uploader';
 import HttpRequest from './http/http-request';
 import {
     isDeepUpload,
@@ -56,8 +54,6 @@ export default class FileSystemUpload extends DirectBinaryUpload {
         const fileSystemUploadOptions = FileSystemUploadOptions.fromOptions(options);
         const uploadOptions = this.getOptions();
         const httpClient = new HttpClient(uploadOptions, fileSystemUploadOptions);
-        const concurrentQueue = new ConcurrentQueue(uploadOptions, fileSystemUploadOptions);
-        const partUploader = new PartUploader(uploadOptions, fileSystemUploadOptions, httpClient, concurrentQueue);
         const uploadResult = new UploadResult(uploadOptions, fileSystemUploadOptions);
         await this.createTargetFolder(fileSystemUploadOptions, uploadResult, httpClient);
         const {
@@ -75,7 +71,7 @@ export default class FileSystemUpload extends DirectBinaryUpload {
         const fileUploadOptions = FileSystemUploadOptions.fromOptions(fileSystemUploadOptions)
             .withUploadFiles(uploadFiles);
 
-        const uploadProcess = new DirectBinaryUploadProcess(this.getOptions(), fileUploadOptions, httpClient, partUploader);
+        const uploadProcess = new DirectBinaryUploadProcess(this.getOptions(), fileUploadOptions, httpClient);
 
         this.beforeUploadProcess(uploadProcess, directories.length);
         await this.createUploadDirectories(fileSystemUploadOptions, uploadResult, httpClient, directories);
@@ -93,7 +89,7 @@ export default class FileSystemUpload extends DirectBinaryUpload {
         // we have a list of multiple results (for each directory upload). Merge all those
         // into a single result that contains metrics for the overall upload of all
         // directories and files.
-        return uploadResult;
+        return uploadResult.toJSON();
     }
 
     /**
