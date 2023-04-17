@@ -9,7 +9,7 @@
   "scripts": {
     "test": "npm run lint && npm run testOnly",
     "testOnly": "mocha --recursive ./test",
-    "build": "/rimraf dist && babel ./src --out-dir dist",
+    "build": "rimraf dist && babel ./src --out-dir dist",
     "prepublishOnly": "npm test && npm run build",
     "coverage": "nyc npm run test",
     "lint": "eslint .",
@@ -40,7 +40,6 @@
     "@babel/polyfill": "^7.8.7",
     "@babel/preset-env": "^7.9.0",
     "@babel/preset-stage-2": "^7.8.3",
-    "@babel/register": "^7.9.0",
     "@semantic-release/git": "^9.0.0",
     "axios-mock-adapter": "^1.18.1",
     "conventional-changelog-eslint": "^3.0.9",
