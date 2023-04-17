@@ -16,8 +16,8 @@ import { v4 as uuid } from 'uuid';
 
 import UploadOptionsBase from './upload-options-base';
 import FileUploadResults from './file-upload-results';
-import { 
-    getHttpTransferOptions,
+import {
+  getHttpTransferOptions,
 } from './http-utils';
 
 /**
@@ -48,99 +48,99 @@ import {
  *   * {Array} errors: List of errors that occurred to prevent the upload.
  */
 export default class DirectBinaryUploadProcess extends UploadOptionsBase {
-    /**
-     * Constructs a new instance of the upload process for a single directory.
-     * @param {object} options Overall direct binary process options.
-     * @param {DirectBinaryUploadOptions} uploadOptions Options specific to the
-     *  current upload.
-     * @param {HttpClient} [httpClient] Client to use to submit HTTP requests. If
-     *  not specified then the process will create its own.
-     */
-    constructor(options, uploadOptions, httpClient = false) {
-        super(options, uploadOptions, httpClient);
+  /**
+   * Constructs a new instance of the upload process for a single directory.
+   * @param {object} options Overall direct binary process options.
+   * @param {DirectBinaryUploadOptions} uploadOptions Options specific to the
+   *  current upload.
+   * @param {HttpClient} [httpClient] Client to use to submit HTTP requests. If
+   *  not specified then the process will create its own.
+   */
+  constructor(options, uploadOptions, httpClient = false) {
+    super(options, uploadOptions, httpClient);
 
-        this.fileResults = {};
-        this.fileEvents = {};
-        this.fileTransfer = {};
-        this.completeUri = '';
-        this.uploadId = uuid();
+    this.fileResults = {};
+    this.fileEvents = {};
+    this.fileTransfer = {};
+    this.completeUri = '';
+    this.uploadId = uuid();
 
-        const log = options.log;
-        if (log) {
-            httpTransferLogger.debug = (...args) => log.debug.apply(log, args);
-            httpTransferLogger.info = (...args) => log.info.apply(log, args);
-            httpTransferLogger.warn = (...args) => log.warn.apply(log, args);
-            httpTransferLogger.error = (...args) => log.error.apply(log, args);
-        }
+    const { log } = options;
+    if (log) {
+      httpTransferLogger.debug = (...args) => log.debug(...args);
+      httpTransferLogger.info = (...args) => log.info(...args);
+      httpTransferLogger.warn = (...args) => log.warn(...args);
+      httpTransferLogger.error = (...args) => log.error(...args);
     }
+  }
 
-    /**
-     * Retrieves a unique identifier that can be used to identify this particular upload.
-     *
-     * @returns {string} ID representing the upload.
-     */
-    getUploadId() {
-        return this.uploadId;
-    }
+  /**
+   * Retrieves a unique identifier that can be used to identify this particular upload.
+   *
+   * @returns {string} ID representing the upload.
+   */
+  getUploadId() {
+    return this.uploadId;
+  }
 
-    /**
-     * Retrieves the total size of the upload, which is determined based on the file size
-     * specified on each upload file.
-     *
-     * @returns {number} Total size, in bytes.
-     */
-    getTotalSize() {
-        let totalSize = 0;
-        this.getUploadOptions().getUploadFiles().forEach((uploadFile) => {
-            const { fileSize = 0 } = uploadFile;
-            totalSize += fileSize;
-        });
-        return totalSize;
-    }
+  /**
+   * Retrieves the total size of the upload, which is determined based on the file size
+   * specified on each upload file.
+   *
+   * @returns {number} Total size, in bytes.
+   */
+  getTotalSize() {
+    let totalSize = 0;
+    this.getUploadOptions().getUploadFiles().forEach((uploadFile) => {
+      const { fileSize = 0 } = uploadFile;
+      totalSize += fileSize;
+    });
+    return totalSize;
+  }
 
-    /**
-     * Does the work of uploading all files based on the upload options provided to the process.
-     *
-     * @param {import('./upload-result').default} uploadResult Result to which information about the upload will be
-     *  added.
-     * @returns {Promise} Resolves when all files have been uploaded.
-     */
-    async upload(uploadResult) {
-        const aemUploadOptions = getHttpTransferOptions(this.getOptions(), this.getUploadOptions());
-        const fileResults = new FileUploadResults(this.getOptions(), this.getUploadOptions());
-        fileResults.addHttpTransferOptions(aemUploadOptions);
-        const aemUpload = new AEMUpload();
-        aemUpload.on('filestart', (data) => {
-            this.logInfo(`Upload START '${data.fileName}': ${data.fileSize} bytes`);
-            this.emit('filestart', data);
-        });
-        aemUpload.on('fileprogress', (data) => {
-            this.logInfo(`Upload PROGRESS '${data.fileName}': ${data.transferred} of ${data.fileSize} bytes`);
-            this.emit('fileprogress', data)
-        });
-        aemUpload.on('fileend', (data) => {
-            this.logInfo(`Upload COMPLETE '${data.fileName}': ${data.fileSize} bytes`);
-            fileResults.addFileEventResult(data);
-            this.emit('fileend', data);
-        });
-        aemUpload.on('fileerror', (data) => {
-            this.logError(`Upload FAILED '${data.fileName}': '${data.errors[0].message}'`)
-            fileResults.addFileEventResult(data);
-            this.emit('fileerror', data)
-        });
+  /**
+   * Does the work of uploading all files based on the upload options provided to the process.
+   *
+   * @param {import('./upload-result').default} uploadResult Result to which information about
+   *  the upload will be added.
+   * @returns {Promise} Resolves when all files have been uploaded.
+   */
+  async upload(uploadResult) {
+    const aemUploadOptions = getHttpTransferOptions(this.getOptions(), this.getUploadOptions());
+    const fileResults = new FileUploadResults(this.getOptions(), this.getUploadOptions());
+    fileResults.addHttpTransferOptions(aemUploadOptions);
+    const aemUpload = new AEMUpload();
+    aemUpload.on('filestart', (data) => {
+      this.logInfo(`Upload START '${data.fileName}': ${data.fileSize} bytes`);
+      this.emit('filestart', data);
+    });
+    aemUpload.on('fileprogress', (data) => {
+      this.logInfo(`Upload PROGRESS '${data.fileName}': ${data.transferred} of ${data.fileSize} bytes`);
+      this.emit('fileprogress', data);
+    });
+    aemUpload.on('fileend', (data) => {
+      this.logInfo(`Upload COMPLETE '${data.fileName}': ${data.fileSize} bytes`);
+      fileResults.addFileEventResult(data);
+      this.emit('fileend', data);
+    });
+    aemUpload.on('fileerror', (data) => {
+      this.logError(`Upload FAILED '${data.fileName}': '${data.errors[0].message}'`);
+      fileResults.addFileEventResult(data);
+      this.emit('fileerror', data);
+    });
 
-        const fileCount = aemUploadOptions.uploadFiles.length;
+    const fileCount = aemUploadOptions.uploadFiles.length;
 
-        uploadResult.startTimer();
+    uploadResult.startTimer();
 
-        this.logInfo(`sending ${fileCount} files to httptransfer with options ${JSON.stringify(aemUploadOptions, null, 2)}`);
-        await aemUpload.uploadFiles(aemUploadOptions);
-        this.logInfo('successfully uploaded files with httptransfer');
+    this.logInfo(`sending ${fileCount} files to httptransfer with options ${JSON.stringify(aemUploadOptions, null, 2)}`);
+    await aemUpload.uploadFiles(aemUploadOptions);
+    this.logInfo('successfully uploaded files with httptransfer');
 
-        uploadResult.setFileUploadResults(fileResults);
-        uploadResult.stopTimer();
+    uploadResult.setFileUploadResults(fileResults);
+    uploadResult.stopTimer();
 
-        // output json result to logger
-        this.logInfo('Uploading result in JSON: ' + JSON.stringify(uploadResult, null, 4));
-    }
+    // output json result to logger
+    this.logInfo(`Uploading result in JSON: ${JSON.stringify(uploadResult, null, 4)}`);
+  }
 }

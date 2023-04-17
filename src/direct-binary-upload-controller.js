@@ -17,17 +17,17 @@ import UploadBase from './upload-base';
  * upload.
  */
 export default class DirectBinaryUploadController extends UploadBase {
-    /**
-     * Instructs the upload to cancel the entire upload process.
-     */
-    cancel() {
-        this.sendEvent('cancel', {});
-    }
+  /**
+   * Instructs the upload to cancel the entire upload process.
+   */
+  cancel() {
+    this.sendEvent('cancel', {});
+  }
 
-    /**
-     * Instructs the upload to cancel a specific file upload.
-     */
-    cancelFile(targetFilePath) {
-        this.sendEvent('cancel', { fileName: targetFilePath });
-    }
+  /**
+   * Instructs the upload to cancel a specific file upload.
+   */
+  cancelFile(targetFilePath) {
+    this.sendEvent('cancel', { fileName: targetFilePath });
+  }
 }

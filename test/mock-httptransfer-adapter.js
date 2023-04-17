@@ -13,25 +13,28 @@ governing permissions and limitations under the License.
 const MockAemUpload = require('./mock-aem-upload');
 
 class MockHttpTransferAdapter {
-    constructor(httpTransfer) {
-        this.httpTransferInstance = httpTransfer;
-        this.origAemUpload = httpTransfer.AEMUpload;
-        httpTransfer.AEMUpload = MockAemUpload;
-        this.directUploads = {};
-        this.directUploadInvokes = {};
-    }
+  constructor(httpTransfer) {
+    this.httpTransferInstance = httpTransfer;
+    this.origAemUpload = httpTransfer.AEMUpload;
+    // eslint-disable-next-line no-param-reassign
+    httpTransfer.AEMUpload = MockAemUpload;
+    this.directUploads = {};
+    this.directUploadInvokes = {};
+  }
 
-    restore() {
-        this.httpTransferInstance.AEMUpload = this.origAemUpload;
-    }
+  restore() {
+    this.httpTransferInstance.AEMUpload = this.origAemUpload;
+  }
 
-    getDirectUploads() {
-        return MockAemUpload.getDirectUploads();
-    }
+  // eslint-disable-next-line class-methods-use-this
+  getDirectUploads() {
+    return MockAemUpload.getDirectUploads();
+  }
 
-    reset() {
-        MockAemUpload.reset();
-    }
+  // eslint-disable-next-line class-methods-use-this
+  reset() {
+    MockAemUpload.reset();
+  }
 }
 
 module.exports = MockHttpTransferAdapter;

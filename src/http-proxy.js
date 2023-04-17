@@ -21,105 +21,106 @@ const PRIVATE = Symbol('PRIVATE');
  * Represents information about the proxy to use when sending HTTP requests.
  */
 export default class HttpProxy {
-    /**
-     * Constructs new proxy information using the given proxy URL. By default, authentication will not be used with the proxy.
-     * @param {string} proxyUrl Full URL of the HTTP proxy to be used. Example: http://localhost:5000.
-     */
-    constructor(proxyUrl) {
-        this[PRIVATE] = {
-            proxyUrl
-        };
-    }
+  /**
+   * Constructs new proxy information using the given proxy URL. By default, authentication will
+   * not be used with the proxy.
+   * @param {string} proxyUrl Full URL of the HTTP proxy to be used. Example: http://localhost:5000.
+   */
+  constructor(proxyUrl) {
+    this[PRIVATE] = {
+      proxyUrl,
+    };
+  }
 
-    /**
-     * Retrieves the URL of the proxy as it was provided on construction.
-     * @returns {URL} Full URL of an HTTP proxy.
-     */
-    getUrl() {
-        const { proxyUrl } = this[PRIVATE];
-        if (!proxyUrl) {
-            throw new UploadError('URL of proxy is required', ErrorCodes.INVALID_OPTIONS);
-        }
-        return URL.parse(proxyUrl);
+  /**
+   * Retrieves the URL of the proxy as it was provided on construction.
+   * @returns {URL} Full URL of an HTTP proxy.
+   */
+  getUrl() {
+    const { proxyUrl } = this[PRIVATE];
+    if (!proxyUrl) {
+      throw new UploadError('URL of proxy is required', ErrorCodes.INVALID_OPTIONS);
     }
+    return URL.parse(proxyUrl);
+  }
 
-    /**
-     * Retrieves the name of the user being used for authentication. Will return falsy if basic
-     * authentication has not been set.
-     * @returns {string} Username for basic authentication.
-     */
-    getBasicAuthUser() {
-        const { username } = this[PRIVATE];
-        return username;
-    }
+  /**
+   * Retrieves the name of the user being used for authentication. Will return falsy if basic
+   * authentication has not been set.
+   * @returns {string} Username for basic authentication.
+   */
+  getBasicAuthUser() {
+    const { username } = this[PRIVATE];
+    return username;
+  }
 
-    /**
-     * Retrieves the password of the user being used for authentication. Will return falsy if basic
-     * authentication has not been set.
-     * @returns {string} Password for basic authentication.
-     */
-    getBasicAuthPassword() {
-        const { password } = this[PRIVATE];
-        return password;
-    }
+  /**
+   * Retrieves the password of the user being used for authentication. Will return falsy if basic
+   * authentication has not been set.
+   * @returns {string} Password for basic authentication.
+   */
+  getBasicAuthPassword() {
+    const { password } = this[PRIVATE];
+    return password;
+  }
 
-    /**
-     * Sets the basic authentication to be used with the proxy.
-     * @param {string} user Name of the user to use for authentication.
-     * @param {string} password Password for the user to use for authentication.
-     * @returns {HttpProxy} Current instance, for chaining.
-     */
-    withBasicAuth(user, password) {
-        if (user || password) {
-            if (user && !password) {
-                throw new UploadError('password is required for basic auth', ErrorCodes.INVALID_OPTIONS);
-            }
-            if (password && !user) {
-                throw new UploadError('username is required for basic auth', ErrorCodes.INVALID_OPTIONS);
-            }
-            this[PRIVATE].username = user;
-            this[PRIVATE].password = password;
-        }
-        return this;
+  /**
+   * Sets the basic authentication to be used with the proxy.
+   * @param {string} user Name of the user to use for authentication.
+   * @param {string} password Password for the user to use for authentication.
+   * @returns {HttpProxy} Current instance, for chaining.
+   */
+  withBasicAuth(user, password) {
+    if (user || password) {
+      if (user && !password) {
+        throw new UploadError('password is required for basic auth', ErrorCodes.INVALID_OPTIONS);
+      }
+      if (password && !user) {
+        throw new UploadError('username is required for basic auth', ErrorCodes.INVALID_OPTIONS);
+      }
+      this[PRIVATE].username = user;
+      this[PRIVATE].password = password;
     }
+    return this;
+  }
 
-    /**
-     * Retrieves a simple JSON representation of the proxy info. This will be in the format expected by the
-     * "proxy" option of an axios request.
-     * @returns {object} All information about the proxy.
-     */
-    toHttpOptions() {
-        const {
-            protocol,
-            hostname,
-            port
-        } = this.getUrl();
-        const json = {
-            protocol: protocol === 'https:' ? 'https' : 'http',
-            host: hostname,
-            port: parseInt(port, 10)
-        };
-        const username = this.getBasicAuthUser();
-        const password = this.getBasicAuthPassword();
-        if (username) {
-            json.auth = {
-                username,
-                password
-            };
-        }
-        return json;
+  /**
+   * Retrieves a simple JSON representation of the proxy info. This will be in the format
+   * expected by the "proxy" option of an axios request.
+   * @returns {object} All information about the proxy.
+   */
+  toHttpOptions() {
+    const {
+      protocol,
+      hostname,
+      port,
+    } = this.getUrl();
+    const json = {
+      protocol: protocol === 'https:' ? 'https' : 'http',
+      host: hostname,
+      port: parseInt(port, 10),
+    };
+    const username = this.getBasicAuthUser();
+    const password = this.getBasicAuthPassword();
+    if (username) {
+      json.auth = {
+        username,
+        password,
+      };
     }
+    return json;
+  }
 
-    /**
-     * Retrieves a simple JSON representation of the proxy info.
-     * @returns {object} All information about the proxy.
-     */
-    toJSON() {
-        const options = this.toHttpOptions();
-        if (options.auth) {
-            options.auth.username = '<redacted>';
-            options.auth.password = '<redacted>';
-        }
-        return options;
+  /**
+   * Retrieves a simple JSON representation of the proxy info.
+   * @returns {object} All information about the proxy.
+   */
+  toJSON() {
+    const options = this.toHttpOptions();
+    if (options.auth) {
+      options.auth.username = '<redacted>';
+      options.auth.password = '<redacted>';
     }
+    return options;
+  }
 }

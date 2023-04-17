@@ -10,19 +10,20 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
+/* eslint-env mocha */
+
 import should from 'should';
-import Exports from '../src/exports';
-import { DirectBinaryUploadOptions } from '../src/exports';
+import Exports, { DirectBinaryUploadOptions } from '../src/exports';
 
-describe('Exports Tests', function() {
+describe('Exports Tests', () => {
+  it('test exports smoke test', () => {
+    should(Exports).be.ok();
+    // eslint-disable-next-line import/no-named-as-default-member
+    should(Exports.DirectBinaryUploadOptions).be.ok();
+    should(DirectBinaryUploadOptions).be.ok();
 
-    it('test exports smoke test', function() {
-        should(Exports).be.ok();
-        should(Exports.DirectBinaryUploadOptions).be.ok();
-        should(DirectBinaryUploadOptions).be.ok();
-
-        should(new Exports.DirectBinaryUploadOptions()).be.ok();
-        should(new DirectBinaryUploadOptions()).be.ok();
-    });
-
+    // eslint-disable-next-line import/no-named-as-default-member
+    should(new Exports.DirectBinaryUploadOptions()).be.ok();
+    should(new DirectBinaryUploadOptions()).be.ok();
+  });
 });

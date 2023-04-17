@@ -10,41 +10,39 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-const EventEmitter = require('events').EventEmitter;
+const { EventEmitter } = require('events');
 const util = require('util');
-const Readable = require('stream').Readable;
+const { Readable } = require('stream');
 
 function MockBlob() {
-    EventEmitter.call(this);
-    this.slices = [];
+  EventEmitter.call(this);
+  this.slices = [];
 }
 
 util.inherits(MockBlob, EventEmitter);
 
-MockBlob.prototype.getSlices = function() {
-    return this.slices;
-}
+MockBlob.prototype.getSlices = () => this.slices;
 
-MockBlob.prototype.slice = function(start, end) {
-    const data = `${start},${end},`;
-    let called = false;
+MockBlob.prototype.slice = (start, end) => {
+  const data = `${start},${end},`;
+  let called = false;
 
-    this.slices.push({ start, end });
+  this.slices.push({ start, end });
 
-    const slice = new Readable({
-        read() {
-            if (!called) {
-                this.push(data);
-                called = true;
-            } else {
-                this.push(null);
-            }
-        }
-    });
+  const slice = new Readable({
+    read() {
+      if (!called) {
+        this.push(data);
+        called = true;
+      } else {
+        this.push(null);
+      }
+    },
+  });
 
-    slice.mockData = data;
+  slice.mockData = data;
 
-    return slice;
-}
+  return slice;
+};
 
 module.exports = MockBlob;

@@ -25,58 +25,62 @@ import UploadFile from './upload-file';
  * @returns {Object} Used to cancel an HTTP request.
  */
 function createCancelToken() {
-    return CancelToken.source();
+  return CancelToken.source();
 }
 
 /**
- * Submits an HTTP requests and provides the amount of time it took (in milliseconds) for the request to complete.
- * In addition, the method will retry the request according to the provided retry options.
+ * Submits an HTTP requests and provides the amount of time it took (in milliseconds) for the
+ * request to complete. In addition, the method will retry the request according to the provided
+ * retry options.
  *
- * @param {object} requestOptions Will be passed as-is to the underlying HTTP request processor, axios.
+ * @param {object} requestOptions Will be passed as-is to the underlying HTTP request processor,
+ *  axios.
  * @param {object} retryOptions Determines the behavior of the retry functionality.
- * @param {number} [retryOptions.retryCount] Specifies how many times, in total, the request will be submitted before giving up.
- * @param {number} [retryOptions.retryDelay] Specifies the amount of time to wait before retrying. The actual wait time will
- *   exponentially increase by this value for each retry.
- * @param {function} [retryOptions.onRetryError] Will be invoked with a single error before each retry. If all retries fail, the
- *   method will resolved with the last error instead. If this function throws an exception then the retry functionality
- *   will immediately be resolved with the thrown exception.
+ * @param {number} [retryOptions.retryCount] Specifies how many times, in total, the request will be
+ *   submitted before giving up.
+ * @param {number} [retryOptions.retryDelay] Specifies the amount of time to wait before retrying.
+ *   The actual wait time will exponentially increase by this value for each retry.
+ * @param {function} [retryOptions.onRetryError] Will be invoked with a single error before each
+ *   retry. If all retries fail, the method will resolved with the last error instead. If this
+ *   function throws an exception then the retry functionality will immediately be resolved with
+ *   the thrown exception.
  * @param {Object} [cancelToken] If specified, can be used to cancel the request.
- * @returns {object} The response to the request, which will match the signature of an axios response. In addition
- *  to typical axios response data, the object will also have an "elapsedTime" property containing the amount
- *  of time (in milliseconds) it took for the request to complete.
+ * @returns {object} The response to the request, which will match the signature of an axios
+ *  response. In addition to typical axios response data, the object will also have an "elapsedTime"
+ *  property containing the amount of time (in milliseconds) it took for the request to complete.
  */
 async function timedRequest(requestOptions, retryOptions, cancelToken) {
-    const reqStart = new Date().getTime();
-    const options = { ...requestOptions };
+  const reqStart = new Date().getTime();
+  const options = { ...requestOptions };
 
-    if (options.onRetryError) {
-        delete options.onRetryError;
+  if (options.onRetryError) {
+    delete options.onRetryError;
+  }
+
+  if (cancelToken) {
+    options.cancelToken = cancelToken.token;
+  }
+
+  let response;
+
+  // add proxy for axios request to httpAgent or httpsAgent property as mentioned
+  //  in this issue: https://github.com/axios/axios/issues/2072
+  if (options.proxy) {
+    const { protocol = 'http:' } = URL.parse(options.url);
+    if (protocol === 'https:') {
+      options.httpsAgent = new HttpsProxyAgent(options.proxy);
+    } else {
+      options.httpAgent = new HttpProxyAgent(options.proxy);
     }
+    // need to clear this property since it does not work (see above issue)
+    options.proxy = false;
+  }
 
-    if (cancelToken) {
-        options.cancelToken = cancelToken.token;
-    }
-
-    let response;
-
-    // add proxy for axios request to httpAgent or httpsAgent property as mentioned
-    //  in this issue: https://github.com/axios/axios/issues/2072
-    if (options.proxy) {
-      const { protocol = 'http:' } = URL.parse(options.url);
-      if (protocol === 'https:') {
-        options.httpsAgent = new HttpsProxyAgent(options.proxy);
-      } else {
-        options.httpAgent = new HttpProxyAgent(options.proxy);
-      }
-      // need to clear this property since it does not work (see above issue)
-      options.proxy = false;
-    }
-
-    await exponentialRetry(retryOptions, async () => {
-        response = await axios(options);
-        response.elapsedTime = new Date().getTime() - reqStart;
-    });
-    return response;
+  await exponentialRetry(retryOptions, async () => {
+    response = await axios(options);
+    response.elapsedTime = new Date().getTime() - reqStart;
+  });
+  return response;
 }
 
 /**
@@ -86,17 +90,17 @@ async function timedRequest(requestOptions, retryOptions, cancelToken) {
  * @returns {boolean} True if the error should be retried, false otherwise.
  */
 function isRetryableError(e) {
-    if (e && e.isAxiosError) {
-        const { response = {} } = e;
-        const { status } = response;
+  if (e && e.isAxiosError) {
+    const { response = {} } = e;
+    const { status } = response;
 
-        // only retry 5xx errors and errors that don't have a status code (which
-        // indicates some kind of network or I/O error)
-        if (status && (status < 500 || status > 599)) {
-            return false;
-        }
+    // only retry 5xx errors and errors that don't have a status code (which
+    // indicates some kind of network or I/O error)
+    if (status && (status < 500 || status > 599)) {
+      return false;
     }
-    return true;
+  }
+  return true;
 }
 
 /**
@@ -108,11 +112,11 @@ function isRetryableError(e) {
  * @param {HttpResponse} response A response from an HTTP client request.
  */
 function updateOptionsWithResponse(options, response) {
-    const setCookie = response.getHeaders()['set-cookie'];
+  const setCookie = response.getHeaders()['set-cookie'];
 
-    if (setCookie && setCookie.length) {
-        options.withCookies(cookie.parse(setCookie[0]));
-    }
+  if (setCookie && setCookie.length) {
+    options.withCookies(cookie.parse(setCookie[0]));
+  }
 }
 
 /**
@@ -126,32 +130,33 @@ function updateOptionsWithResponse(options, response) {
  *  measurement.
  */
 function calculateRate(elapsed, totalTransferred) {
-    if (elapsed > 1000) {
-        const elapsedSeconds = Math.round(elapsed / 1000);
-        return Math.round(totalTransferred / elapsedSeconds);
-    }
+  if (elapsed > 1000) {
+    const elapsedSeconds = Math.round(elapsed / 1000);
+    return Math.round(totalTransferred / elapsedSeconds);
+  }
 
-    return 0;
+  return 0;
 }
 
 /**
- * Builds proxy agent options based on upload options. Note that the method may return a falsy value, which
- * indicates that a proxy does not apply.
- * @param {DirectBinaryUploadOptions} directBinaryUploadOptions Options from which to retrieve information.
+ * Builds proxy agent options based on upload options. Note that the method may return a falsy
+ * value, which indicates that a proxy does not apply.
+ * @param {DirectBinaryUploadOptions} directBinaryUploadOptions Options from which to retrieve
+ *  information.
  * @returns {object} Options for either http-proxy-agent or https-proxy-agent.
  */
 function getProxyAgentOptions(directBinaryUploadOptions) {
-    const proxy = directBinaryUploadOptions.getHttpProxy();
-    if (proxy) {
-        const proxyOptions = proxy.getUrl();
-        const user = proxy.getBasicAuthUser();
-        const password = proxy.getBasicAuthPassword();
-        if (user) {
-            proxyOptions.auth = `${user}:${password}`;
-        }
-        return proxyOptions;
+  const proxy = directBinaryUploadOptions.getHttpProxy();
+  if (proxy) {
+    const proxyOptions = proxy.getUrl();
+    const user = proxy.getBasicAuthUser();
+    const password = proxy.getBasicAuthPassword();
+    if (user) {
+      proxyOptions.auth = `${user}:${password}`;
     }
-    return false;
+    return proxyOptions;
+  }
+  return false;
 }
 
 /**
@@ -161,43 +166,43 @@ function getProxyAgentOptions(directBinaryUploadOptions) {
  * @param {DirectBinaryUploadOptions} directBinaryUploadOptions Options to convert.
  */
 function getHttpTransferOptions(options, directBinaryUploadOptions) {
-    // the httptransfer module accepts a full fileUrl instead of a single
-    // url with individual file names. if needed, convert the format with a
-    // single url and individual file names to the fileUrl format.
-    const convertedFiles = directBinaryUploadOptions.getUploadFiles().map((uploadFile) => {
-        const uploadFileInstance = new UploadFile(options, directBinaryUploadOptions, uploadFile);
-        const transferOptions = uploadFileInstance.toJSON();
-        if (uploadFile.blob) {
-            // ensure blob is passed through to transfer options
-            transferOptions.blob = uploadFile.blob;
-        }
-        return transferOptions;
-    });
-
-    const transferOptions = {
-        uploadFiles: convertedFiles,
-        headers: directBinaryUploadOptions.getHeaders(),
-        concurrent: directBinaryUploadOptions.isConcurrent(),
-        maxConcurrent: directBinaryUploadOptions.getMaxConcurrent(),
-    };
-
-    const proxyOptions = getProxyAgentOptions(directBinaryUploadOptions);
-    if (proxyOptions) {
-        const { protocol = 'http:' } = URL.parse(directBinaryUploadOptions.getUrl());
-        transferOptions.requestOptions = {
-            agent: protocol === 'https:' ? new HttpsProxyAgent(proxyOptions) : new HttpProxyAgent(proxyOptions)
-        };
+  // the httptransfer module accepts a full fileUrl instead of a single
+  // url with individual file names. if needed, convert the format with a
+  // single url and individual file names to the fileUrl format.
+  const convertedFiles = directBinaryUploadOptions.getUploadFiles().map((uploadFile) => {
+    const uploadFileInstance = new UploadFile(options, directBinaryUploadOptions, uploadFile);
+    const transferOptions = uploadFileInstance.toJSON();
+    if (uploadFile.blob) {
+      // ensure blob is passed through to transfer options
+      transferOptions.blob = uploadFile.blob;
     }
-
     return transferOptions;
+  });
+
+  const transferOptions = {
+    uploadFiles: convertedFiles,
+    headers: directBinaryUploadOptions.getHeaders(),
+    concurrent: directBinaryUploadOptions.isConcurrent(),
+    maxConcurrent: directBinaryUploadOptions.getMaxConcurrent(),
+  };
+
+  const proxyOptions = getProxyAgentOptions(directBinaryUploadOptions);
+  if (proxyOptions) {
+    const { protocol = 'http:' } = URL.parse(directBinaryUploadOptions.getUrl());
+    transferOptions.requestOptions = {
+      agent: protocol === 'https:' ? new HttpsProxyAgent(proxyOptions) : new HttpProxyAgent(proxyOptions),
+    };
+  }
+
+  return transferOptions;
 }
 
 export {
-    createCancelToken,
-    timedRequest,
-    isRetryableError,
-    updateOptionsWithResponse,
-    calculateRate,
-    getProxyAgentOptions,
-    getHttpTransferOptions,
+  createCancelToken,
+  timedRequest,
+  isRetryableError,
+  updateOptionsWithResponse,
+  calculateRate,
+  getProxyAgentOptions,
+  getHttpTransferOptions,
 };

@@ -17,89 +17,90 @@ import HttpResult from './http-result';
  * the amount of time it took to create, and any error that may have occurred.
  */
 export default class CreateDirectoryResult extends HttpResult {
-    /**
-     * Constructs a new instance using the provided information. Can then be used to provide additional details
-     * as needed.
-     *
-     * @param {object} options Options as provided when the upload instance was instantiated.
-     * @param {DirectBinaryUploadOptions} uploadOptions Options as provided when the upload was initiated.
-     * @param {string} folderPath Full path of the folder that was created.
-     * @param {string} folderTitle Full title of the folder that was created.
-     * @param {*} response Response to the create request from the underlying client.
-     */
-    constructor(options, uploadOptions, folderPath, folderTitle) {
-        super(options, uploadOptions);
+  /**
+   * Constructs a new instance using the provided information. Can then be used to provide
+   * additional details as needed.
+   *
+   * @param {object} options Options as provided when the upload instance was instantiated.
+   * @param {DirectBinaryUploadOptions} uploadOptions Options as provided when the upload was
+   *  initiated.
+   * @param {string} folderPath Full path of the folder that was created.
+   * @param {string} folderTitle Full title of the folder that was created.
+   * @param {*} response Response to the create request from the underlying client.
+   */
+  constructor(options, uploadOptions, folderPath, folderTitle) {
+    super(options, uploadOptions);
 
-        this.folderPath = folderPath;
-        this.folderTitle = folderTitle;
-        this.response = false;
-        this.error = false;
+    this.folderPath = folderPath;
+    this.folderTitle = folderTitle;
+    this.response = false;
+    this.error = false;
+  }
+
+  /**
+   * Sets the response to the create request.
+   *
+   * @param {*} response Response to the create request from the underlying client.
+   */
+  setCreateResponse(response) {
+    this.response = response;
+  }
+
+  /**
+   * Sets the error that was the result of the create request.
+   *
+   * @param {import('./upload-error').default} error Error to the create request.
+   */
+  setCreateError(error) {
+    this.error = error;
+  }
+
+  /**
+   * Retrieves the full path of the folder as it was created in AEM.
+   *
+   * @returns {string} Path of a folder.
+   */
+  getFolderPath() {
+    return this.folderPath;
+  }
+
+  /**
+   * Retrieves the title of the folder as it was created in AEM.
+   *
+   * @returns {string} Title of a folder.
+   */
+  getFolderTitle() {
+    return this.folderTitle;
+  }
+
+  /**
+   * Retrieves the amount of time, in milliseconds, it took to create the folder.
+   *
+   * @returns {number} Time span in milliseconds.
+   */
+  getCreateTime() {
+    if (this.response && this.response.getElapsedTime) {
+      return this.response.getElapsedTime();
     }
+    return 0;
+  }
 
-    /**
-     * Sets the response to the create request.
-     *
-     * @param {*} response Response to the create request from the underlying client.
-     */
-    setCreateResponse(response) {
-        this.response = response;
+  /**
+   * Converts the result instance into a simple object containing all result data.
+   *
+   * @returns {object} Result data in a simple format.
+   */
+  toJSON() {
+    const json = {
+      elapsedTime: this.getCreateTime(),
+      folderPath: this.getFolderPath(),
+      folderTitle: this.getFolderTitle(),
+      ...super.toJSON(),
+    };
+
+    if (this.error) {
+      json.error = this.error.toJSON();
     }
-
-    /**
-     * Sets the error that was the result of the create request.
-     *
-     * @param {import('./upload-error').default} error Error to the create request.
-     */
-    setCreateError(error) {
-        this.error = error;
-    }
-
-    /**
-     * Retrieves the full path of the folder as it was created in AEM.
-     *
-     * @returns {string} Path of a folder.
-     */
-    getFolderPath() {
-        return this.folderPath;
-    }
-
-    /**
-     * Retrieves the title of the folder as it was created in AEM.
-     *
-     * @returns {string} Title of a folder.
-     */
-    getFolderTitle() {
-        return this.folderTitle;
-    }
-
-    /**
-     * Retrieves the amount of time, in milliseconds, it took to create the folder.
-     *
-     * @returns {number} Time span in milliseconds.
-     */
-    getCreateTime() {
-        if (this.response && this.response.getElapsedTime) {
-            return this.response.getElapsedTime();
-        }
-        return 0;
-    }
-
-    /**
-     * Converts the result instance into a simple object containing all result data.
-     *
-     * @returns {object} Result data in a simple format.
-     */
-    toJSON() {
-        const json = {
-            elapsedTime: this.getCreateTime(),
-            folderPath: this.getFolderPath(),
-            folderTitle: this.getFolderTitle(),
-            ...super.toJSON(),
-        };
-
-        if (this.error) {
-            json.error = this.error.toJSON();
-        }
-        return json;
-    }
+    return json;
+  }
 }

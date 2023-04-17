@@ -19,74 +19,78 @@ import Path from 'path';
  * of the upload.
  */
 export default class FileSystemUploadDirectory {
-    /**
-     * Constructs a new directory instance with the given values.
-     * @param {FileSystemUploadOptions} uploadOptions The URL from
-     *  the options will be used to build the remote URL of the
-     *  directory.
-     * @param {string} localPath Full local path to the directory.
-     * @param {string} remoteNodeName The name of the folder's node
-     *  as it should appear in AEM.
-     * @param {FileSystemUploadDirectory} [parent] Parent directory
-     *  for this directory. If not supplied then the directory will
-     *  be treated as the root of the upload.
-     */
-    constructor(uploadOptions, localPath, remoteNodeName, parent) {
-        this.uploadOptions = uploadOptions;
-        this.localPath = localPath;
-        this.remoteName = remoteNodeName;
-        this.parent = parent;
-    }
+  /**
+   * Constructs a new directory instance with the given values.
+   * @param {FileSystemUploadOptions} uploadOptions The URL from
+   *  the options will be used to build the remote URL of the
+   *  directory.
+   * @param {string} localPath Full local path to the directory.
+   * @param {string} remoteNodeName The name of the folder's node
+   *  as it should appear in AEM.
+   * @param {FileSystemUploadDirectory} [parent] Parent directory
+   *  for this directory. If not supplied then the directory will
+   *  be treated as the root of the upload.
+   */
+  constructor(uploadOptions, localPath, remoteNodeName, parent) {
+    this.uploadOptions = uploadOptions;
+    this.localPath = localPath;
+    this.remoteName = remoteNodeName;
+    this.parent = parent;
+  }
 
-    /**
-     * Retrieves the full, local path of the directory, as provided in
-     * the constructor.
-     * @returns {string} Local directory path.
-     */
-    getLocalPath() {
-        return this.localPath;
-    }
+  /**
+   * Retrieves the full, local path of the directory, as provided in
+   * the constructor.
+   * @returns {string} Local directory path.
+   */
+  getLocalPath() {
+    return this.localPath;
+  }
 
-    /**
-     * Retrieves the full, remote path (only) of the item. Will be built
-     * using the remote node name provided in the constructor.
-     *
-     * The value will not be URL encoded.
-     *
-     * @returns {string} Path ready for use in a URL.
-     */
-    getRemotePath() {
-        const prefix = this.parent ? this.parent.getRemotePath() : this.uploadOptions.getTargetFolderPath();
-        return `${prefix}/${this.getRemoteNodeName()}`;
-    }
+  /**
+   * Retrieves the full, remote path (only) of the item. Will be built
+   * using the remote node name provided in the constructor.
+   *
+   * The value will not be URL encoded.
+   *
+   * @returns {string} Path ready for use in a URL.
+   */
+  getRemotePath() {
+    const prefix = this.parent
+      ? this.parent.getRemotePath()
+      : this.uploadOptions.getTargetFolderPath();
+    return `${prefix}/${this.getRemoteNodeName()}`;
+  }
 
-    /**
-     * Retrieves the remote URL of the item's parent.
-     * @returns {string} The item parent's URL.
-     */
-    getParentRemoteUrl() {
-        if (!this.parentRemoteUrl) {
-            const path = this.parent ? this.parent.getRemotePath() : this.uploadOptions.getTargetFolderPath();
-            this.parentRemoteUrl = `${this.uploadOptions.getUrlPrefix()}${encodeURI(path)}`;
-        }
-        return this.parentRemoteUrl;
+  /**
+   * Retrieves the remote URL of the item's parent.
+   * @returns {string} The item parent's URL.
+   */
+  getParentRemoteUrl() {
+    if (!this.parentRemoteUrl) {
+      const path = this.parent
+        ? this.parent.getRemotePath()
+        : this.uploadOptions.getTargetFolderPath();
+      this.parentRemoteUrl = `${this.uploadOptions.getUrlPrefix()}${encodeURI(path)}`;
     }
+    return this.parentRemoteUrl;
+  }
 
-    /**
-     * Retrieves the remote node name of the item, as provided in the
-     * constructor.
-     * @returns {string} A node name.
-     */
-    getRemoteNodeName() {
-        return this.remoteName;
-    }
+  /**
+   * Retrieves the remote node name of the item, as provided in the
+   * constructor.
+   * @returns {string} A node name.
+   */
+  getRemoteNodeName() {
+    return this.remoteName;
+  }
 
-    /**
-     * The name of the item as it was originally provided in the local
-     * path.
-     * @returns {string} Item name.
-     */
-    getName() {
-        return Path.basename(this.localPath);
-    }
+  /**
+   * The name of the item as it was originally provided in the local
+   * path.
+   * @returns {string} Item name.
+   */
+  getName() {
+    return Path.basename(this.localPath);
+  }
 }

@@ -10,28 +10,30 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
+/* eslint-env mocha */
+
 const should = require('should');
 
 const { importFile } = require('../testutils');
 
 const HttpResponse = importFile('http/http-response');
 
-describe('HTTP Response Tests', function() {
-    it('test accessors', function() {
-        const response = new HttpResponse({}, {
-            status: 200,
-            statusText: 'OK',
-            headers: {
-                header1: 'test1'
-            },
-            data: 'hello',
-            elapsedTime: 100
-        });
-
-        should(response.getStatusCode()).be.exactly(200);
-        should(response.getStatusText()).be.exactly('OK');
-        should(response.getHeaders().header1).be.exactly('test1');
-        should(response.getData()).be.exactly('hello');
-        should(response.getElapsedTime()).be.exactly(100);
+describe('HTTP Response Tests', () => {
+  it('test accessors', () => {
+    const response = new HttpResponse({}, {
+      status: 200,
+      statusText: 'OK',
+      headers: {
+        header1: 'test1',
+      },
+      data: 'hello',
+      elapsedTime: 100,
     });
+
+    should(response.getStatusCode()).be.exactly(200);
+    should(response.getStatusText()).be.exactly('OK');
+    should(response.getHeaders().header1).be.exactly('test1');
+    should(response.getData()).be.exactly('hello');
+    should(response.getElapsedTime()).be.exactly(100);
+  });
 });

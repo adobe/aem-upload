@@ -17,67 +17,65 @@ import UploadBase from '../upload-base';
  * various accessors for retrieving information from the response.
  */
 export default class HttpResponse extends UploadBase {
+  /**
+   * Constructs a new response, which will use raw response values from the underlying
+   * module that performs HTTP communication.
+   *
+   * @param {object} options Direct binary options.
+   * @param {object} rawResponse Raw response data.
+   */
+  constructor(options, rawResponse) {
+    super(options);
 
-    /**
-     * Constructs a new response, which will use raw response values from the underlying
-     * module that performs HTTP communication.
-     *
-     * @param {object} options Direct binary options.
-     * @param {object} rawResponse Raw response data.
-     */
-    constructor(options, rawResponse) {
-        super(options);
+    this.rawResponse = rawResponse;
+  }
 
-        this.rawResponse = rawResponse;
-    }
+  /**
+   * Retrieves the HTTP status code of the response.
+   *
+   * @returns {number} HTTP status code.
+   */
+  getStatusCode() {
+    return this.rawResponse ? this.rawResponse.status : 0;
+  }
 
-    /**
-     * Retrieves the HTTP status code of the response.
-     *
-     * @returns {number} HTTP status code.
-     */
-    getStatusCode() {
-        return this.rawResponse ? this.rawResponse.status : 0;
-    }
+  /**
+   * Retrieves the response status text.
+   *
+   * @returns {string} HTTP response status.
+   */
+  getStatusText() {
+    return this.rawResponse ? this.rawResponse.statusText : '';
+  }
 
-    /**
-     * Retrieves the response status text.
-     *
-     * @returns {string} HTTP response status.
-     */
-    getStatusText() {
-        return this.rawResponse ? this.rawResponse.statusText : '';
-    }
+  /**
+   * Retrieves the response's header values.
+   *
+   * @returns {object} Simple object whose keys are header names
+   *  and whose values are header values.
+   */
+  getHeaders() {
+    return this.rawResponse ? this.rawResponse.headers || {} : {};
+  }
 
-    /**
-     * Retrieves the response's header values.
-     *
-     * @returns {object} Simple object whose keys are header names
-     *  and whose values are header values.
-     */
-    getHeaders() {
-        return this.rawResponse ? this.rawResponse.headers || {} : {};
-    }
+  /**
+   * Retrieves any data provided in the response body. Note that the
+   * type of this value will vary depending on the response type set
+   * on the request.
+   *
+   * @returns {*} Varies, depending on the request.
+   */
+  getData() {
+    return this.rawResponse ? this.rawResponse.data : '';
+  }
 
-    /**
-     * Retrieves any data provided in the response body. Note that the
-     * type of this value will vary depending on the response type set
-     * on the request.
-     *
-     * @returns {*} Varies, depending on the request.
-     */
-    getData() {
-        return this.rawResponse ? this.rawResponse.data : '';
-    }
-
-    /**
-     * Retrieves the amount of time it took between the request being
-     * sent and the server providing a response.
-     *
-     * @returns {number} Time span, in milliseconds.
-     */
-    getElapsedTime() {
-        return this.rawResponse ? this.rawResponse.elapsedTime : 0;
-    }
-
+  /**
+   * Retrieves the amount of time it took between the request being
+   * sent and the server providing a response.
+   *
+   * @returns {number} Time span, in milliseconds.
+   */
+  getElapsedTime() {
+    return this.rawResponse ? this.rawResponse.elapsedTime : 0;
+  }
 }

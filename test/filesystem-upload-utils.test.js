@@ -10,6 +10,8 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
+/* eslint-env mocha */
+
 const should = require('should');
 
 const { importFile } = require('./testutils');
@@ -17,23 +19,23 @@ const { importFile } = require('./testutils');
 const { cleanFolderName, cleanAssetName } = importFile('filesystem-upload-utils');
 const FileSystemUploadOptions = importFile('filesystem-upload-options');
 
-describe('FileSystemUploadUtils Tests', function() {
-    let options;
-    beforeEach(function() {
-        options = new FileSystemUploadOptions();
-    });
+describe('FileSystemUploadUtils Tests', () => {
+  let options;
+  beforeEach(() => {
+    options = new FileSystemUploadOptions();
+  });
 
-    it('test clean folder name', async function () {
-        should(await cleanFolderName(options, 'A b:c.d')).be.exactly('a-b-c-d');
-        options.withFolderNodeNameProcessor(async (folderName) => folderName)
-            .withInvalidCharacterReplaceValue('_');
-        should(await cleanFolderName(options, 'A b:c')).be.exactly('A b_c');
-    });
+  it('test clean folder name', async () => {
+    should(await cleanFolderName(options, 'A b:c.d')).be.exactly('a-b-c-d');
+    options.withFolderNodeNameProcessor(async (folderName) => folderName)
+      .withInvalidCharacterReplaceValue('_');
+    should(await cleanFolderName(options, 'A b:c')).be.exactly('A b_c');
+  });
 
-    it('test clean asset name', async function () {
-        should(await cleanAssetName(options, 'A #b:c.d.jpg')).be.exactly('A -b-c.d.jpg');
-        options.withAssetNodeNameProcessor(async (assetName) => assetName)
-            .withInvalidCharacterReplaceValue('_');
-        should(await cleanAssetName(options, 'A #b:c')).be.exactly('A #b_c');
-    });
+  it('test clean asset name', async () => {
+    should(await cleanAssetName(options, 'A #b:c.d.jpg')).be.exactly('A -b-c.d.jpg');
+    options.withAssetNodeNameProcessor(async (assetName) => assetName)
+      .withInvalidCharacterReplaceValue('_');
+    should(await cleanAssetName(options, 'A #b:c')).be.exactly('A #b_c');
+  });
 });

@@ -17,23 +17,24 @@ import UploadBase from './upload-base';
  * instance.
  */
 export default class UploadOptionsBase extends UploadBase {
-    /**
-     * Constructs a new instance using the provided information.
-     *
-     * @param {object} options Options as provided when the direct binary object was instantiated.
-     * @param {DirectBinaryUploadOptions} uploadOptions Options as provided when the direct binary upload process was initiated.
-     */
-    constructor(options, uploadOptions) {
-        super(options);
-        this.uploadOptions = uploadOptions;
-    }
+  /**
+   * Constructs a new instance using the provided information.
+   *
+   * @param {object} options Options as provided when the direct binary object was instantiated.
+   * @param {DirectBinaryUploadOptions} uploadOptions Options as provided when the direct binary
+   *   upload process was initiated.
+   */
+  constructor(options, uploadOptions) {
+    super(options);
+    this.uploadOptions = uploadOptions;
+  }
 
-    /**
-     * Retrieves the upload options that were provided when the upload was initiated.
-     *
-     * @returns {DirectBinaryUploadOptions} Upload options.
-     */
-    getUploadOptions() {
-        return this.uploadOptions;
-    }
+  /**
+   * Retrieves the upload options that were provided when the upload was initiated.
+   *
+   * @returns {DirectBinaryUploadOptions} Upload options.
+   */
+  getUploadOptions() {
+    return this.uploadOptions;
+  }
 }
