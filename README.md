@@ -1012,20 +1012,11 @@ consumers can use `DirectBinaryUploadOptions.withHttpProxy()` to modify the defa
 
 # Releasing
 
-This module uses [semantic-release](https://github.com/semantic-release/semantic-release) when publishing new versions. The process is initiated upon merging commits to the `master` branch. To create a release, ensure
-that the commit message of the PR begins with one of the following values:
+This module uses [semantic-release](https://github.com/semantic-release/semantic-release) when publishing new versions. The process is initiated upon merging commits to the `master` branch. Review semantic-release's documentation for commit message format.
 
-* `BREAKING-RELEASE:`
-  * Increments the `major` version number (i.e. 1.2.3 would become 2.0.0)
-* `FEATURE-RELEASE:`
-  * Increments the `minor` version number (i.e. 1.2.3 would become 1.3.0)
-* `BUGFIX-RELEASE:`
-  * Increments the `patch` version number (i.e. 1.2.3 would become 1.2.4)
+PRs whose messages do not meet semantic-release's format will _not_ generate a new release.
 
-PRs whose messages do not meet this format will _not_ generate a new release.
-
-Release notes are generated based on semantic-release's [eslint](https://github.com/conventional-changelog/conventional-changelog/tree/master/packages/conventional-changelog-eslint) preset. Follow the guidelines
-in the preset's documentation to include commit messages in a release's notes.
+Release notes are generated based on git commit messages. Release notes will appear in `CHANGELOG.md`.
 
 # Todo
 * Pause/resume uploads
