@@ -15,22 +15,35 @@ governing permissions and limitations under the License.
 const should = require('should');
 const { Readable } = require('stream');
 
-const { getTestOptions } = require('./testutils');
-const MockRequest = require('./mock-request');
+const {
+  getTestOptions,
+  addDirectUpload,
+  resetHttp,
+  allHttpUsed,
+  getDirectBinaryUploads,
+  parseQuery,
+} = require('./testutils');
 const MockBlob = require('./mock-blob');
 const UploadResult = require('../src/upload-result');
 const DirectBinaryUploadProcess = require('../src/direct-binary-upload-process');
 const DirectBinaryUploadOptions = require('../src/direct-binary-upload-options');
 
+const HOST = 'http://reallyfakeaemuploadhost';
+
 describe('DirectBinaryUploadProcessTest', () => {
   beforeEach(() => {
-    MockRequest.reset();
+    resetHttp();
+  });
+
+  afterEach(() => {
+    should(allHttpUsed()).be.ok();
+    resetHttp();
   });
 
   describe('upload', () => {
     async function runCompleteTest(createVersion, versionLabel, versionComment, replace) {
-      const targetFolder = `/target/folder-create-version-${new Date().getTime()}`;
-      MockRequest.addDirectUpload(targetFolder);
+      const targetFolder = `/content/dam/target/folder-create-version-${new Date().getTime()}`;
+      addDirectUpload(HOST, targetFolder, ['myasset.jpg']);
       const fileData = {
         fileName: 'myasset.jpg',
         fileSize: 512,
@@ -52,7 +65,7 @@ describe('DirectBinaryUploadProcessTest', () => {
       }
 
       const options = new DirectBinaryUploadOptions()
-        .withUrl(MockRequest.getUrl(targetFolder))
+        .withUrl(`${HOST}${targetFolder}`)
         .withUploadFiles([fileData]);
 
       const process = new DirectBinaryUploadProcess(getTestOptions(), options);
@@ -60,39 +73,60 @@ describe('DirectBinaryUploadProcessTest', () => {
       await process.upload(new UploadResult(getTestOptions(), options));
 
       // verify that complete request is correct
-      const directUploads = MockRequest.getDirectUploads();
-      should(directUploads.length).be.exactly(1);
-      should(directUploads[0].uploadFiles.length).be.exactly(1);
+      const {
+        inits = [],
+        parts = [],
+        completes = [],
+      } = getDirectBinaryUploads();
+      should(inits.length).be.ok();
+      const init = inits[inits.length - 1];
+      should(init.uri).equal(`${targetFolder}.initiateUpload.json`);
+      should(parseQuery(init.body)).deepEqual({
+        fileName: 'myasset.jpg',
+        fileSize: '512',
+      });
+      should(parts).deepEqual([{
+        uri: `${targetFolder}/myasset.jpg`,
+        body: '0,512,',
+      }]);
+      should(completes.length).equal(1);
+      should(completes[0].uri).equal(`${targetFolder}.completeUpload.json`);
 
-      const uploadFile = directUploads[0].uploadFiles[0];
-      should(uploadFile.fileUrl).be.exactly(`${MockRequest.getUrl(targetFolder)}/myasset.jpg`);
-      should(uploadFile.fileSize).be.exactly(512);
+      const completeInfo = parseQuery(completes[0].body);
+      should(completeInfo.fileName).equal('myasset.jpg');
+      should(completeInfo.fileSize).equal('512');
+      should(completeInfo.mimeType).equal('image/jpeg');
+      should(completeInfo.uploadToken).be.ok();
+      should(completeInfo.uploadDuration).be.ok();
 
       if (createVersion) {
-        should(uploadFile.createVersion).be.ok();
+        should(completeInfo.createVersion).be.ok();
         if (versionLabel) {
-          should(uploadFile.versionLabel).be.exactly(versionLabel);
+          should(completeInfo.versionLabel).be.exactly(versionLabel);
         } else {
-          should(uploadFile.versionLabel).not.be.ok();
+          should(completeInfo.versionLabel).not.be.ok();
         }
         if (versionComment) {
-          should(uploadFile.versionComment).be.exactly(versionComment);
+          should(completeInfo.versionComment).be.exactly(versionComment);
         } else {
           should(versionComment).not.be.ok();
         }
       } else {
-        should(uploadFile.createVersion).not.be.ok();
-        should(uploadFile.versionLabel).not.be.ok();
-        should(uploadFile.versionComment).not.be.ok();
+        const { createVersion: completeCreateVersion = 'false' } = completeInfo;
+        should(completeCreateVersion).equal('false');
+        should(completeInfo.versionLabel).not.be.ok();
+        should(completeInfo.versionComment).not.be.ok();
       }
+
+      const { replace: completeReplace = 'false' } = completeInfo;
       if (replace) {
-        should(uploadFile.replace).be.ok();
+        should(completeReplace).equal('true');
       } else {
-        should(uploadFile.replace).not.be.ok();
+        should(completeReplace).equal('false');
       }
     }
 
-    it('create version test', async () => {
+    it('create version only test', async () => {
       await runCompleteTest(true);
     });
 
@@ -110,10 +144,10 @@ describe('DirectBinaryUploadProcessTest', () => {
 
     it('trailing slash', async () => {
       const targetFolder = '/target/folder-trailing-slash';
-      MockRequest.addDirectUpload(targetFolder);
+      addDirectUpload(HOST, targetFolder, ['myasset.jpg']);
 
       const options = new DirectBinaryUploadOptions()
-        .withUrl(MockRequest.getUrl(`${targetFolder}/`))
+        .withUrl(`${HOST}${targetFolder}/`)
         .withUploadFiles([{
           fileName: 'myasset.jpg',
           fileSize: 512,
@@ -122,20 +156,19 @@ describe('DirectBinaryUploadProcessTest', () => {
       const process = new DirectBinaryUploadProcess(getTestOptions(), options);
       await process.upload(new UploadResult(getTestOptions(), options));
 
-      const directUploads = MockRequest.getDirectUploads();
-      should(directUploads.length).be.exactly(1);
-      should(directUploads[0].uploadFiles.length).be.exactly(1);
-
-      const uploadFile = directUploads[0].uploadFiles[0];
-      should(uploadFile.fileUrl).be.exactly(`${MockRequest.getUrl(targetFolder)}/myasset.jpg`);
+      const { parts = [] } = getDirectBinaryUploads();
+      should(parts).deepEqual([{
+        uri: `${targetFolder}/myasset.jpg`,
+        body: '0,512,',
+      }]);
     });
 
     it('file upload smoke', async () => {
       const fileSize = 1024;
       const targetFolder = '/target/file-upload-smoke';
-      MockRequest.addDirectUpload(targetFolder);
+      addDirectUpload(HOST, targetFolder, ['fileuploadsmoke.jpg']);
       const options = new DirectBinaryUploadOptions()
-        .withUrl(MockRequest.getUrl(targetFolder))
+        .withUrl(`${HOST}${targetFolder}`)
         .withUploadFiles([{
           fileName: 'fileuploadsmoke.jpg',
           fileSize,
@@ -162,13 +195,22 @@ describe('DirectBinaryUploadProcessTest', () => {
       }, options);
 
       await process.upload(new UploadResult(getTestOptions(), options));
-      const directUploads = MockRequest.getDirectUploads();
-      should(directUploads.length).be.exactly(1);
-      should(directUploads[0].uploadFiles.length).be.exactly(1);
 
-      const uploadFile = directUploads[0].uploadFiles[0];
-      should(uploadFile.fileUrl).be.exactly('http://localhost/content/dam/target/file-upload-smoke/fileuploadsmoke.jpg');
-      should(uploadFile.fileSize).be.exactly(1024);
+      const {
+        inits = [],
+        parts = [],
+        completes = [],
+      } = getDirectBinaryUploads();
+      should(inits.length > 0).be.ok();
+      should(inits[inits.length - 1].uri).equal(`${targetFolder}.initiateUpload.json`);
+
+      should(parts.length).equal(1);
+      should(parts[0].uri).equal(`${targetFolder}/fileuploadsmoke.jpg`);
+      should(parts[0].body.length).equal(1024);
+
+      should(completes.length).equal(1);
+      should(completes[0].uri).equal(`${targetFolder}.completeUpload.json`);
+      should(completes[0].body).be.ok();
     });
 
     it('test total upload size', () => {

@@ -21,12 +21,15 @@ const {
   getEvent,
   getFolderEvent,
   verifyResult,
+  resetHttp,
+  allHttpUsed,
+  getDirectBinaryUploads,
+  addDirectUpload,
+  addCreateDirectory,
+  getFolderCreates,
 } = require('./testutils');
-const MockRequest = require('./mock-request');
 
-const HttpClient = require('../src/http/http-client');
 const FileSystemUploadDirectory = require('../src/filesystem-upload-directory');
-const HttpProxy = require('../src/http-proxy');
 const UploadResult = require('../src/upload-result');
 
 function MockDirectBinaryUpload() {
@@ -46,18 +49,20 @@ const SUBDIR_ENCODED = encodeURI(SUBDIR);
 
 const ASSET1 = '吏';
 
+const HOST = 'http://reallyfakehostforaemuploadtesting';
+
 describe('FileSystemUpload Tests', () => {
-  let httpClient;
   let uploadResult;
 
   beforeEach(() => {
-    MockRequest.reset();
+    resetHttp();
 
-    httpClient = new HttpClient(getTestOptions(), new FileSystemUploadOptions());
     uploadResult = new UploadResult(getTestOptions(), new FileSystemUploadOptions());
   });
 
   afterEach(() => {
+    should(allHttpUsed()).be.ok();
+    resetHttp();
     MockFs.restore();
   });
 
@@ -87,13 +92,16 @@ describe('FileSystemUpload Tests', () => {
     it('filesystem upload smoke test', async () => {
       createFsStructure();
 
-      MockRequest.onPost(MockRequest.getApiUrl('/target')).reply(201);
-
-      MockRequest.addDirectUpload('/target');
+      addCreateDirectory(HOST, '/target');
+      addDirectUpload(HOST, '/target', [
+        ASSET1,
+        '2',
+        '3',
+        '4',
+      ]);
 
       const uploadOptions = new FileSystemUploadOptions()
-        .withUrl(MockRequest.getUrl('/target'))
-        .withBasicAuth('testauth')
+        .withUrl(`${HOST}/target`)
         .withUploadFileOptions({
           createVersion: true,
           versionLabel: 'test version label',
@@ -108,7 +116,7 @@ describe('FileSystemUpload Tests', () => {
         '/test/dir',
       ]);
       verifyResult(result, {
-        host: 'http://localhost',
+        host: HOST,
         totalFiles: 4,
         totalTime: result.totalTime,
         totalCompleted: 4,
@@ -123,7 +131,7 @@ describe('FileSystemUpload Tests', () => {
           retryErrors: [],
         }],
         detailedResult: [{
-          fileUrl: 'http://localhost/content/dam/target/%E5%90%8F',
+          fileUrl: `${HOST}/target/%E5%90%8F`,
           fileSize: 9,
           createVersion: true,
           versionComment: 'test version comment',
@@ -133,12 +141,14 @@ describe('FileSystemUpload Tests', () => {
           result: {
             fileName: '吏',
             fileSize: 9,
-            targetFolder: '/content/dam/target',
-            targetFile: '/content/dam/target/吏',
-            mimeType: null,
+            targetFolder: '/target',
+            targetFile: '/target/吏',
+            mimeType: 'application/octet-stream',
+            sourceFile: '/test/file/吏',
+            sourceFolder: '/test/file',
           },
         }, {
-          fileUrl: 'http://localhost/content/dam/target/2',
+          fileUrl: `${HOST}/target/2`,
           fileSize: 10,
           createVersion: true,
           versionComment: 'test version comment',
@@ -148,12 +158,14 @@ describe('FileSystemUpload Tests', () => {
           result: {
             fileName: '2',
             fileSize: 10,
-            targetFolder: '/content/dam/target',
-            targetFile: '/content/dam/target/2',
-            mimeType: null,
+            targetFolder: '/target',
+            targetFile: '/target/2',
+            sourceFile: '/test/file/2',
+            sourceFolder: '/test/file',
+            mimeType: 'application/octet-stream',
           },
         }, {
-          fileUrl: 'http://localhost/content/dam/target/3',
+          fileUrl: `${HOST}/target/3`,
           fileSize: 8,
           createVersion: true,
           versionComment: 'test version comment',
@@ -163,12 +175,14 @@ describe('FileSystemUpload Tests', () => {
           result: {
             fileName: '3',
             fileSize: 8,
-            targetFolder: '/content/dam/target',
-            targetFile: '/content/dam/target/3',
-            mimeType: null,
+            targetFolder: '/target',
+            targetFile: '/target/3',
+            sourceFile: '/test/dir/3',
+            sourceFolder: '/test/dir',
+            mimeType: 'application/octet-stream',
           },
         }, {
-          fileUrl: 'http://localhost/content/dam/target/4',
+          fileUrl: `${HOST}/target/4`,
           fileSize: 7,
           createVersion: true,
           versionComment: 'test version comment',
@@ -178,123 +192,126 @@ describe('FileSystemUpload Tests', () => {
           result: {
             fileName: '4',
             fileSize: 7,
-            targetFolder: '/content/dam/target',
-            targetFile: '/content/dam/target/4',
-            mimeType: null,
+            targetFolder: '/target',
+            targetFile: '/target/4',
+            sourceFile: '/test/dir/4',
+            sourceFolder: '/test/dir',
+            mimeType: 'application/octet-stream',
           },
         }],
       });
     });
 
     it('test directory already exists', async () => {
-      MockRequest.onPost(MockRequest.getApiUrl('/existing_target')).reply(409);
+      addCreateDirectory(HOST, '/existing_target', 409);
 
       const uploadOptions = new FileSystemUploadOptions()
-        .withUrl(MockRequest.getUrl('/existing_target'))
-        .withHttpRetryDelay(10)
-        .withBasicAuth('testauth');
+        .withUrl(`${HOST}/existing_target`)
+        .withHttpRetryDelay(10);
       const fsUpload = new FileSystemUpload(getTestOptions());
-      return fsUpload.createAemFolder(uploadOptions, uploadResult, httpClient);
+      return fsUpload.createAemFolder(uploadOptions, uploadResult);
     });
 
     it('test directory not found', async () => {
-      MockRequest.onPost(MockRequest.getApiUrl('/existing_target')).reply(404);
+      addCreateDirectory(HOST, '/existing_target', 404);
 
       const uploadOptions = new FileSystemUploadOptions()
-        .withUrl(MockRequest.getUrl('/existing_target'))
-        .withHttpRetryDelay(10)
-        .withBasicAuth('testauth');
+        .withUrl(`${HOST}/existing_target`)
+        .withHttpRetryDelay(10);
       const fsUpload = new FileSystemUpload(getTestOptions());
       let threw = false;
       try {
-        await fsUpload.createAemFolder(uploadOptions, uploadResult, httpClient);
+        await fsUpload.createAemFolder(uploadOptions, uploadResult);
       } catch (e) {
         threw = true;
       }
       should(threw).be.ok();
     });
 
+    function getFolderRequest(path, title) {
+      return {
+        body: {
+          class: 'assetFolder',
+          properties: {
+            'jcr:title': title,
+          },
+        },
+        uri: path,
+      };
+    }
+
     it('test create target folder', async () => {
-      MockRequest.onPost(MockRequest.getApiUrl('/folder')).reply(409);
-      MockRequest.onPost(MockRequest.getApiUrl('/folder/structure')).reply(201);
+      addCreateDirectory(HOST, '/folder', 409);
+      addCreateDirectory(HOST, '/folder/structure', 201);
 
       const uploadOptions = new FileSystemUploadOptions()
-        .withUrl(MockRequest.getUrl('/folder/structure'))
-        .withBasicAuth('testauth');
+        .withUrl(`${HOST}/folder/structure`);
       const fsUpload = new FileSystemUpload(getTestOptions());
-      await fsUpload.createTargetFolder(uploadOptions, uploadResult, httpClient);
-      const { post: posts = [] } = MockRequest.history;
-      should(posts.length).be.exactly(2);
-      should(posts[0].url).be.exactly(MockRequest.getApiUrl('/folder'));
-      should(posts[1].url).be.exactly(MockRequest.getApiUrl('/folder/structure'));
+      await fsUpload.createTargetFolder(uploadOptions, uploadResult);
+      should(getFolderCreates()).deepEqual([
+        getFolderRequest('/api/assets/folder', 'folder'),
+        getFolderRequest('/api/assets/folder/structure', 'structure'),
+      ]);
     });
 
     it('test create upload directories', async () => {
-      MockRequest.onPost(MockRequest.getApiUrl('/folder/structure/path1')).reply(409);
-      MockRequest.onPost(MockRequest.getApiUrl('/folder/structure/path1/dir1')).reply(201);
-      MockRequest.onPost(MockRequest.getApiUrl('/folder/structure/path1/dir2')).reply(201);
+      addCreateDirectory(HOST, '/folder/structure/path1', 409);
+      addCreateDirectory(HOST, '/folder/structure/path1/dir1', 201);
+      addCreateDirectory(HOST, '/folder/structure/path1/dir2', 201);
 
       const uploadOptions = new FileSystemUploadOptions()
-        .withUrl(MockRequest.getUrl('/folder/structure'))
-        .withBasicAuth('testauth')
-        .withHttpProxy(new HttpProxy('http://somereallyfakeproxyhost'));
+        .withUrl(`${HOST}/folder/structure`);
       const path1Dir = new FileSystemUploadDirectory(uploadOptions, '/prefix/path1', 'path1');
       const fsUpload = new FileSystemUpload(getTestOptions());
-      await fsUpload.createUploadDirectories(uploadOptions, uploadResult, httpClient, [
+      await fsUpload.createUploadDirectories(uploadOptions, uploadResult, [
         path1Dir,
         new FileSystemUploadDirectory(uploadOptions, '/prefix/path1/dir1/', 'dir1', path1Dir),
         new FileSystemUploadDirectory(uploadOptions, '/prefix/path1/dir2', 'dir2', path1Dir),
       ]);
 
-      const { post: posts = [] } = MockRequest.history;
-      should(posts.length).be.exactly(3);
-      should(posts[0].url).be.exactly(MockRequest.getApiUrl('/folder/structure/path1'));
-      // confirm proxy details - requests made with axios
-      should(posts[0].proxy).equal(false);
-      should(posts[0].httpAgent).be.ok();
-      should(posts[0].httpAgent.proxy.host).be.exactly('somereallyfakeproxyhost');
-      should(posts[1].url).be.exactly(MockRequest.getApiUrl('/folder/structure/path1/dir1'));
-      should(posts[1].proxy).equal(false);
-      should(posts[1].httpAgent).be.ok();
-      should(posts[1].httpAgent.proxy.host).be.exactly('somereallyfakeproxyhost');
-      should(posts[2].url).be.exactly(MockRequest.getApiUrl('/folder/structure/path1/dir2'));
-      should(posts[2].proxy).equal(false);
-      should(posts[2].httpAgent).be.ok();
-      should(posts[2].httpAgent.proxy.host).be.exactly('somereallyfakeproxyhost');
+      should(getFolderCreates()).deepEqual([
+        getFolderRequest('/api/assets/folder/structure/path1', 'path1'),
+        getFolderRequest('/api/assets/folder/structure/path1/dir1', 'dir1'),
+        getFolderRequest('/api/assets/folder/structure/path1/dir2', 'dir2'),
+      ]);
     });
-
-    function buildPostLookup() {
-      const postedUrls = {};
-      MockRequest.history.post.forEach((post) => {
-        const { url } = post;
-
-        if (!postedUrls[url]) {
-          postedUrls[url] = 0;
-        }
-        postedUrls[url] += 1;
-      });
-      return postedUrls;
-    }
 
     it('smoke test directory descendent upload', async () => {
       createFsStructure();
 
-      MockRequest.onPost(MockRequest.getApiUrl('/target')).reply(201);
-      MockRequest.onPost(MockRequest.getApiUrl('/target/test')).reply(201);
-      MockRequest.onPost(MockRequest.getApiUrl('/target/test/dir')).reply(201);
-      MockRequest.onPost(MockRequest.getApiUrl(`/target/test/dir/${SUBDIR_ENCODED}`)).reply(201);
-      MockRequest.onPost(MockRequest.getApiUrl(`/target/test/dir/${SUBDIR_ENCODED}/subsubdir`)).reply(201);
-      MockRequest.onPost(MockRequest.getApiUrl('/target/test/file')).reply(201);
+      addCreateDirectory(HOST, '/target');
+      addCreateDirectory(HOST, '/target/test');
+      addCreateDirectory(HOST, '/target/test/dir');
+      addCreateDirectory(HOST, `/target/test/dir/${SUBDIR_ENCODED}`);
+      addCreateDirectory(HOST, `/target/test/dir/${SUBDIR_ENCODED}/subsubdir`);
+      addCreateDirectory(HOST, '/target/test/file');
 
-      MockRequest.addDirectUpload('/target');
-      MockRequest.addDirectUpload('/target/test/dir');
-      MockRequest.addDirectUpload(`/target/test/dir/${SUBDIR_ENCODED}`);
-      MockRequest.addDirectUpload(`/target/test/dir/${SUBDIR_ENCODED}/subsubdir`);
-      MockRequest.addDirectUpload('/target/test/file');
+      addDirectUpload(HOST, '/target/test/dir', [
+        '3',
+        '4',
+      ]);
+
+      addDirectUpload(HOST, '/target', [
+        '吏',
+      ]);
+
+      addDirectUpload(HOST, '/target/test/file', [
+        '2',
+        '吏',
+      ]);
+
+      addDirectUpload(HOST, '/target/test/dir/sub吏dir', [
+        '5',
+        '6',
+      ]);
+
+      addDirectUpload(HOST, '/target/test/dir/sub吏dir/subsubdir', [
+        '7',
+        '8',
+      ]);
 
       const uploadOptions = new FileSystemUploadOptions()
-        .withUrl(MockRequest.getUrl('/target'))
-        .withBasicAuth('testauth')
+        .withUrl(`${HOST}/target`)
         .withHttpRetryCount(1)
         .withHttpRetryDelay(10)
         .withDeepUpload(true);
@@ -307,7 +324,7 @@ describe('FileSystemUpload Tests', () => {
       ]);
 
       verifyResult(result, {
-        host: 'http://localhost',
+        host: HOST,
         totalFiles: 9,
         totalCompleted: 9,
         totalTime: result.totalTime,
@@ -322,161 +339,182 @@ describe('FileSystemUpload Tests', () => {
           retryErrors: [],
         }, {
           elapsedTime: result.createdFolders[1].elapsedTime,
-          folderPath: '/content/dam/target/test',
+          folderPath: '/target/test',
           folderTitle: 'test',
           retryErrors: [],
         }, {
           elapsedTime: result.createdFolders[2].elapsedTime,
-          folderPath: '/content/dam/target/test/dir',
+          folderPath: '/target/test/dir',
           folderTitle: 'dir',
           retryErrors: [],
         }, {
           elapsedTime: result.createdFolders[3].elapsedTime,
-          folderPath: '/content/dam/target/test/file',
+          folderPath: '/target/test/file',
           folderTitle: 'file',
           retryErrors: [],
         }, {
           elapsedTime: result.createdFolders[4].elapsedTime,
-          folderPath: '/content/dam/target/test/dir/sub吏dir',
+          folderPath: '/target/test/dir/sub吏dir',
           folderTitle: 'sub吏dir',
           retryErrors: [],
         }, {
           elapsedTime: result.createdFolders[5].elapsedTime,
-          folderPath: '/content/dam/target/test/dir/sub吏dir/subsubdir',
+          folderPath: '/target/test/dir/sub吏dir/subsubdir',
           folderTitle: 'subsubdir',
           retryErrors: [],
         }],
         detailedResult: [{
-          fileUrl: 'http://localhost/content/dam/target/test/dir/3',
+          fileUrl: `${HOST}/target/test/dir/3`,
           fileSize: 8,
           filePath: '/test/dir/3',
           result: {
             fileName: '3',
             fileSize: 8,
-            targetFolder: '/content/dam/target/test/dir',
-            targetFile: '/content/dam/target/test/dir/3',
-            mimeType: null,
+            targetFolder: '/target/test/dir',
+            targetFile: '/target/test/dir/3',
+            mimeType: 'application/octet-stream',
+            sourceFile: '/test/dir/3',
+            sourceFolder: '/test/dir',
           },
         }, {
-          fileUrl: 'http://localhost/content/dam/target/test/dir/4',
+          fileUrl: `${HOST}/target/test/dir/4`,
           fileSize: 7,
           filePath: '/test/dir/4',
           result: {
             fileName: '4',
             fileSize: 7,
-            targetFolder: '/content/dam/target/test/dir',
-            targetFile: '/content/dam/target/test/dir/4',
-            mimeType: null,
+            targetFolder: '/target/test/dir',
+            targetFile: '/target/test/dir/4',
+            mimeType: 'application/octet-stream',
+            sourceFile: '/test/dir/4',
+            sourceFolder: '/test/dir',
           },
         }, {
-          fileUrl: 'http://localhost/content/dam/target/test/file/2',
+          fileUrl: `${HOST}/target/test/file/2`,
           fileSize: 10,
           filePath: '/test/file/2',
           result: {
             fileName: '2',
             fileSize: 10,
-            targetFolder: '/content/dam/target/test/file',
-            targetFile: '/content/dam/target/test/file/2',
-            mimeType: null,
+            targetFolder: '/target/test/file',
+            targetFile: '/target/test/file/2',
+            mimeType: 'application/octet-stream',
+            sourceFile: '/test/file/2',
+            sourceFolder: '/test/file',
           },
         }, {
-          fileUrl: 'http://localhost/content/dam/target/test/file/%E5%90%8F',
+          fileUrl: `${HOST}/target/test/file/%E5%90%8F`,
           fileSize: 9,
           filePath: '/test/file/吏',
           result: {
             fileName: '吏',
             fileSize: 9,
-            targetFolder: '/content/dam/target/test/file',
-            targetFile: '/content/dam/target/test/file/吏',
-            mimeType: null,
+            targetFolder: '/target/test/file',
+            targetFile: '/target/test/file/吏',
+            mimeType: 'application/octet-stream',
+            sourceFile: '/test/file/吏',
+            sourceFolder: '/test/file',
           },
         }, {
-          fileUrl: 'http://localhost/content/dam/target/test/dir/sub%E5%90%8Fdir/5',
+          fileUrl: `${HOST}/target/test/dir/sub%E5%90%8Fdir/5`,
           fileSize: 5,
           filePath: '/test/dir/sub吏dir/5',
           result: {
             fileName: '5',
             fileSize: 5,
-            targetFolder: '/content/dam/target/test/dir/sub吏dir',
-            targetFile: '/content/dam/target/test/dir/sub吏dir/5',
-            mimeType: null,
+            targetFolder: '/target/test/dir/sub吏dir',
+            targetFile: '/target/test/dir/sub吏dir/5',
+            mimeType: 'application/octet-stream',
+            sourceFile: '/test/dir/sub吏dir/5',
+            sourceFolder: '/test/dir/sub吏dir',
           },
         }, {
-          fileUrl: 'http://localhost/content/dam/target/test/dir/sub%E5%90%8Fdir/6',
+          fileUrl: `${HOST}/target/test/dir/sub%E5%90%8Fdir/6`,
           fileSize: 6,
           filePath: '/test/dir/sub吏dir/6',
           result: {
             fileName: '6',
             fileSize: 6,
-            targetFolder: '/content/dam/target/test/dir/sub吏dir',
-            targetFile: '/content/dam/target/test/dir/sub吏dir/6',
-            mimeType: null,
+            targetFolder: '/target/test/dir/sub吏dir',
+            targetFile: '/target/test/dir/sub吏dir/6',
+            mimeType: 'application/octet-stream',
+            sourceFile: '/test/dir/sub吏dir/6',
+            sourceFolder: '/test/dir/sub吏dir',
           },
         }, {
-          fileUrl: 'http://localhost/content/dam/target/test/dir/sub%E5%90%8Fdir/subsubdir/7',
+          fileUrl: `${HOST}/target/test/dir/sub%E5%90%8Fdir/subsubdir/7`,
           fileSize: 3,
           filePath: '/test/dir/sub吏dir/subsubdir/7',
           result: {
             fileName: '7',
             fileSize: 3,
-            targetFolder: '/content/dam/target/test/dir/sub吏dir/subsubdir',
-            targetFile: '/content/dam/target/test/dir/sub吏dir/subsubdir/7',
-            mimeType: null,
+            targetFolder: '/target/test/dir/sub吏dir/subsubdir',
+            targetFile: '/target/test/dir/sub吏dir/subsubdir/7',
+            mimeType: 'application/octet-stream',
+            sourceFile: '/test/dir/sub吏dir/subsubdir/7',
+            sourceFolder: '/test/dir/sub吏dir/subsubdir',
           },
         }, {
-          fileUrl: 'http://localhost/content/dam/target/test/dir/sub%E5%90%8Fdir/subsubdir/8',
+          fileUrl: `${HOST}/target/test/dir/sub%E5%90%8Fdir/subsubdir/8`,
           fileSize: 2,
           filePath: '/test/dir/sub吏dir/subsubdir/8',
           result: {
             fileName: '8',
             fileSize: 2,
-            targetFolder: '/content/dam/target/test/dir/sub吏dir/subsubdir',
-            targetFile: '/content/dam/target/test/dir/sub吏dir/subsubdir/8',
-            mimeType: null,
+            targetFolder: '/target/test/dir/sub吏dir/subsubdir',
+            targetFile: '/target/test/dir/sub吏dir/subsubdir/8',
+            mimeType: 'application/octet-stream',
+            sourceFile: '/test/dir/sub吏dir/subsubdir/8',
+            sourceFolder: '/test/dir/sub吏dir/subsubdir',
           },
         }, {
-          fileUrl: 'http://localhost/content/dam/target/%E5%90%8F',
+          fileUrl: `${HOST}/target/%E5%90%8F`,
           fileSize: 9,
           filePath: '/test/file/吏',
           result: {
             fileName: '吏',
             fileSize: 9,
-            targetFolder: '/content/dam/target',
-            targetFile: '/content/dam/target/吏',
-            mimeType: null,
+            targetFolder: '/target',
+            targetFile: '/target/吏',
+            mimeType: 'application/octet-stream',
+            sourceFile: '/test/file/吏',
+            sourceFolder: '/test/file',
           },
         }],
       });
 
-      const postedUrls = buildPostLookup();
-      should(Object.keys(postedUrls).length).be.exactly(6);
-      should(postedUrls[MockRequest.getApiUrl('/target')]).be.exactly(1);
-      should(postedUrls[MockRequest.getApiUrl('/target/test')]).be.exactly(1);
-      should(postedUrls[MockRequest.getApiUrl('/target/test/dir')]).be.exactly(1);
-      should(postedUrls[MockRequest.getApiUrl('/target/test/file')]).be.exactly(1);
-      should(postedUrls[MockRequest.getApiUrl(`/target/test/dir/${SUBDIR_ENCODED}`)]).be.exactly(1);
-      should(postedUrls[MockRequest.getApiUrl(`/target/test/dir/${SUBDIR_ENCODED}/subsubdir`)]).be.exactly(1);
+      should(getFolderCreates()).deepEqual([
+        getFolderRequest('/api/assets/target', 'target'),
+        getFolderRequest('/api/assets/target/test', 'test'),
+        getFolderRequest('/api/assets/target/test/dir', 'dir'),
+        getFolderRequest('/api/assets/target/test/file', 'file'),
+        getFolderRequest(`/api/assets/target/test/dir/${SUBDIR_ENCODED}`, 'sub吏dir'),
+        getFolderRequest(`/api/assets/target/test/dir/${SUBDIR_ENCODED}/subsubdir`, 'subsubdir'),
+      ]);
 
-      const directUploads = MockRequest.getDirectUploads();
-      should(directUploads.length).be.exactly(1);
+      const {
+        inits = [],
+        parts = [],
+        completes = [],
+      } = getDirectBinaryUploads();
+      should(inits.length >= 5).be.ok();
+      should(parts.length).be.exactly(9);
+      should(completes.length).be.exactly(9);
+      should(parts[0].uri).be.exactly('/target/test/dir/3');
+      should(parts[1].uri).be.exactly('/target/test/dir/4');
+      should(parts[2].uri).be.exactly('/target/test/file/2');
+      should(parts[3].uri).be.exactly('/target/test/file/%E5%90%8F');
+      should(parts[4].uri).be.exactly('/target/test/dir/sub%E5%90%8Fdir/5');
+      should(parts[5].uri).be.exactly('/target/test/dir/sub%E5%90%8Fdir/6');
+      should(parts[6].uri).be.exactly('/target/test/dir/sub%E5%90%8Fdir/subsubdir/7');
+      should(parts[7].uri).be.exactly('/target/test/dir/sub%E5%90%8Fdir/subsubdir/8');
+      should(parts[8].uri).be.exactly('/target/%E5%90%8F');
 
-      const { uploadFiles } = directUploads[0];
-      should(uploadFiles.length).be.exactly(9);
-      should(uploadFiles[0].fileUrl).be.exactly(MockRequest.getUrl('/target/test/dir/3'));
-      should(uploadFiles[1].fileUrl).be.exactly(MockRequest.getUrl('/target/test/dir/4'));
-      should(uploadFiles[2].fileUrl).be.exactly(MockRequest.getUrl('/target/test/file/2'));
-      should(uploadFiles[3].fileUrl).be.exactly(MockRequest.getUrl('/target/test/file/%E5%90%8F'));
-      should(uploadFiles[4].fileUrl).be.exactly(MockRequest.getUrl('/target/test/dir/sub%E5%90%8Fdir/5'));
-      should(uploadFiles[5].fileUrl).be.exactly(MockRequest.getUrl('/target/test/dir/sub%E5%90%8Fdir/6'));
-      should(uploadFiles[6].fileUrl).be.exactly(MockRequest.getUrl('/target/test/dir/sub%E5%90%8Fdir/subsubdir/7'));
-      should(uploadFiles[7].fileUrl).be.exactly(MockRequest.getUrl('/target/test/dir/sub%E5%90%8Fdir/subsubdir/8'));
-      should(uploadFiles[8].fileUrl).be.exactly(MockRequest.getUrl('/target/%E5%90%8F'));
+      should(getEvent('filestart', `/target/${ASSET1}`)).be.ok();
+      should(getEvent('fileend', `/target/${ASSET1}`)).be.ok();
 
-      should(getEvent('filestart', `/content/dam/target/${ASSET1}`)).be.ok();
-      should(getEvent('fileend', `/content/dam/target/${ASSET1}`)).be.ok();
-
-      should(getEvent('filestart', `/content/dam/target/test/dir/${SUBDIR}/5`)).be.ok();
-      should(getEvent('fileend', `/content/dam/target/test/dir/${SUBDIR}/5`)).be.ok();
+      should(getEvent('filestart', `/target/test/dir/${SUBDIR}/5`)).be.ok();
+      should(getEvent('fileend', `/target/test/dir/${SUBDIR}/5`)).be.ok();
     });
 
     it('test upload empty directory', async () => {
@@ -489,17 +527,16 @@ describe('FileSystemUpload Tests', () => {
       };
       MockFs(structure);
       const uploadOptions = new FileSystemUploadOptions()
-        .withUrl(MockRequest.getUrl('/target'))
-        .withBasicAuth('testauth')
+        .withUrl(`${HOST}/target`)
         .withHttpRetryCount(1)
         .withHttpRetryDelay(10)
         .withDeepUpload(true);
 
-      MockRequest.onPost(MockRequest.getApiUrl('/target')).reply(201);
-      MockRequest.onPost(MockRequest.getApiUrl('/target/test')).reply(201);
-      MockRequest.onPost(MockRequest.getApiUrl('/target/test/dir')).reply(201);
-      MockRequest.onPost(MockRequest.getApiUrl('/target/test/dir/subdir')).reply(201);
-      MockRequest.onPost(MockRequest.getApiUrl('/target/test/dir/subdir/subsubdir')).reply(201);
+      addCreateDirectory(HOST, '/target');
+      addCreateDirectory(HOST, '/target/test');
+      addCreateDirectory(HOST, '/target/test/dir');
+      addCreateDirectory(HOST, '/target/test/dir/subdir');
+      addCreateDirectory(HOST, '/target/test/dir/subdir/subsubdir');
 
       const fileSystemUpload = new FileSystemUpload(getTestOptions());
       monitorEvents(fileSystemUpload);
@@ -508,18 +545,19 @@ describe('FileSystemUpload Tests', () => {
       ]);
       should(result).be.ok();
 
-      const postedUrls = buildPostLookup();
-      should(Object.keys(postedUrls).length).be.exactly(5);
-      should(postedUrls[MockRequest.getApiUrl('/target')]).be.exactly(1);
-      should(postedUrls[MockRequest.getApiUrl('/target/test')]).be.exactly(1);
-      should(postedUrls[MockRequest.getApiUrl('/target/test/dir')]).be.exactly(1);
-      should(postedUrls[MockRequest.getApiUrl('/target/test/dir/subdir')]).be.exactly(1);
-      should(postedUrls[MockRequest.getApiUrl('/target/test/dir/subdir/subsubdir')]).be.exactly(1);
+      should(getFolderCreates()).deepEqual([
+        getFolderRequest('/api/assets/target', 'target'),
+        getFolderRequest('/api/assets/target/test', 'test'),
+        getFolderRequest('/api/assets/target/test/dir', 'dir'),
+        getFolderRequest('/api/assets/target/test/dir/subdir', 'subdir'),
+        getFolderRequest('/api/assets/target/test/dir/subdir/subsubdir', 'subsubdir'),
+      ]);
+
       should(getFolderEvent('foldercreated', '/content/dam/target')).be.ok();
-      should(getFolderEvent('foldercreated', '/content/dam/target/test')).be.ok();
-      should(getFolderEvent('foldercreated', '/content/dam/target/test/dir')).be.ok();
-      should(getFolderEvent('foldercreated', '/content/dam/target/test/dir/subdir')).be.ok();
-      should(getFolderEvent('foldercreated', '/content/dam/target/test/dir/subdir/subsubdir')).be.ok();
+      should(getFolderEvent('foldercreated', '/target/test')).be.ok();
+      should(getFolderEvent('foldercreated', '/target/test/dir')).be.ok();
+      should(getFolderEvent('foldercreated', '/target/test/dir/subdir')).be.ok();
+      should(getFolderEvent('foldercreated', '/target/test/dir/subdir/subsubdir')).be.ok();
     });
   });
 });

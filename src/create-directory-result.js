@@ -79,8 +79,8 @@ class CreateDirectoryResult extends HttpResult {
    * @returns {number} Time span in milliseconds.
    */
   getCreateTime() {
-    if (this.response && this.response.getElapsedTime) {
-      return this.response.getElapsedTime();
+    if (this.response && this.response.cloudClient) {
+      return this.response.cloudClient.requestTime;
     }
     return 0;
   }

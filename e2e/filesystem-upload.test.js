@@ -21,7 +21,6 @@ const {
   setCredentials,
   doesAemPathExist,
   deleteAemPath,
-  getHttpClient,
   getPathTitle,
   createAemFolder,
   getAemEndpoint,
@@ -75,16 +74,16 @@ describe('FileSystemUpload end-to-end tests', function () {
     return hasStart && hasEnd;
   }
 
-  async function verifyExistsInAemAndHasEvents(httpClient, uploadOptions, filePath) {
-    const exists = await doesAemPathExist(httpClient, uploadOptions, filePath);
+  async function verifyExistsInAemAndHasEvents(uploadOptions, filePath) {
+    const exists = await doesAemPathExist(uploadOptions, filePath);
     const hasEvents = hasStartAndStopEvents(uploadOptions.getUrl(), filePath);
     should(exists).be.ok();
     should(hasEvents).be.ok();
   }
 
-  async function verifyExistsInAemAndHasTitle(httpClient, uploadOptions, filePath, title) {
-    should(await doesAemPathExist(httpClient, uploadOptions, filePath)).be.ok();
-    should(await getPathTitle(httpClient, uploadOptions, filePath)).be.exactly(title);
+  async function verifyExistsInAemAndHasTitle(uploadOptions, filePath, title) {
+    should(await doesAemPathExist(uploadOptions, filePath)).be.ok();
+    should(await getPathTitle(uploadOptions, filePath)).be.exactly(title);
   }
 
   beforeEach(() => {
@@ -128,7 +127,6 @@ describe('FileSystemUpload end-to-end tests', function () {
 
     setCredentials(uploadOptions);
 
-    const httpClient = getHttpClient(uploadOptions);
     const fileSystemUpload = new FileSystemUpload(getTestOptions());
 
     monitorEvents(fileSystemUpload);
@@ -159,15 +157,15 @@ describe('FileSystemUpload end-to-end tests', function () {
       ],
     });
 
-    await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/climber-ferrata-la-torre-di-toblin.jpg');
-    await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/skiing_1.jpg');
-    await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/freeride.jpg');
-    await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/freeride-steep.jpg');
-    await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/ice-climbing.jpg');
-    await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, `/${ENCODED_ASSET1}`);
-    should(await doesAemPathExist(httpClient, uploadOptions, '/dir-1')).not.be.ok();
+    await verifyExistsInAemAndHasEvents(uploadOptions, '/climber-ferrata-la-torre-di-toblin.jpg');
+    await verifyExistsInAemAndHasEvents(uploadOptions, '/skiing_1.jpg');
+    await verifyExistsInAemAndHasEvents(uploadOptions, '/freeride.jpg');
+    await verifyExistsInAemAndHasEvents(uploadOptions, '/freeride-steep.jpg');
+    await verifyExistsInAemAndHasEvents(uploadOptions, '/ice-climbing.jpg');
+    await verifyExistsInAemAndHasEvents(uploadOptions, `/${ENCODED_ASSET1}`);
+    should(await doesAemPathExist(uploadOptions, '/dir-1')).not.be.ok();
 
-    return deleteAemPath(httpClient, uploadOptions);
+    return deleteAemPath(uploadOptions);
   });
 
   it('deep upload test', async () => {
@@ -178,7 +176,6 @@ describe('FileSystemUpload end-to-end tests', function () {
 
     setCredentials(uploadOptions);
 
-    const httpClient = getHttpClient(uploadOptions);
     const fileSystemUpload = new FileSystemUpload(getTestOptions());
 
     monitorEvents(fileSystemUpload);
@@ -188,7 +185,10 @@ describe('FileSystemUpload end-to-end tests', function () {
       Path.join(__dirname, 'images/climber-ferrata-la-torre-di-toblin.jpg'),
       Path.join(__dirname, 'images/Dir 1/subdir1/skiing_1.jpg'),
     ]);
-
+console.log(JSON.stringify({
+  uploadResult,
+  events,
+}, null, 2));
     verifyE2eResult(targetFolder, uploadResult, {
       host: getAemEndpoint(),
       totalFiles: 13,
@@ -223,33 +223,33 @@ describe('FileSystemUpload end-to-end tests', function () {
     });
 
     // files supplied directly
-    await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/climber-ferrata-la-torre-di-toblin.jpg');
-    await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/skiing_1.jpg');
+    await verifyExistsInAemAndHasEvents(uploadOptions, '/climber-ferrata-la-torre-di-toblin.jpg');
+    await verifyExistsInAemAndHasEvents(uploadOptions, '/skiing_1.jpg');
 
     // images
-    await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/images/climber-ferrata-la-torre-di-toblin.jpg');
-    await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/images/Freeride-extreme.jpg');
-    await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/images/freeride-siberia.jpg');
+    await verifyExistsInAemAndHasEvents(uploadOptions, '/images/climber-ferrata-la-torre-di-toblin.jpg');
+    await verifyExistsInAemAndHasEvents(uploadOptions, '/images/Freeride-extreme.jpg');
+    await verifyExistsInAemAndHasEvents(uploadOptions, '/images/freeride-siberia.jpg');
 
     // images/dir1
-    await verifyExistsInAemAndHasTitle(httpClient, uploadOptions, '/images/dir-1', 'Dir 1');
-    await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/images/dir-1/freeride.jpg');
-    await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/images/dir-1/freeride-steep.jpg');
-    await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/images/dir-1/ice-climbing.jpg');
-    await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, `/images/dir-1/${ENCODED_ASSET1}`);
+    await verifyExistsInAemAndHasTitle(uploadOptions, '/images/dir-1', 'Dir 1');
+    await verifyExistsInAemAndHasEvents(uploadOptions, '/images/dir-1/freeride.jpg');
+    await verifyExistsInAemAndHasEvents(uploadOptions, '/images/dir-1/freeride-steep.jpg');
+    await verifyExistsInAemAndHasEvents(uploadOptions, '/images/dir-1/ice-climbing.jpg');
+    await verifyExistsInAemAndHasEvents(uploadOptions, `/images/dir-1/${ENCODED_ASSET1}`);
 
     // images/dir1/subdir1
-    await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/images/dir-1/subdir1/ski touring.jpg');
-    await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/images/dir-1/subdir1/skiing_1.jpg');
-    await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/images/dir-1/subdir1/skiing_2.jpg');
+    await verifyExistsInAemAndHasEvents(uploadOptions, '/images/dir-1/subdir1/ski touring.jpg');
+    await verifyExistsInAemAndHasEvents(uploadOptions, '/images/dir-1/subdir1/skiing_1.jpg');
+    await verifyExistsInAemAndHasEvents(uploadOptions, '/images/dir-1/subdir1/skiing_2.jpg');
 
     // images/dir1/folder_♂♀°′″℃＄￡‰§№￠℡㈱
-    await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, `/images/dir-1/${ENCODED_FOLDER}/${ENCODED_ASSET2}`);
+    await verifyExistsInAemAndHasEvents(uploadOptions, `/images/dir-1/${ENCODED_FOLDER}/${ENCODED_ASSET2}`);
 
     should(hasEventCheck('foldercreated', targetFolder, '/images/dir-1/subdir2', (data) => data.targetFolder)).be.ok();
-    should(await doesAemPathExist(httpClient, uploadOptions, '/images/dir-1/subdir2')).be.ok();
+    should(await doesAemPathExist(uploadOptions, '/images/dir-1/subdir2')).be.ok();
 
-    return deleteAemPath(httpClient, uploadOptions);
+    return deleteAemPath(uploadOptions);
   });
 
   it('zero byte file test', async () => {
@@ -279,9 +279,7 @@ describe('FileSystemUpload end-to-end tests', function () {
 
     setCredentials(uploadOptions);
 
-    const httpClient = getHttpClient(uploadOptions);
-
-    await createAemFolder(httpClient, uploadOptions, folderName);
+    await createAemFolder(uploadOptions, folderName);
 
     const fileSystemUpload = new FileSystemUpload(getTestOptions());
 
@@ -296,15 +294,15 @@ describe('FileSystemUpload end-to-end tests', function () {
 
     should(uploadResult).be.ok();
 
-    await verifyExistsInAemAndHasEvents(httpClient, uploadOptions, '/climber-ferrata-la-torre-di-toblin.jpg');
+    await verifyExistsInAemAndHasEvents(uploadOptions, '/climber-ferrata-la-torre-di-toblin.jpg');
 
     const doubleEncodedUrl = `${targetFolder}/${encodeURI(encodeURI(folderName))}`;
     uploadOptions.withUrl(doubleEncodedUrl);
 
-    const doubleEncodedExists = await doesAemPathExist(httpClient, uploadOptions, '/climber-ferrata-la-torre-di-toblin.jpg');
+    const doubleEncodedExists = await doesAemPathExist(uploadOptions, '/climber-ferrata-la-torre-di-toblin.jpg');
     should(doubleEncodedExists).not.be.ok();
 
     uploadOptions.withUrl(uploadUrl);
-    return deleteAemPath(httpClient, uploadOptions);
+    return deleteAemPath(uploadOptions);
   });
 });

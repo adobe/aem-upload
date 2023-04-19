@@ -10,7 +10,35 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
+const nock = require('nock');
 const should = require('should');
+const mime = require('mime');
+
+/**
+ * @typedef {DirectBinaryUploadInfo}
+ * @property {Array} inits The init calls that were made by the test utils.
+ * @property {Array} parts The part calls that were made by the test utils.
+ * @property {Array} completes The complete calls that were made by the test utils.
+ */
+
+/**
+ * @type {DirectBinaryUploadInfo}
+ */
+let uploadInfo;
+let folderInfo;
+let firstCheck = true;
+
+function initializeUploadInfo() {
+  firstCheck = true;
+  uploadInfo = {
+    inits: [],
+    parts: [],
+    completes: [],
+  };
+  folderInfo = [];
+}
+
+initializeUploadInfo();
 
 function getConsoleLogger() {
   return {
@@ -158,4 +186,126 @@ module.exports.verifyResult = (result, expected) => {
 
   const { createdFolders = [] } = toVerify;
   createdFolders.forEach((folder) => should(folder.elapsedTime !== undefined).be.ok());
+};
+
+/**
+ * Clears all HTTP mocks created by the test utils.
+ */
+module.exports.resetHttp = () => {
+  initializeUploadInfo();
+  nock.cleanAll();
+};
+
+/**
+ * Retrieves a value indicating whether all of the HTTP mocks created by the test
+ * utils have been used.
+ * @returns {boolean} True if all mocks have been used, false otherwise.
+ */
+module.exports.allHttpUsed = () => nock.isDone();
+
+/**
+ * Retrieves information about all of the mocked direct binary uploads that were
+ * performed through the test utils.
+ * @returns {DirectBinaryUploadInfo} Upload information.
+ */
+module.exports.getDirectBinaryUploads = () => uploadInfo;
+
+/**
+ * Retrieves information about all of the mocked folder creates that were
+ * performed through the test utils.
+ * @returns {Array} Upload information.
+ */
+module.exports.getFolderCreates = () => folderInfo;
+
+/**
+ * Creates mock HTTP requests necessary for successfully uploading using AEM's direct
+ * binary upload process.
+ *
+ * @param {string} host Host on which the direct upload will be registered.
+ * @param {string} targetFolder Full AEM folder path to which upload will be registered.
+ * @param {Array<string>} fileNames Names of files to be uploaded.
+ * @param {object} requests Simple object to which request information will be
+ *  added.
+ */
+module.exports.addDirectUpload = (
+  host,
+  targetFolder,
+  fileNames,
+) => {
+  nock.disableNetConnect();
+
+  const files = fileNames.map((fileName) => {
+    const partPath = `${encodeURI(targetFolder)}/${encodeURI(fileName)}`;
+    const partUrl = `${host}${partPath}`;
+
+    // success reply for part
+    nock(host)
+      .put(partPath)
+      .reply(201, (uri, body) => uploadInfo.parts.push({ uri, body }));
+
+    return {
+      fileName,
+      mimeType: mime.getType(fileName),
+      uploadToken: `upload-token-${targetFolder}`,
+      uploadURIs: [partUrl],
+      minPartSize: 256,
+      maxPartSize: 2048,
+    };
+  });
+
+  const completeURI = `${encodeURI(targetFolder)}.completeUpload.json`;
+  const initiatePath = `${encodeURI(targetFolder)}.initiateUpload.json`;
+
+  // success reply for init
+  nock(host)
+    .post(initiatePath)
+    .times(firstCheck ? 2 : 1) // twice for direct binary access enabled check
+    .reply(201, (uri, body) => {
+      uploadInfo.inits.push({ uri, body });
+      return {
+        completeURI,
+        folderPath: targetFolder,
+        files,
+      };
+    });
+
+  // success reply for complete
+  nock(host)
+    .post(completeURI)
+    .times(fileNames.length)
+    .reply(201, (uri, body) => {
+      uploadInfo.completes.push({ uri, body });
+      return {};
+    });
+  firstCheck = false;
+};
+
+/**
+ * Create mock HTTP requests necessary for a directory creation request.
+ *
+ * @param {string} host Host on which the directory will be created.
+ * @param {string} directoryPath Full path to the directory to create.
+ * @param {number} [status=201] Status code that will be included in the response.
+ */
+module.exports.addCreateDirectory = (host, directoryPath, status = 201) => {
+  nock.disableNetConnect();
+
+  nock(host)
+    .post(`/api/assets${directoryPath}`)
+    .reply(status, (uri, body) => folderInfo.push({ uri, body }));
+};
+
+/**
+ * Parses a raw query string and converts it to a simple javascript object whose keys
+ * are param names, and values are the param's value.
+ * @param {string} query Query value to parse.
+ * @returns {URLSearchParams} Parsed query parameters.
+ */
+module.exports.parseQuery = (query) => {
+  const params = new URLSearchParams(query);
+  const parsed = {};
+  params.forEach((value, key) => {
+    parsed[key] = value;
+  });
+  return parsed;
 };

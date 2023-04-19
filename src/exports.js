@@ -15,7 +15,6 @@ const DirectBinaryUploadOptions = require('./direct-binary-upload-options');
 const DirectBinaryUploadErrorCodes = require('./error-codes');
 const FileSystemUpload = require('./filesystem-upload');
 const FileSystemUploadOptions = require('./filesystem-upload-options');
-const HttpProxy = require('./http-proxy');
 
 module.exports = {
   DirectBinaryUpload,
@@ -23,5 +22,4 @@ module.exports = {
   DirectBinaryUploadErrorCodes,
   FileSystemUpload,
   FileSystemUploadOptions,
-  HttpProxy,
 };

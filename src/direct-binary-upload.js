@@ -39,23 +39,6 @@ class DirectBinaryUpload extends UploadBase {
 
     return uploadResult.toJSON();
   }
-
-  /**
-   * Determines whether a given upload can be performed. If the upload is not possible then
-   * the method will throw an UploadError whose code specifies the reason why the upload
-   * cannot happen.
-   * @param {DirectBinaryUploadOptions} options Options for the proposed upload. See module
-   *  documentation for details.
-   */
-  // eslint-disable-next-line no-unused-vars, class-methods-use-this
-  async canUpload(options) {
-    // this is a legacy option, but leaving the method in place for backward compatibility.
-    // The library previously only worked if direct binary upload was enabled on AEM. However,
-    // the capabilities of node-httptransfer were updated so that it could upload using the
-    // create asset servlet if direct binary upload is not available. So the upload process
-    // will now work with any AEM instance, regardless of its configuration
-    return true;
-  }
 }
 
 module.exports = DirectBinaryUpload;

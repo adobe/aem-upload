@@ -24,14 +24,12 @@
   ],
   "bugs": "https://github.com/adobe/aem-upload",
   "dependencies": {
+    "@adobe/cloud-service-client": "^1.1.0",
     "@adobe/httptransfer": "^3.3.0",
     "async": "^3.2.0",
     "async-lock": "^1.2.8",
-    "axios": "^0.21.4",
-    "cookie": "^0.4.1",
     "filesize": "^4.2.1",
-    "http-proxy-agent": "^5.0.0",
-    "https-proxy-agent": "^5.0.1",
+    "node-fetch": "^2.6.9",
     "uuid": "^3.3.2"
   },
   "devDependencies": {
@@ -42,7 +40,6 @@
     "@babel/preset-stage-2": "^7.8.3",
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
-    "axios-mock-adapter": "^1.18.1",
     "conventional-changelog-eslint": "^3.0.9",
     "dotenv": "^8.2.0",
     "eslint": "^8.38.0",
@@ -52,6 +49,7 @@
     "mime": "^2.4.4",
     "mocha": "^10.2.0",
     "mock-fs": "^4.13.0",
+    "nock": "^13.3.0",
     "nyc": "14.1.1",
     "rimraf": "^3.0.2",
     "should": "^13.2.3",

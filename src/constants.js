@@ -63,3 +63,7 @@ module.exports.RegularExpressions = {
    */
   INVALID_ASSET_CHARACTERS_REGEX: /[#%{}?&]/g,
 };
+
+module.exports.HttpMethods = {
+  POST: 'POST',
+};
