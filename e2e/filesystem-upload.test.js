@@ -185,10 +185,7 @@ describe('FileSystemUpload end-to-end tests', function () {
       Path.join(__dirname, 'images/climber-ferrata-la-torre-di-toblin.jpg'),
       Path.join(__dirname, 'images/Dir 1/subdir1/skiing_1.jpg'),
     ]);
-console.log(JSON.stringify({
-  uploadResult,
-  events,
-}, null, 2));
+
     verifyE2eResult(targetFolder, uploadResult, {
       host: getAemEndpoint(),
       totalFiles: 13,

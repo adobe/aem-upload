@@ -6,6 +6,12 @@ This document will provide instructions for upgrading between breaking versions 
 
 Here are a few things to know when upgrading to version 2 of the library.
 
+### HTTP API Change
+
+Version 2 now uses the Fetch API when submitting HTTP requests (it previously used Axios). Note that this only applies to the process of creating folders; file uploads were already going through the Fetch API. This change brings the two operations inline with one another, and will allow consumers to more directly control the options that are used when the library submits HTTP requests.
+
+The options used by Fetch can be controlled through `DirectBinaryUploadOptions.withHttpOptions()`. All values provided through this method will be passed directly to the Fetch API.
+
 ### Upload Result
 
 The structure of the upload results provided by the library has changed. Previously, the result was a class instance containing various metrics about the upload process. In version 2, the class was changed to a simple javascript `object`.
@@ -66,3 +72,22 @@ Instead, remove `default`:
 // this will work:
 const AemUpload = require('@adobe/aem-upload');
 ```
+
+### Class Signature Changes
+
+The following classes have had breaking changes to their signatures.
+
+* DirectBinaryUpload
+  * `canUpload()` has been removed. The library will now automatically determine the type of upload that a target AEM instance requires, and use the appropriate algorithm.
+* DirectBinaryUploadOptions
+  * `withHeaders()` has been removed. Instead, consumers should use `withHttpOptions()` and include a `headers` property as described by the Fetch API.
+  * `withCookies()` has been removed. Instead, consumers should use `withHttpOptions()` and include a `Cookie` header in the `headers` property as described by the Fetch API.
+  * `withBasicAuth()` has been removed. Instead, consumers should use `withHttpOptions()` and include an `Authorization` header in the `headers` property as described by the Fetch API.
+  * `withAddContentLengthHeader()` has been removed. This method was deprecated, and has been non-functional and unneeded for a long time.
+  * `withHttpProxy()` has been removed. Instead, consumers should use `withHttpOptions()` and include proxy information (probably through the `agent` property) as described by the Fetch API.
+  * `getHeaders()` has been removed. Consumers can access the headers through the `getHttpOptions()` method.
+  * `addContentLengthHeader()` has been removed. This method was deprecated, and has been non-functional and unneeded for a long time.
+  * `getController()` has been removed. This method a means for cancelling in-progress uploads, but the cancel functionality has been non-functional for a long time. If your case requires the ability to cancel an upload, please submit an issue and provide details.
+  * `getHttpProxy()` has been removed. Consumers can access the proxy through the `getHttpOptions()` method.
+* HttpProxy
+  * This class has been removed and is no longer exported. Consumers are responsible for defining their own proxy configuration and providing it to the Fetch API through `DirectBinaryUploadOptions.withHttpOptions()`.
