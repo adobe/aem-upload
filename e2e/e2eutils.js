@@ -10,15 +10,12 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
+const fetch = require('node-fetch');
 const Path = require('path');
 // eslint-disable-next-line import/no-extraneous-dependencies
 const should = require('should');
 
 const testutils = require('../test/testutils');
-
-const { importFile, getTestOptions } = testutils;
-const HttpClient = importFile('http/http-client');
-const HttpRequest = importFile('http/http-request');
 
 // load .env values in the e2e folder, if any
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -44,21 +41,29 @@ module.exports.getAemEndpoint = () => {
 /**
  * Updates the given options to include authentication information required
  * to communicate with AEM.
- * @param {DirectBinaryUploadOptions} uploadOptions Will be updated with auth info.
+ * @param {import('../src/direct-binary-upload-options')} uploadOptions Will be updated with
+ *  auth info.
  */
 module.exports.setCredentials = (uploadOptions) => {
   const basic = process.env.BASIC_AUTH;
   const token = process.env.LOGIN_TOKEN;
+  const options = {};
 
-  if (basic) {
-    return uploadOptions.withBasicAuth(basic);
-  } if (token) {
-    return uploadOptions.withHeaders({
-      Cookie: token,
-    });
+  if (!basic && !token) {
+    throw new Error('Either BASIC_AUTH or LOGIN_TOKEN env variable must be set');
   }
 
-  throw new Error('Either BASIC_AUTH or LOGIN_TOKEN env variable must be set');
+  if (basic) {
+    options.headers = {
+      Authorization: `Basic ${Buffer.from(basic).toString('base64')}`,
+    };
+  } else {
+    options.headers = {
+      Cookie: token,
+    };
+  }
+
+  return uploadOptions.withHttpOptions(options);
 };
 
 /**
@@ -68,31 +73,46 @@ module.exports.setCredentials = (uploadOptions) => {
 module.exports.getTargetFolder = () => `${module.exports.getAemEndpoint()}/content/dam/aem-upload-e2e/test_${new Date().getTime()}`;
 
 /**
- * Retrieves an HTTP client that can be used to submit HTTP requests.
- * @param {DirectBinaryUploadOptions} uploadOptions Will be given as-is to the
- *  client.
- * @returns {HttpClient} A new client instance.
+ * Uses fetch to submit an HTTP request and provide a response.
+ * @param {string} url Full URL to which the request will be submitted.
+ * @param {import('../src/direct-binary-upload-options')} uploadOptions Options whose
+ *  information will be used to augment the request.
+ * @param {*} httpOptions Raw options to pass to fetch.
+ * @returns {Promise<fetch.Response>} Response to the request.
  */
-module.exports.getHttpClient = (uploadOptions) => new HttpClient(getTestOptions(), uploadOptions);
+async function submitRequest(url, uploadOptions, httpOptions = {}) {
+  const { headers: uploadHeaders = {} } = uploadOptions.getHttpOptions();
+  const { headers: optionHeaders = {} } = httpOptions;
+  const fetchOptions = {
+    ...uploadOptions.getHttpOptions(),
+    ...httpOptions,
+    headers: {
+      ...uploadHeaders,
+      ...optionHeaders,
+    },
+  };
+  const response = await fetch(url, fetchOptions);
+  if (!response.ok) {
+    throw new Error(`Unexpected status code ${response.status}`);
+  }
+  return response;
+}
 
 /**
  * Determines whether or not a given path exists in the target AEM endpoint.
- * @param {HttpClient} httpClient Will be used to submit HTTP requests.
  * @param {DirectBinaryUploadOptions} uploadOptions The options' URL will be used
  *  when querying AEM.
  * @param {string} relativePath Relative path (from the options's URL) to the item
  *  to check. Example: /folder/myasset.jpg.
  * @returns {boolean} True if the path exists, false otherwise.
  */
-module.exports.doesAemPathExist = async (httpClient, uploadOptions, relativePath) => {
+module.exports.doesAemPathExist = async (uploadOptions, relativePath) => {
   const headUrl = `${uploadOptions.getUrl().replace('/content/dam', '/api/assets')}${encodeURI(relativePath)}.json`;
 
-  const request = new HttpRequest(getTestOptions(), headUrl)
-    .withUploadOptions(uploadOptions)
-    .withMethod(HttpRequest.Method.HEAD);
-
   try {
-    await httpClient.submit(request);
+    await submitRequest(headUrl, uploadOptions, {
+      method: 'HEAD',
+    });
   } catch (e) {
     return false;
   }
@@ -101,7 +121,6 @@ module.exports.doesAemPathExist = async (httpClient, uploadOptions, relativePath
 
 /**
  * Retrieves the jcr:title property value for a given path.
- * @param {HttpClient} httpClient Will be used to submit HTTP requests.
  * @param {DirectBinaryUploadOptions} uploadOptions The options' URL will be used
  *  when querying AEM.
  * @param {string} relativePath Relative path (from the options's URL) to the item
@@ -109,54 +128,45 @@ module.exports.doesAemPathExist = async (httpClient, uploadOptions, relativePath
  * @returns {string} Value of the path's jcr:title property, or empty string if none
  *  found.
  */
-module.exports.getPathTitle = async (httpClient, uploadOptions, relativePath) => {
+module.exports.getPathTitle = async (uploadOptions, relativePath) => {
   const infoUrl = `${uploadOptions.getUrl().replace('/content/dam', '/api/assets')}${encodeURI(relativePath)}.json?showProperty=jcr:title`;
 
-  const request = new HttpRequest(getTestOptions(), infoUrl)
-    .withUploadOptions(uploadOptions);
-
-  const response = await httpClient.submit(request);
-  const { properties = {} } = response.getData();
+  const response = await submitRequest(infoUrl, uploadOptions);
+  const { properties = {} } = await response.json();
 
   return properties['jcr:title'] || '';
 };
 
 /**
  * Deletes a path from the target AEM instance.
- * @param {HttpClient} httpClient Will be used to submit HTTP requests.
  * @param {DirectBinaryUploadOptions} uploadOptions The options' URL will be used
  *  when deleting the path.
  * @param {string} relativePath Relative path (from the options's URL) to the item
  *  to delete. Example: /folder/myasset.jpg.
  */
-module.exports.deleteAemPath = async (httpClient, uploadOptions, relativePath = '') => {
+module.exports.deleteAemPath = async (uploadOptions, relativePath = '') => {
   const deleteUrl = `${uploadOptions.getUrl().replace('/content/dam', '/api/assets')}${relativePath}`;
 
-  const request = new HttpRequest(getTestOptions(), deleteUrl)
-    .withUploadOptions(uploadOptions)
-    .withMethod(HttpRequest.Method.DELETE);
-
-  return httpClient.submit(request);
+  return submitRequest(deleteUrl, uploadOptions, { method: 'DELETE' });
 };
 
-module.exports.createAemFolder = async (httpClient, uploadOptions, folderName) => {
+module.exports.createAemFolder = async (uploadOptions, folderName) => {
   const createUrl = `${uploadOptions.getUrl().replace('/content/dam', `/api/assets/${encodeURIComponent(folderName)}`)}`;
 
-  const data = JSON.stringify({
+  const data = {
     class: 'assetFolder',
     properties: {
       title: 'Test Folder',
     },
-  });
-  const request = new HttpRequest(getTestOptions(), createUrl)
-    .withUploadOptions(uploadOptions)
-    .withMethod(HttpRequest.Method.POST)
-    .withHeaders({
-      'content-type': 'application/json',
-    })
-    .withData(data, data.length);
+  };
 
-  return httpClient.submit(request);
+  return submitRequest(createUrl, uploadOptions, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
 };
 
 /**

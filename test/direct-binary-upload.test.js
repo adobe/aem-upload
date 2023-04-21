@@ -14,8 +14,15 @@ governing permissions and limitations under the License.
 
 const should = require('should');
 
-const { getTestOptions, verifyResult } = require('./testutils');
-const MockRequest = require('./mock-request');
+const {
+  getTestOptions,
+  verifyResult,
+  addDirectUpload,
+  getDirectBinaryUploads,
+  allHttpUsed,
+  resetHttp,
+  parseQuery,
+} = require('./testutils');
 const MockBlob = require('./mock-blob');
 
 const DirectBinaryUpload = require('../src/direct-binary-upload');
@@ -42,10 +49,12 @@ function verifyFile1Event(eventName, eventData, folderName = 'folder') {
   should(eventData.event).be.exactly(eventName);
   should(event.fileName).be.exactly('targetfile.jpg');
   should(event.fileSize).be.exactly(1024);
-  should(event.targetFolder).be.exactly(`/content/dam/target/${folderName}`);
-  should(event.targetFile).be.exactly(`/content/dam/target/${folderName}/targetfile.jpg`);
-  should(event.mimeType).be.exactly('image/jpeg');
+  should(event.targetFolder).be.exactly(`/target/${folderName}`);
+  should(event.targetFile).be.exactly(`/target/${folderName}/targetfile.jpg`);
 
+  if (eventName !== 'filestart') {
+    should(event.mimeType).be.exactly('image/jpeg');
+  }
   if (eventName === 'fileprogress') {
     should(event.transferred).be.greaterThan(0);
   }
@@ -59,10 +68,12 @@ function verifyFile2Event(eventName, eventData, folderName = 'folder') {
   should(eventData.event).be.exactly(eventName);
   should(event.fileName).be.exactly('targetfile2.jpg');
   should(event.fileSize).be.exactly(1999);
-  should(event.targetFolder).be.exactly(`/content/dam/target/${folderName}`);
-  should(event.targetFile).be.exactly(`/content/dam/target/${folderName}/targetfile2.jpg`);
-  should(event.mimeType).be.exactly('image/jpeg');
+  should(event.targetFolder).be.exactly(`/target/${folderName}`);
+  should(event.targetFile).be.exactly(`/target/${folderName}/targetfile2.jpg`);
 
+  if (eventName !== 'filestart') {
+    should(event.mimeType).be.exactly('image/jpeg');
+  }
   if (eventName === 'fileprogress') {
     should(event.transferred).be.greaterThan(0);
   }
@@ -95,17 +106,24 @@ function monitorEvents(upload) {
   });
 }
 
+const HOST = 'http://reallyfakehostforaemupload';
+
 describe('DirectBinaryUploadTest', () => {
   beforeEach(() => {
-    MockRequest.reset();
+    resetHttp();
     events = [];
+  });
+
+  afterEach(() => {
+    should(allHttpUsed()).be.ok();
+    resetHttp();
   });
 
   describe('uploadFiles', () => {
     it('direct upload smoke test', async () => {
-      MockRequest.addDirectUpload('/target/folder');
+      addDirectUpload(HOST, '/target/folder', getTestUploadFiles().map((file) => file.fileName));
       const options = new DirectBinaryUploadOptions()
-        .withUrl(MockRequest.getUrl('/target/folder'))
+        .withUrl(`${HOST}/target/folder`)
         .withUploadFiles(getTestUploadFiles())
         .withConcurrent(false);
 
@@ -115,22 +133,54 @@ describe('DirectBinaryUploadTest', () => {
       const result = await upload.uploadFiles(options);
       should(result).be.ok();
 
-      // verify that upload is correct
-      const directUploads = MockRequest.getDirectUploads();
-      should(directUploads.length).be.exactly(1);
-      should(directUploads[0].uploadFiles.length).be.exactly(2);
+      const {
+        inits = [],
+        parts = [],
+        completes = [],
+      } = getDirectBinaryUploads();
+      should(inits.length > 0).be.ok();
+      should(inits[inits.length - 1].uri).equal('/target/folder.initiateUpload.json');
 
-      const uploadFile1 = directUploads[0].uploadFiles[0];
-      const uploadFile2 = directUploads[0].uploadFiles[1];
+      should(parts).deepEqual([{
+        uri: '/target/folder/targetfile.jpg',
+        body: '0,1024,',
+      }, {
+        uri: '/target/folder/targetfile2.jpg',
+        body: '0,1999,',
+      }]);
 
-      should(uploadFile1.fileUrl).be.exactly(`${MockRequest.getUrl('/target/folder/targetfile.jpg')}`);
-      should(uploadFile1.fileSize).be.exactly(1024);
-      should(uploadFile2.fileUrl).be.exactly(`${MockRequest.getUrl('/target/folder/targetfile2.jpg')}`);
-      should(uploadFile2.fileSize).be.exactly(1999);
+      should(completes.length).equal(2);
+      should(completes[0].uri).equal('/target/folder.completeUpload.json');
+      should(completes[1].uri).equal('/target/folder.completeUpload.json');
+
+      const complete1 = parseQuery(completes[0].body);
+      const complete2 = parseQuery(completes[1].body);
+      should(complete1).deepEqual({
+        createVersion: 'false',
+        fileName: 'targetfile.jpg',
+        fileSize: '1024',
+        mimeType: 'image/jpeg',
+        replace: 'false',
+        uploadDuration: complete1.uploadDuration,
+        uploadToken: complete1.uploadToken,
+      });
+      should(complete2).deepEqual({
+        createVersion: 'false',
+        fileName: 'targetfile2.jpg',
+        fileSize: '1999',
+        mimeType: 'image/jpeg',
+        replace: 'false',
+        uploadDuration: complete2.uploadDuration,
+        uploadToken: complete2.uploadToken,
+      });
+      should(complete1.uploadDuration).be.ok();
+      should(complete1.uploadToken).be.ok();
+      should(complete2.uploadDuration).be.ok();
+      should(complete2.uploadToken).be.ok();
 
       // verify return value
       verifyResult(result, {
-        host: 'http://localhost',
+        host: HOST,
         totalFiles: 2,
         totalTime: result.totalTime,
         totalCompleted: 2,
@@ -138,26 +188,30 @@ describe('DirectBinaryUploadTest', () => {
         folderCreateSpent: 0,
         createdFolders: [],
         detailedResult: [{
-          fileUrl: 'http://localhost/content/dam/target/folder/targetfile.jpg',
+          fileUrl: `${HOST}/target/folder/targetfile.jpg`,
           fileSize: 1024,
           blob: '<provided>',
           result: {
             fileName: 'targetfile.jpg',
             fileSize: 1024,
-            targetFolder: '/content/dam/target/folder',
-            targetFile: '/content/dam/target/folder/targetfile.jpg',
+            targetFolder: '/target/folder',
+            targetFile: '/target/folder/targetfile.jpg',
             mimeType: 'image/jpeg',
+            sourceFile: '',
+            sourceFolder: '.',
           },
         }, {
-          fileUrl: 'http://localhost/content/dam/target/folder/targetfile2.jpg',
+          fileUrl: `${HOST}/target/folder/targetfile2.jpg`,
           fileSize: 1999,
           blob: '<provided>',
           result: {
             fileName: 'targetfile2.jpg',
             fileSize: 1999,
-            targetFolder: '/content/dam/target/folder',
-            targetFile: '/content/dam/target/folder/targetfile2.jpg',
+            targetFolder: '/target/folder',
+            targetFile: '/target/folder/targetfile2.jpg',
             mimeType: 'image/jpeg',
+            sourceFile: '',
+            sourceFolder: '.',
           },
         }],
         errors: [],
@@ -168,20 +222,20 @@ describe('DirectBinaryUploadTest', () => {
       should(events.length).be.exactly(8);
       should(events[0].event).be.exactly('fileuploadstart');
       verifyFile1Event('filestart', events[1]);
-      verifyFile1Event('fileprogress', events[2]);
-      verifyFile1Event('fileend', events[3]);
-      verifyFile2Event('filestart', events[4]);
-      verifyFile2Event('fileprogress', events[5]);
+      verifyFile2Event('filestart', events[2]);
+      verifyFile1Event('fileprogress', events[3]);
+      verifyFile2Event('fileprogress', events[4]);
+      verifyFile1Event('fileend', events[5]);
       verifyFile2Event('fileend', events[6]);
       should(events[7].event).be.exactly('fileuploadend');
     });
 
     it('progress events', async () => {
       const targetFolder = '/target/progress_events';
-      MockRequest.addDirectUpload(targetFolder);
+      addDirectUpload(HOST, targetFolder, getTestUploadFiles().map((file) => file.fileName));
 
       const options = new DirectBinaryUploadOptions()
-        .withUrl(MockRequest.getUrl(targetFolder))
+        .withUrl(`${HOST}${targetFolder}`)
         .withUploadFiles(getTestUploadFiles())
         .withConcurrent(false);
 
@@ -200,43 +254,22 @@ describe('DirectBinaryUploadTest', () => {
       should(events[0].data.totalSize).be.exactly(3023);
       should(events[1].event).be.exactly('filestart');
       should(events[1].data.fileName).be.exactly('targetfile.jpg');
-      should(events[2].event).be.exactly('fileprogress');
-      should(events[2].data.fileName).be.exactly('targetfile.jpg');
-      should(events[2].data.transferred).be.exactly(512);
-      should(events[3].event).be.exactly('fileend');
+      should(events[2].event).be.exactly('filestart');
+      should(events[2].data.fileName).be.exactly('targetfile2.jpg');
+      should(events[3].event).be.exactly('fileprogress');
       should(events[3].data.fileName).be.exactly('targetfile.jpg');
-
-      should(events[4].event).be.exactly('filestart');
+      should(events[3].data.transferred).be.exactly(1024);
+      should(events[4].event).be.exactly('fileprogress');
       should(events[4].data.fileName).be.exactly('targetfile2.jpg');
-      should(events[5].event).be.exactly('fileprogress');
-      should(events[5].data.fileName).be.exactly('targetfile2.jpg');
-      should(events[5].data.transferred).be.exactly(512);
+      should(events[4].data.transferred).be.exactly(1999);
+      should(events[5].event).be.exactly('fileend');
+      should(events[5].data.fileName).be.exactly('targetfile.jpg');
       should(events[6].event).be.exactly('fileend');
       should(events[6].data.fileName).be.exactly('targetfile2.jpg');
       should(events[7].event).be.exactly('fileuploadend');
       should(events[7].data.fileCount).be.exactly(2);
       should(events[7].data.totalSize).be.exactly(3023);
       should(events[7].data.result).be.ok();
-    });
-
-    it('direct binary not supported', async () => {
-      const targetFolder = '/target/folder_not_supported';
-      MockRequest.addDirectUpload(targetFolder);
-
-      const options = new DirectBinaryUploadOptions()
-        .withUrl(MockRequest.getUrl(targetFolder))
-        .withUploadFiles(getTestUploadFiles())
-        .withConcurrent(false)
-        .withHttpRetryCount(1);
-
-      const upload = new DirectBinaryUpload(getTestOptions());
-      await upload.canUpload(options);
-
-      MockRequest.onInit(targetFolder, () => new Promise((resolve) => {
-        resolve([501]);
-      }));
-
-      await upload.canUpload(options);
     });
   });
 });

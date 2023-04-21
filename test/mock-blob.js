@@ -11,38 +11,38 @@ governing permissions and limitations under the License.
 */
 
 const { EventEmitter } = require('events');
-const util = require('util');
 const { Readable } = require('stream');
 
-function MockBlob() {
-  EventEmitter.call(this);
-  this.slices = [];
+class MockBlob extends EventEmitter {
+  constructor() {
+    super();
+    this.slices = [];
+  }
+
+  getSlices() {
+    return this.slices;
+  }
+
+  slice(start, end) {
+    const data = `${start},${end},`;
+    let called = false;
+
+    this.slices.push({ start, end });
+
+    const slice = new Readable({
+      read() {
+        if (!called) {
+          this.push(data);
+          called = true;
+        } else {
+          this.push(null);
+        }
+      },
+    });
+
+    slice.mockData = data;
+
+    return slice;
+  }
 }
-
-util.inherits(MockBlob, EventEmitter);
-
-MockBlob.prototype.getSlices = () => this.slices;
-
-MockBlob.prototype.slice = (start, end) => {
-  const data = `${start},${end},`;
-  let called = false;
-
-  this.slices.push({ start, end });
-
-  const slice = new Readable({
-    read() {
-      if (!called) {
-        this.push(data);
-        called = true;
-      } else {
-        this.push(null);
-      }
-    },
-  });
-
-  slice.mockData = data;
-
-  return slice;
-};
-
 module.exports = MockBlob;

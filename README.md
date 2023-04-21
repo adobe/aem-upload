@@ -7,7 +7,6 @@
     - [Supported Options](#supported-options)
     - [Error Handling](#error-handling)
     - [Upload Events](#upload-events)
-    - [Controlling In-Progress Uploads](#controlling-in-progress-uploads)
   - [Uploading Local Files](#uploading-local-files)
     - [Supported File Options](#supported-file-options)
   - [Logging](#logging)
@@ -279,20 +278,25 @@ options.withUploadFiles([
             </td>
         </tr>
         <tr>
-            <td>headers</td>
+            <td>fetch options</td>
             <td>object</td>
             <td>
-                HTTP headers that will be included in each request sent to AEM. Each property should
-                be a header name, with the value being the header's value.
+                Consumers can control the options that the library will provide to the Fetch API when submitting HTTP requests. These options will be passed as-is to Fetch, so consumers should reference the Fetch API documentation to determine which values are applicable.
                 <br/>
                 <br/>
                 <b>Example</b>
                 <br/>
-                <code>options.withHeaders({</code>
+                <code>options.withHttpOptions({</code>
                 <br/>
-                <code>&nbsp;&nbsp;&nbsp;&nbsp;'content-type': 'image/jpeg',</code>
+                <code>&nbsp;&nbsp;agent: myAgent,</code>
+                <br/>
+                <code>&nbsp;&nbsp;headers: {</code>
                 <br/>
                 <code>&nbsp;&nbsp;&nbsp;&nbsp;'authorization': '12345'</code>
+                <br/>
+                <code>&nbsp;&nbsp;&nbsp;&nbsp;'cookie': 'mycookie=myvalue'</code>
+                <br/>
+                <code>&nbsp;&nbsp;}</code>
                 <br/>
                 <code>});</code>
             </td>
@@ -336,35 +340,6 @@ options.withUploadFiles([
             </td>
         </tr>
         <tr>
-            <td>*DEPRECATED* add content length header</td>
-            <td>boolean</td>
-            <td>
-                *DEPRECATED* The module will now perform the operation that this option controlled automatically.
-                The option no longer does anything.
-                <br/>
-                <br/>
-                If <code>true</code>, the upload process will automatically add a
-                <code>Content-Length</code> header when uploading file parts to AEM. If
-                <code>false</code>, no such header will be added.
-                <br/>
-                This option is relevant depending on the context in which the process is running.
-                For example, if running through Node.js then the underlying libraries will not
-                automatically add a <code>Content-Length</code> header when submitting an HTTP
-                <code>PUT</code> request, so it must be explicitly added. However, when running
-                through a browser the underlying libraries <i>will</i> automatically
-                add a <code>Content-Length</code> header, and will issue a warning if it's
-                explicitly added.
-                <br/>
-                <br/>
-                Default: <code>false</code>
-                <br/>
-                <br/>
-                <b>Example</b>
-                <br/>
-                <code>options.withAddContentLengthHeader(true);</code>
-            </td>
-        </tr>
-        <tr>
             <td>http retry count</td>
             <td>number</td>
             <td>
@@ -398,24 +373,6 @@ options.withUploadFiles([
                 <b>Example</b>
                 <br/>
                 <code>options.withHttpRetryDelay(3000);</code>
-            </td>
-        </tr>
-        <tr>
-            <td>http proxy</td>
-            <td>HttpProxy</td>
-            <td>
-                Information about the proxy that should be used for all HTTP requests sent by the library. See <a href="#proxy-support" target="_blank">proxy support</a> documentation for additional information.
-                <br/>
-                <br/>
-                <b>Example</b>
-                <br/>
-                <code>const { HttpProxy } = require('@adobe/aem-upload');</code>
-                <br/>
-                <code>options.withHttpProxy(</code>
-                <br/>
-                <code>&nbsp;&nbsp;new HttpProxy('http://my-proxy:1234')</code>
-                <br/>
-                <code>&nbsp;&nbsp;&nbsp;&nbsp;.withBasicAuth('user', 'pass'));</code>
             </td>
         </tr>
     </tbody>
@@ -762,36 +719,6 @@ upload.on('fileerror', data => {
 upload.uploadFiles(options);
 ```
 
-### Controlling In-Progress Uploads
-
-After the process of uploading one or more files begins, it's possible to interact
-with the process using a controller. The controller allows operations like cancelling
-individual file uploads or _all_ uploads.
-
-The following is an example for how to control the process.
-
-```javascript
-const options = new DirectBinaryUploadOptions()
-    .withUrl(url)
-    .withUploadFiles(files);
-
-// retrieve a controller instance from the options
-const controller = options.getController();
-const upload = new DirectBinaryUpload();
-upload.uploadFiles(options);
-
-// at this point its possible to send command to the upload process using
-// the controller
-
-// cancel the upload of an individual file. Note that the "filePath" parameter
-// should be the full target AEM path to the file. an example value might be:
-// "/content/dam/uploadfolder/file-to-cancel.jpg"
-controller.cancelFile(filePath);
-
-// cancel ALL files in the upload
-controller.cancel();
-```
-
 ## Uploading Local Files
 
 The library supports uploading local files and folders. For folders, the tool
@@ -815,7 +742,11 @@ const {
 // configure options to use basic authentication
 const options = new FileSystemUploadOptions()
     .withUrl('http://localhost:4502/content/dam/target-folder')
-    .withBasicAuth('admin:admin');
+    .withHttpOptions({
+        headers: {
+            Authorization: Buffer.from('admin:admin').toString('base64')
+        }
+    });
 
 // upload a single asset and all assets in a given folder
 const fileUpload = new FileSystemUpload();
@@ -1000,8 +931,8 @@ Note that this will also work with the `FileSystemUpload` constructor.
 
 ## Proxy Support
 
-When running in a browser, the library will use whichever proxy settings are detected and applied by the browser. In Node.JS, all HTTP requests are sent directly to the target, without going through a proxy. Auto detecting a system's proxy settings is not supported in Node.JS, but
-consumers can use `DirectBinaryUploadOptions.withHttpProxy()` to modify the default behavior in either context.
+The library utilizes the Fetch API, so when running in a browser, proxy settings are detected and applied by the browser. In Node.JS, all HTTP requests are sent directly to the target, without going through a proxy. Auto detecting a system's proxy settings is not supported in Node.JS, but
+consumers can use `DirectBinaryUploadOptions.withHttpOptions()` to provde an `agent` value as recommended by `node-fetch`.
 
 # Features
 * Well tuning to take advantage of nodejs for best uploading performance

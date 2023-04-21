@@ -12,8 +12,8 @@ governing permissions and limitations under the License.
 
 const {
   AEMUpload,
-  logger: httpTransferLogger,
 } = require('@adobe/httptransfer');
+const httpTransferLogger = require('@adobe/httptransfer/lib/logger');
 const { v4: uuid } = require('uuid');
 
 const UploadOptionsBase = require('./upload-options-base');
@@ -55,11 +55,9 @@ class DirectBinaryUploadProcess extends UploadOptionsBase {
    * @param {object} options Overall direct binary process options.
    * @param {DirectBinaryUploadOptions} uploadOptions Options specific to the
    *  current upload.
-   * @param {HttpClient} [httpClient] Client to use to submit HTTP requests. If
-   *  not specified then the process will create its own.
    */
-  constructor(options, uploadOptions, httpClient = false) {
-    super(options, uploadOptions, httpClient);
+  constructor(options, uploadOptions) {
+    super(options, uploadOptions);
 
     this.fileResults = {};
     this.fileEvents = {};
@@ -135,7 +133,7 @@ class DirectBinaryUploadProcess extends UploadOptionsBase {
 
     uploadResult.startTimer();
 
-    this.logInfo(`sending ${fileCount} files to httptransfer with options ${JSON.stringify(aemUploadOptions, null, 2)}`);
+    this.logInfo(`sending ${fileCount} files to httptransfer`);
     await aemUpload.uploadFiles(aemUploadOptions);
     this.logInfo('successfully uploaded files with httptransfer');
 

@@ -11,10 +11,7 @@ governing permissions and limitations under the License.
 */
 
 const URL = require('url');
-const cookie = require('cookie');
-const util = require('util');
 
-const DirectBinaryUploadController = require('./direct-binary-upload-controller');
 const { trimRight } = require('./utils');
 const { DefaultValues } = require('./constants');
 
@@ -34,12 +31,10 @@ class DirectBinaryUploadOptions {
   constructor() {
     this.options = {
       maxConcurrent: DefaultValues.MAX_CONCURRENT,
-      headers: {},
       retryCount: DefaultValues.RETRY_COUNT,
       retryDelay: DefaultValues.RETRY_DELAY,
       requestTimeout: DefaultValues.REQUEST_TIMEOUT,
     };
-    this.controller = new DirectBinaryUploadController();
   }
 
   /**
@@ -68,70 +63,6 @@ class DirectBinaryUploadOptions {
   withUploadFiles(uploadFiles) {
     this.options.uploadFiles = uploadFiles;
     return this;
-  }
-
-  /**
-   * If specified, an object containing headers that will be sent along with each
-   * request submitted to the target instance.
-   *
-   * The given headers will be merged with any headers specified previously using
-   * the method.
-   *
-   * @param {object} headers Keys should be header names, values should be the header's value.
-   * @returns {DirectBinaryUploadOptions} The current options instance. Allows for chaining.
-   */
-  withHeaders(headers) {
-    this.options.headers = {
-      ...this.options.headers,
-      ...headers,
-    };
-    return this;
-  }
-
-  /**
-   * The given cookies will be merged with any cookies specified previously using the
-   * method.
-   *
-   * @param {object} cookies Keys should be cookie names, values should be the cookie's value.
-   * @returns {DirectBinaryUploadOptions} The current options instance. Allows for chaining.
-   */
-  withCookies(cookies) {
-    const headers = this.getHeaders() || {};
-    const existingCookies = cookie.parse(headers.Cookie || headers.cookie || '');
-    let cookieString = '';
-
-    Object.keys(existingCookies).forEach((toSerialize) => {
-      if (!cookies[toSerialize]) {
-        if (cookieString) {
-          cookieString += '; ';
-        }
-        cookieString += cookie.serialize(toSerialize, existingCookies[toSerialize]);
-      }
-    });
-
-    Object.keys(cookies).forEach((toSerialize) => {
-      if (cookieString) {
-        cookieString += '; ';
-      }
-      cookieString += cookie.serialize(toSerialize, cookies[toSerialize]);
-    });
-
-    return this.withHeaders({
-      Cookie: cookieString,
-    });
-  }
-
-  /**
-   * Convenience method that adds a basic Authorization header that will be submitted
-   * to the target.
-   *
-   * @param {string} basicAuth Basic authorization value in the form of username:password.
-   * @returns {DirectBinaryUploadOptions} The current options instance. Allows for chaining.
-   */
-  withBasicAuth(basicAuth) {
-    return this.withHeaders({
-      Authorization: `Basic ${Buffer.from(basicAuth).toString('base64')}`,
-    });
   }
 
   /**
@@ -169,25 +100,31 @@ class DirectBinaryUploadOptions {
   }
 
   /**
-   * DEPRECATED: This method has been deprecated and should no longer be used. The library
-   * will now automatically determine if a content length header is needed. The value will
-   * be ignored.
+   * Specifies the options that will be used when submitting HTTP requests. The method will
+   * merge the given options with any options provided in previous calls to the method,
+   * and will pass the merged options as-is to fetch.
    *
-   * If true, the process will manually add a "Content-Length" header to requests that upload a
-   * file's chunks. If false, the process will assume the header is not needed. The purpose of
-   * this option is primarily to support browser upload cases, which won't require this process
-   * to add the header. Default: true.
-   *
-   * @param {boolean} doAddContentLengthHeader True if the process should add its own
-   *  "Content-Length" header value.
-   * @returns {DirectBinaryUploadOptions} The current options instance. Allows for chaining.
+   * @param {*} options Fetch options.
+   * @returns {DirectBinaryUploadOptions} The current options instance, for chaining.
    */
-  withAddContentLengthHeader() {
-    const withAddContentLengthHeaderDeprecated = util.deprecate(
-      () => {},
-      'withAddContentLengthHeader is deprecated and no longer required.',
-    );
-    withAddContentLengthHeaderDeprecated();
+  withHttpOptions(options) {
+    const { headers: currHeaders } = this.getHttpOptions();
+    const { headers: newHeaders } = options;
+
+    const newOptions = {
+      ...this.getHttpOptions(),
+      ...options,
+    };
+
+    if (currHeaders && newHeaders) {
+      newOptions.headers = {
+        ...currHeaders,
+        ...newHeaders,
+      };
+    }
+
+    this.options.httpOptions = newOptions;
+
     return this;
   }
 
@@ -225,16 +162,6 @@ class DirectBinaryUploadOptions {
    */
   withHttpRequestTimeout(timeout) {
     this.options.requestTimeout = timeout;
-    return this;
-  }
-
-  /**
-   * Defines the proxy that all HTTP requests sent by the client should use.
-   * @param {HttpProxy} proxy Information about the proxy that the upload should use.
-   * @returns {DirectBinaryUploadOptions} The current options instance. Allows for chaining.
-   */
-  withHttpProxy(proxy) {
-    this.proxy = proxy;
     return this;
   }
 
@@ -285,16 +212,6 @@ class DirectBinaryUploadOptions {
   }
 
   /**
-   * Retrieves the headers that will be added to each request sent to the target
-   * instance.
-   *
-   * @returns {object} The headers as provided to the options instance.
-   */
-  getHeaders() {
-    return this.options.headers || {};
-  }
-
-  /**
    * Retrieves a value indicating whether or not the upload process will transfer files
    * concurrently.
    *
@@ -314,27 +231,12 @@ class DirectBinaryUploadOptions {
   }
 
   /**
-   * DEPRECATED: This method has been deprecated and should no longer be used. The library
-   * will now automatically determine if a content length header is needed.
-   *
-   * Retrieves a value indicating whether or not the upload process will add its own
-   * Content-Length header to file chunk requests.
-   *
-   * @returns {boolean} The value as provided to the options instance.
+   * Retrieves the HTTP options that the upload process will use in each HTTP request that
+   * it sends with fetch.
+   * @returns {*} Fetch options.
    */
-  // eslint-disable-next-line class-methods-use-this
-  addContentLengthHeader() {
-    return false;
-  }
-
-  /**
-   * Retrieves an object that can be used to control various aspects of the upload process,
-   * including cancelling uploads.
-   *
-   * @returns {DirectBinaryUploadController} Controller for the upload process.
-   */
-  getController() {
-    return this.controller;
+  getHttpOptions() {
+    return this.options.httpOptions || {};
   }
 
   /**
@@ -367,14 +269,6 @@ class DirectBinaryUploadOptions {
   }
 
   /**
-   * Retrieves the HTTP proxy in use by the options. Will be falsy if no proxy is set.
-   * @returns {HttpProxy} Options for the upload's HTTP proxy.
-   */
-  getHttpProxy() {
-    return this.proxy;
-  }
-
-  /**
    * Overridden to return an object appropriate for representing this class as a
    * JSON object.
    *
@@ -384,11 +278,6 @@ class DirectBinaryUploadOptions {
     const json = {
       ...this.options,
     };
-
-    const proxy = this.getHttpProxy();
-    if (proxy) {
-      json.proxy = proxy.toHttpOptions();
-    }
 
     return json;
   }
