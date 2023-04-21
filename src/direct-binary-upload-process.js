@@ -133,7 +133,7 @@ class DirectBinaryUploadProcess extends UploadOptionsBase {
 
     uploadResult.startTimer();
 
-    this.logInfo(`sending ${fileCount} files to httptransfer with options ${JSON.stringify(aemUploadOptions, null, 2)}`);
+    this.logInfo(`sending ${fileCount} files to httptransfer`);
     await aemUpload.uploadFiles(aemUploadOptions);
     this.logInfo('successfully uploaded files with httptransfer');
 
