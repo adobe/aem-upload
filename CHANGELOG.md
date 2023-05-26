@@ -1,3 +1,10 @@
+## [2.0.1](https://github.com/adobe/aem-upload/compare/v2.0.0...v2.0.1) (2023-05-26)
+
+
+### Bug Fixes
+
+* update to latest node-httptransfer ([#108](https://github.com/adobe/aem-upload/issues/108)) ([33f4e01](https://github.com/adobe/aem-upload/commit/33f4e01ca22dfcf759954a9373c6d980ad6f2430))
+
 # [2.0.0](https://github.com/adobe/aem-upload/compare/v1.5.0...v2.0.0) (2023-04-21)
 
 
