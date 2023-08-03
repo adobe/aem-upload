@@ -12,8 +12,8 @@ governing permissions and limitations under the License.
 
 /* eslint-env mocha */
 
-const should = require('should');
 const { Readable } = require('stream');
+const should = require('should');
 
 const {
   getTestOptions,
