@@ -1,3 +1,10 @@
+## [2.0.2](https://github.com/adobe/aem-upload/compare/v2.0.1...v2.0.2) (2023-08-04)
+
+
+### Bug Fixes
+
+* pass request options to cors requests ([#113](https://github.com/adobe/aem-upload/issues/113)) ([528b654](https://github.com/adobe/aem-upload/commit/528b65497de300f6d22a4b81d54dd49f907e47f3))
+
 ## [2.0.1](https://github.com/adobe/aem-upload/compare/v2.0.0...v2.0.1) (2023-05-26)
 
 
