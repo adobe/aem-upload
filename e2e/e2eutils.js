@@ -10,8 +10,8 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-const fetch = require('node-fetch');
 const Path = require('path');
+const fetch = require('node-fetch');
 // eslint-disable-next-line import/no-extraneous-dependencies
 const should = require('should');
 

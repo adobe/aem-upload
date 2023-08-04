@@ -10,8 +10,8 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-const Async = require('async');
 const Path = require('path');
+const Async = require('async');
 const AsyncLock = require('async-lock');
 const fs = require('./fs-promise');
 

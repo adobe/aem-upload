@@ -11,8 +11,8 @@ governing permissions and limitations under the License.
 */
 
 const { EventEmitter } = require('events');
-const mime = require('mime');
 const Path = require('path');
+const mime = require('mime');
 
 let directUploads = [];
 
