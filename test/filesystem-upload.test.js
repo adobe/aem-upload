@@ -12,6 +12,7 @@ governing permissions and limitations under the License.
 
 /* eslint-env mocha */
 
+const nock = require('nock');
 const should = require('should');
 const MockFs = require('mock-fs');
 
@@ -558,6 +559,56 @@ describe('FileSystemUpload Tests', () => {
       should(getFolderEvent('foldercreated', '/target/test/dir')).be.ok();
       should(getFolderEvent('foldercreated', '/target/test/dir/subdir')).be.ok();
       should(getFolderEvent('foldercreated', '/target/test/dir/subdir/subsubdir')).be.ok();
+    });
+
+    it('test eventually consistent upload', async () => {
+      const structure = {
+        '/test': {
+          'consistency1.jpg': '12345',
+        },
+        '/test/subdir': {
+          'consistency2.jpg': '78910',
+        },
+      };
+      MockFs(structure);
+
+      const uploadOptions = new FileSystemUploadOptions()
+        .withUrl(`${HOST}/target`)
+        .withHttpRetryDelay(10)
+        .withDeepUpload(true)
+        .withHttpOptions({
+          cloudClient: {
+            eventuallyConsistentCreate: true,
+          },
+        });
+
+      addCreateDirectory(HOST, '/target');
+      // tests that retry on directory creation works correctly
+      addCreateDirectory(HOST, '/target/test', 404);
+      addCreateDirectory(HOST, '/target/test');
+      addCreateDirectory(HOST, '/target/test/subdir');
+
+      addDirectUpload(HOST, '/target/test', [
+        'consistency1.jpg',
+      ]);
+      // tests that retry on initiate works correctly
+      nock(HOST)
+        .post('/target/test/subdir.initiateUpload.json')
+        .reply(404);
+      // tests that retry on complete works correctly
+      nock(HOST)
+        .post('/target/test/subdir.completeUpload.json')
+        .reply(404);
+      addDirectUpload(HOST, '/target/test/subdir', [
+        'consistency2.jpg',
+      ]);
+
+      const fileSystemUpload = new FileSystemUpload(getTestOptions());
+      monitorEvents(fileSystemUpload);
+      const result = await fileSystemUpload.upload(uploadOptions, ['/test']);
+      should(result).be.ok();
+      should(result.totalFiles).equal(2);
+      should(result.totalFileSize).equal(10);
     });
   });
 });

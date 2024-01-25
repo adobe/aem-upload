@@ -28,7 +28,14 @@ describe('HttpUtilsTest', () => {
       .withUrl('http://localhost/content/dam');
     let httpTransfer = getHttpTransferOptions(getTestOptions(), uploadOptions);
     should(httpTransfer).deepEqual({
-      requestOptions: {},
+      requestOptions: {
+        retryOptions: {
+          retryAllErrors: false,
+          retryInitialDelay: 5000,
+          retryMaxCount: 3,
+        },
+      },
+      timeout: 60000,
       concurrent: true,
       maxConcurrent: 5,
       uploadFiles: [],
@@ -41,7 +48,13 @@ describe('HttpUtilsTest', () => {
           hello: 'world!',
         },
         method: 'DELETE',
+        cloudClient: {
+          eventuallyConsistentCreate: true,
+        },
       })
+      .withHttpRequestTimeout(30000)
+      .withHttpRetryCount(2)
+      .withHttpRetryDelay(500)
       .withUploadFiles([{
         fileSize: 1024,
         fileName: 'file.jpg',
@@ -67,9 +80,15 @@ describe('HttpUtilsTest', () => {
       },
       requestOptions: {
         method: 'DELETE',
+        retryOptions: {
+          retryAllErrors: true,
+          retryInitialDelay: 500,
+          retryMaxCount: 2,
+        },
       },
       concurrent: false,
       maxConcurrent: 1,
+      timeout: 30000,
       uploadFiles: [{
         createVersion: true,
         filePath: '/my/test/file.jpg',
