@@ -14,7 +14,7 @@
       - [File Event Data](#file-event-data)
       - [File Progress Event Data](#file-progress-event-data)
       - [File Error Event Data](#file-error-event-data)
-        - [Error Event Data](#error-event-data)
+      - [Error Event Data](#error-event-data)
   - [Uploading Local Files](#uploading-local-files)
     - [Supported File Options](#supported-file-options)
   - [Logging](#logging)
@@ -208,10 +208,10 @@ through the stages of uploading a file. These events are listed below.
 | Event | Description | Data |
 | ----- | ----------- | ---- |
 | `fileuploadstart` | Indicates an upload of one or more files is starting. | [Upload Session Data](#upload-session-data) |
-| `fileuploadend` | Indicates an upload of one or more files has finished. | Simple javascript object containin the same upload result information that is returned by the library's `upload()` method. |
+| `fileuploadend` | Indicates an upload of one or more files has finished. | Simple javascript object containing the same upload result information that is returned by the library's `upload()` method. |
 | `filestart` | Indicates that a file has started to upload. | [File Event Data](#file-event-data) |
 | `fileprogress` | Indicates that a file has started to upload. | [File Progress Event Data](#file-progress-event-data) |
-| `fileend` | Indicates that a file has uploaded successfully. This event will _not_</i>_ be sent if the file upload did not finish successfully for any reason.. | [File Event Data](#file-event-data) |
+| `fileend` | Indicates that a file has uploaded successfully. This event will _not_ be sent if the file upload did not finish successfully for any reason. | [File Event Data](#file-event-data) |
 | `fileerror` | Sent if a file fails to upload due to an error. This event will not be sent if the file uploads successfully. | [File Error Event Data](#file-error-event-data) |
 | `foldercreated` | Indicates that the upload process created a new folder in the target. | [Folder Event Data](#folder-event-data) |
 
@@ -258,7 +258,7 @@ This event data includes all properties from [File Event Data](#file-event-data)
 | -------- | ---- | ----------- |
 | `errors` | [Error Event Data[]](#error-event-data) | An array of [Error Event Data](#error-event-data) describing the error(s) that occurred during upload. |
 
-##### Error Event Data
+#### Error Event Data
 
 | Property | Type | Description |
 | -------- | ---- | ----------- |
@@ -343,7 +343,7 @@ There is a set of options, `FileSystemUploadOptions`, that are specific to uploa
 | `withFolderNodeNameProcessor(<function<Promise>>)` | N | When performing a deep upload, the tool will create folders in AEM that match local folders being uploaded. The tool will "clean" the folder names of certain characters when creating node names for each folder. The unmodified folder name will become the node's title.<br/><br/>This option allows customization of the functionality that cleans the folder's name. The option should be a <code>function</code>. It will receive a single argument value: the name of the folder to be cleaned. The return value of the function should be a <code>Promise</code>, which should resolve with the clean folder name.<br/><br/>The default functionality will convert the folder name to lower case and replace whitespace and any of the characters <code>%;#,+?^{}</code> with the replacement value specified in the options.<br/><br/>Regardless of this function, the library will <i>always</i> replace any of the characters <code>./:[]|*\</code> with the replacement value specified in the options. |
 | `withAssetNodeNameProcessor(<function<Promise>>)` | N | When performing a deep upload, the tool will create assets in AEM that match local files being uploaded. The tool will "clean" the file names of certain characters when creating node names for each asset.<br/><br/>This option allows customization of the functionality that cleans the file's name. The option should be a <code>function</code>. It will receive a single argument value: the name of the  file to be cleaned. The return value of the function should be a <code>Promise</code>, which should resolve with the clean asset name.<br/><br/>The default functionality will replace any of the characters <code>#%{}?&</code> with the replacement value specified in the options.<br/><br/>Regardless of this function, the library will <i>always</i> replace any of the characters<code>./:[]|*\</code> with the replacement value specified in the options. |
 | `withInvalidCharacterReplaceValue(<string>)` | N | Default: `-`. Specifies the value to use when replacing invalid characters in folder and asset node names. This value is used in the default functions that clean folder/asset names, and is <i>always</i> used when replacing any of the characters <code>./:[]|*\</code>; the value of this option <i>cannot</i> contain any of those characters.<br/><br/>For example, assume the folder name <code>My Test Folder #2</code>. With the default settings, the folder's node would be <code>my-test-folder--2</code>. |
-| `withUploadFileOptions(<[UploadFileOptions](#upload-file-options)>)` | N | Specifies the options to use when uploading each file as part of the file system upload. Most of the [Upload File Options](#upload-file-options) are valid. The exceptions are `fileName`, `fileSize`, `filePath`, and `blob`, which will be ignored. |
+| `withUploadFileOptions(<UploadFileOptions>)` | N | Specifies the options to use when uploading each file as part of the file system upload. Most of the [Upload File Options](#upload-file-options) are valid. The exceptions are `fileName`, `fileSize`, `filePath`, and `blob`, which will be ignored. |
 
 ## Logging
 
