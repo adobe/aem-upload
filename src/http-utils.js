@@ -61,12 +61,26 @@ function getHttpTransferOptions(options, directBinaryUploadOptions) {
     delete requestOptions.headers;
   }
 
+  const retryOptions = {
+    retryInitialDelay: directBinaryUploadOptions.getHttpRetryDelay(),
+    retryMaxCount: directBinaryUploadOptions.getHttpRetryCount(),
+    retryAllErrors: false,
+  };
+  if (requestOptions.cloudClient) {
+    retryOptions.retryAllErrors = requestOptions.cloudClient.eventuallyConsistentCreate || false;
+    delete requestOptions.cloudClient;
+  }
+
   const transferOptions = {
     uploadFiles: convertedFiles,
     concurrent: directBinaryUploadOptions.isConcurrent(),
     maxConcurrent: directBinaryUploadOptions.getMaxConcurrent(),
+    timeout: directBinaryUploadOptions.getHttpRequestTimeout(),
     headers,
-    requestOptions,
+    requestOptions: {
+      retryOptions,
+      ...requestOptions,
+    },
   };
 
   return transferOptions;
