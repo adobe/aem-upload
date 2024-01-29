@@ -1,3 +1,10 @@
+## [2.0.3](https://github.com/adobe/aem-upload/compare/v2.0.2...v2.0.3) (2024-01-29)
+
+
+### Bug Fixes
+
+* improve support for handling eventual consistency when uploading. ([#118](https://github.com/adobe/aem-upload/issues/118)) ([0372ef4](https://github.com/adobe/aem-upload/commit/0372ef460dacb9c837a698ac9826a254e28adfe1))
+
 ## [2.0.2](https://github.com/adobe/aem-upload/compare/v2.0.1...v2.0.2) (2023-08-04)
 
 
