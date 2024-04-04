@@ -316,11 +316,12 @@ const {
 } = require('@adobe/aem-upload');
 
 // configure options to use basic authentication
+const credentials = Buffer.from('admin:admin').toString('base64')
 const options = new FileSystemUploadOptions()
     .withUrl('http://localhost:4502/content/dam/target-folder')
     .withHttpOptions({
         headers: {
-            Authorization: Buffer.from('admin:admin').toString('base64')
+            Authorization: `Basic ${credentials}`
         }
     });
 
