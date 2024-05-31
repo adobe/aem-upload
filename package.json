@@ -9,13 +9,14 @@
   "scripts": {
     "test": "npm run lint && npm run testOnly",
     "testOnly": "mocha --recursive ./test",
-    "build": "rimraf dist && babel ./src --out-dir dist",
+    "build": "rimraf dist && npm run webpack",
     "prepublishOnly": "npm test && npm run build",
     "coverage": "nyc npm run test",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "e2e": "mocha --recursive ./e2e",
-    "semantic-release": "semantic-release"
+    "semantic-release": "semantic-release",
+    "webpack": "webpack --config webpack.config.js"
   },
   "author": "Adobe",
   "contributors": [
@@ -24,22 +25,19 @@
   ],
   "bugs": "https://github.com/adobe/aem-upload",
   "dependencies": {
-    "@adobe/cloud-service-client": "^1.1.0",
-    "@adobe/httptransfer": "^3.4.1",
+    "@adobe/cloud-service-client": "^2.0.0",
+    "@adobe/httptransfer": "^4.0.0",
     "async": "^3.2.0",
     "async-lock": "^1.2.8",
     "filesize": "^4.2.1",
-    "node-fetch": "^2.6.9",
+    "minipass-fetch": "^3.0.5",
     "uuid": "^3.3.2"
   },
   "devDependencies": {
-    "@babel/cli": "^7.16.0",
     "@babel/core": "^7.9.0",
-    "@babel/polyfill": "^7.8.7",
     "@babel/preset-env": "^7.9.0",
-    "@babel/preset-stage-2": "^7.8.3",
-    "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
+    "babel-loader": "^9.1.3",
     "conventional-changelog-eslint": "^3.0.9",
     "dotenv": "^8.2.0",
     "eslint": "^8.38.0",
@@ -51,11 +49,13 @@
     "mock-fs": "^4.13.0",
     "nock": "^13.3.0",
     "nyc": "14.1.1",
+    "path-browserify": "^1.0.1",
     "rimraf": "^3.0.2",
+    "semantic-release": "^23.1.1",
     "should": "^13.2.3",
-    "sinon": "^9.2.3"
-  },
-  "optionalDependencies": {
-    "semantic-release": "^21.0.1"
+    "sinon": "^9.2.3",
+    "url": "^0.11.3",
+    "webpack": "^5.91.0",
+    "webpack-cli": "^5.1.4"
   }
 }
