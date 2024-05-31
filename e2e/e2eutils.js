@@ -11,7 +11,7 @@ governing permissions and limitations under the License.
 */
 
 const Path = require('path');
-const fetch = require('node-fetch');
+const fetch = require('minipass-fetch');
 // eslint-disable-next-line import/no-extraneous-dependencies
 const should = require('should');
 

@@ -14,6 +14,8 @@ const nock = require('nock');
 const should = require('should');
 const mime = require('mime');
 
+global.fetch = require('minipass-fetch');
+
 /**
  * @typedef {DirectBinaryUploadInfo}
  * @property {Array} inits The init calls that were made by the test utils.

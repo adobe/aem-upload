@@ -10,12 +10,11 @@ OF ANY KIND, either express or implied. See the License for the specific languag
 governing permissions and limitations under the License.
 */
 
-const originalFetch = require('node-fetch');
 const { fetchClient } = require('@adobe/cloud-service-client');
 
 const UploadFile = require('./upload-file');
 
-const fetch = fetchClient(originalFetch, {
+const doFetch = fetchClient(global.fetch, {
   handleCookies: true,
 });
 
@@ -26,7 +25,7 @@ const fetch = fetchClient(originalFetch, {
  * @returns {*} A fetch HTTP response.
  */
 function submitRequest(url, options = {}) {
-  return fetch(url, options);
+  return doFetch(url, options);
 }
 
 /**
