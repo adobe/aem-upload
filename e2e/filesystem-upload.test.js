@@ -163,7 +163,7 @@ describe('FileSystemUpload end-to-end tests', function () {
     await verifyExistsInAemAndHasEvents(uploadOptions, '/freeride-steep.jpg');
     await verifyExistsInAemAndHasEvents(uploadOptions, '/ice-climbing.jpg');
     await verifyExistsInAemAndHasEvents(uploadOptions, `/${ENCODED_ASSET1}`);
-    should(await doesAemPathExist(uploadOptions, '/dir-1')).not.be.ok();
+    should(await doesAemPathExist(uploadOptions, '/Dir 1')).not.be.ok();
 
     return deleteAemPath(uploadOptions);
   });
@@ -197,23 +197,23 @@ describe('FileSystemUpload end-to-end tests', function () {
       retryErrors: [],
       createdFolders: [
         buildFolderResult(targetFolder, '/images', 'images', uploadResult.createdFolders[2].elapsedTime),
-        buildFolderResult(targetFolder, '/images/dir-1', 'Dir 1', uploadResult.createdFolders[3].elapsedTime),
-        buildFolderResult(targetFolder, '/images/dir-1/folder_♂♀°′″℃＄￡‰§№￠℡㈱', 'folder_♂♀°′″℃＄￡‰§№￠℡㈱', uploadResult.createdFolders[4].elapsedTime),
-        buildFolderResult(targetFolder, '/images/dir-1/subdir1', 'subdir1', uploadResult.createdFolders[5].elapsedTime),
-        buildFolderResult(targetFolder, '/images/dir-1/subdir2', 'subdir2', uploadResult.createdFolders[6].elapsedTime),
+        buildFolderResult(targetFolder, '/images/Dir 1', 'Dir 1', uploadResult.createdFolders[3].elapsedTime),
+        buildFolderResult(targetFolder, '/images/Dir 1/folder_♂♀°′″℃＄￡‰§№￠℡㈱', 'folder_♂♀°′″℃＄￡‰§№￠℡㈱', uploadResult.createdFolders[4].elapsedTime),
+        buildFolderResult(targetFolder, '/images/Dir 1/subdir1', 'subdir1', uploadResult.createdFolders[5].elapsedTime),
+        buildFolderResult(targetFolder, '/images/Dir 1/subdir2', 'subdir2', uploadResult.createdFolders[6].elapsedTime),
       ],
       detailedResult: [
         buildFileResult(targetFolder, '/images/Freeride-extreme.jpg', '/images/Freeride#extreme.jpg', 246578),
         buildFileResult(targetFolder, '/images/climber-ferrata-la-torre-di-toblin.jpg', 'images/climber-ferrata-la-torre-di-toblin.jpg', 414164),
         buildFileResult(targetFolder, '/images/freeride-siberia.jpg', 'images/freeride-siberia.jpg', 282584),
-        buildFileResult(targetFolder, '/images/dir-1/freeride-steep.jpg', '/images/Dir 1/freeride-steep.jpg', 320669),
-        buildFileResult(targetFolder, '/images/dir-1/freeride.jpg', '/images/Dir 1/freeride.jpg', 102189),
-        buildFileResult(targetFolder, '/images/dir-1/ice-climbing.jpg', '/images/Dir 1/ice-climbing.jpg', 166077),
-        buildFileResult(targetFolder, '/images/dir-1/이두吏讀.jpg', '/images/Dir 1/이두吏讀.jpg', 295623),
-        buildFileResult(targetFolder, '/images/dir-1/folder_♂♀°′″℃＄￡‰§№￠℡㈱/郎礼.jpg', '/images/Dir 1/folder_♂♀°′″℃＄￡‰§№￠℡㈱/郎礼.jpg', 161221),
-        buildFileResult(targetFolder, '/images/dir-1/subdir1/ski touring.jpg', '/images/Dir 1/subdir1/ski touring.jpg', 196310),
-        buildFileResult(targetFolder, '/images/dir-1/subdir1/skiing_2.jpg', '/images/Dir 1/subdir1/skiing_2.jpg', 245780),
-        buildFileResult(targetFolder, '/images/dir-1/subdir1/skiing_1.jpg', '/images/Dir 1/subdir1/skiing_1.jpg', 561767),
+        buildFileResult(targetFolder, '/images/Dir 1/freeride-steep.jpg', '/images/Dir 1/freeride-steep.jpg', 320669),
+        buildFileResult(targetFolder, '/images/Dir 1/freeride.jpg', '/images/Dir 1/freeride.jpg', 102189),
+        buildFileResult(targetFolder, '/images/Dir 1/ice-climbing.jpg', '/images/Dir 1/ice-climbing.jpg', 166077),
+        buildFileResult(targetFolder, '/images/Dir 1/이두吏讀.jpg', '/images/Dir 1/이두吏讀.jpg', 295623),
+        buildFileResult(targetFolder, '/images/Dir 1/folder_♂♀°′″℃＄￡‰§№￠℡㈱/郎礼.jpg', '/images/Dir 1/folder_♂♀°′″℃＄￡‰§№￠℡㈱/郎礼.jpg', 161221),
+        buildFileResult(targetFolder, '/images/Dir 1/subdir1/ski touring.jpg', '/images/Dir 1/subdir1/ski touring.jpg', 196310),
+        buildFileResult(targetFolder, '/images/Dir 1/subdir1/skiing_2.jpg', '/images/Dir 1/subdir1/skiing_2.jpg', 245780),
+        buildFileResult(targetFolder, '/images/Dir 1/subdir1/skiing_1.jpg', '/images/Dir 1/subdir1/skiing_1.jpg', 561767),
         buildFileResult(targetFolder, '/climber-ferrata-la-torre-di-toblin.jpg', '/images/climber-ferrata-la-torre-di-toblin.jpg', 414164),
         buildFileResult(targetFolder, '/skiing_1.jpg', 'images/Dir 1/subdir1/skiing_1.jpg', 561767),
       ],
@@ -229,22 +229,22 @@ describe('FileSystemUpload end-to-end tests', function () {
     await verifyExistsInAemAndHasEvents(uploadOptions, '/images/freeride-siberia.jpg');
 
     // images/dir1
-    await verifyExistsInAemAndHasTitle(uploadOptions, '/images/dir-1', 'Dir 1');
-    await verifyExistsInAemAndHasEvents(uploadOptions, '/images/dir-1/freeride.jpg');
-    await verifyExistsInAemAndHasEvents(uploadOptions, '/images/dir-1/freeride-steep.jpg');
-    await verifyExistsInAemAndHasEvents(uploadOptions, '/images/dir-1/ice-climbing.jpg');
-    await verifyExistsInAemAndHasEvents(uploadOptions, `/images/dir-1/${ENCODED_ASSET1}`);
+    await verifyExistsInAemAndHasTitle(uploadOptions, '/images/Dir 1', 'Dir 1');
+    await verifyExistsInAemAndHasEvents(uploadOptions, '/images/Dir 1/freeride.jpg');
+    await verifyExistsInAemAndHasEvents(uploadOptions, '/images/Dir 1/freeride-steep.jpg');
+    await verifyExistsInAemAndHasEvents(uploadOptions, '/images/Dir 1/ice-climbing.jpg');
+    await verifyExistsInAemAndHasEvents(uploadOptions, `/images/Dir 1/${ENCODED_ASSET1}`);
 
     // images/dir1/subdir1
-    await verifyExistsInAemAndHasEvents(uploadOptions, '/images/dir-1/subdir1/ski touring.jpg');
-    await verifyExistsInAemAndHasEvents(uploadOptions, '/images/dir-1/subdir1/skiing_1.jpg');
-    await verifyExistsInAemAndHasEvents(uploadOptions, '/images/dir-1/subdir1/skiing_2.jpg');
+    await verifyExistsInAemAndHasEvents(uploadOptions, '/images/Dir 1/subdir1/ski touring.jpg');
+    await verifyExistsInAemAndHasEvents(uploadOptions, '/images/Dir 1/subdir1/skiing_1.jpg');
+    await verifyExistsInAemAndHasEvents(uploadOptions, '/images/Dir 1/subdir1/skiing_2.jpg');
 
     // images/dir1/folder_♂♀°′″℃＄￡‰§№￠℡㈱
-    await verifyExistsInAemAndHasEvents(uploadOptions, `/images/dir-1/${ENCODED_FOLDER}/${ENCODED_ASSET2}`);
+    await verifyExistsInAemAndHasEvents(uploadOptions, `/images/Dir 1/${ENCODED_FOLDER}/${ENCODED_ASSET2}`);
 
-    should(hasEventCheck('foldercreated', targetFolder, '/images/dir-1/subdir2', (data) => data.targetFolder)).be.ok();
-    should(await doesAemPathExist(uploadOptions, '/images/dir-1/subdir2')).be.ok();
+    should(hasEventCheck('foldercreated', targetFolder, '/images/Dir 1/subdir2', (data) => data.targetFolder)).be.ok();
+    should(await doesAemPathExist(uploadOptions, '/images/Dir 1/subdir2')).be.ok();
 
     return deleteAemPath(uploadOptions);
   });

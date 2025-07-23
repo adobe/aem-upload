@@ -53,7 +53,7 @@ describe('FileSystemUploadOptions Tests', () => {
     copiedOptions = FileSystemUploadOptions.fromOptions(fileOptions);
     should(copiedOptions).be.ok();
     should(copiedOptions.getInvalidCharacterReplaceValue()).be.exactly('-');
-    should(await copiedOptions.getFolderNodeNameProcessor()('folder name')).be.exactly('folder-name');
+    should(await copiedOptions.getFolderNodeNameProcessor()('folder name')).be.exactly('folder name');
     should(await copiedOptions.getAssetNodeNameProcessor()('asset#name')).be.exactly('asset-name');
   });
 
@@ -82,5 +82,16 @@ describe('FileSystemUploadOptions Tests', () => {
     should.throws(() => {
       options.withInvalidCharacterReplaceValue(':');
     });
+  });
+
+  it('test folder names with spaces', async () => {
+    // Test that spaces are preserved in folder names
+    should(await options.getFolderNodeNameProcessor()('My Folder')).be.exactly('my folder');
+    should(await options.getFolderNodeNameProcessor()('Folder With Spaces')).be.exactly('folder with spaces');
+    should(await options.getFolderNodeNameProcessor()('Folder-With-Hyphens')).be.exactly('folder-with-hyphens');
+
+    // Test that other invalid characters are still replaced
+    should(await options.getFolderNodeNameProcessor()('Folder#With#Hash')).be.exactly('folder-with-hash');
+    should(await options.getFolderNodeNameProcessor()('Folder%With%Percent')).be.exactly('folder-with-percent');
   });
 });
