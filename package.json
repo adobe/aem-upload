@@ -25,7 +25,7 @@
   "bugs": "https://github.com/adobe/aem-upload",
   "dependencies": {
     "@adobe/cloud-service-client": "^1.1.0",
-    "@adobe/httptransfer": "^3.4.1",
+    "@adobe/httptransfer": "^5.0.0",
     "async": "^3.2.0",
     "async-lock": "^1.2.8",
     "filesize": "^4.2.1",
