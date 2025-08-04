@@ -34,7 +34,7 @@ describe('FileSystemUploadItemManager Tests', () => {
     const subChild = await manager.getDirectory('/fake/test/directory/Child Dir/Sub Child/');
     should(subChild).be.ok();
     should(subChild.getLocalPath()).be.exactly('/fake/test/directory/Child Dir/Sub Child');
-    should(subChild.getRemotePath()).be.exactly('/content/dam/target/directory/child-dir/sub-child');
+    should(subChild.getRemotePath()).be.exactly('/content/dam/target/directory/child dir/sub child');
     should(subChild.getName()).be.exactly('Sub Child');
     should(manager.hasDirectory('/fake/test/directory/')).be.ok();
     should(manager.hasDirectory('/fake/test/directory/Child Dir')).be.ok();
@@ -44,7 +44,7 @@ describe('FileSystemUploadItemManager Tests', () => {
     const child = await manager.getDirectory('/fake/test/directory/Child Dir');
     should(child).be.ok();
     should(child.getLocalPath()).be.exactly('/fake/test/directory/Child Dir');
-    should(child.getRemotePath()).be.exactly('/content/dam/target/directory/child-dir');
+    should(child.getRemotePath()).be.exactly('/content/dam/target/directory/child dir');
     should(child.getName()).be.exactly('Child Dir');
 
     should(manager.getDirectory('/fake/test')).be.rejected();
