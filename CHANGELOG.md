@@ -1,3 +1,10 @@
+## [2.0.4](https://github.com/adobe/aem-upload/compare/v2.0.3...v2.0.4) (2025-08-04)
+
+
+### Bug Fixes
+
+* update httptransfer to fix logging issues ([#134](https://github.com/adobe/aem-upload/issues/134)) ([6aa4724](https://github.com/adobe/aem-upload/commit/6aa4724f57662dbdb89f08871cd97f1d643aad6e))
+
 ## [2.0.3](https://github.com/adobe/aem-upload/compare/v2.0.2...v2.0.3) (2024-01-29)
 
 
