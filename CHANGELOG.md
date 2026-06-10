@@ -1,3 +1,10 @@
+## [2.0.5](https://github.com/adobe/aem-upload/compare/v2.0.4...v2.0.5) (2026-06-10)
+
+
+### Bug Fixes
+
+* **deps:** resolve Warden security findings (ASSETS-68954) ([#136](https://github.com/adobe/aem-upload/issues/136)) ([6c678ae](https://github.com/adobe/aem-upload/commit/6c678ae606ece26088181a374aefa8e35800693d))
+
 ## [2.0.4](https://github.com/adobe/aem-upload/compare/v2.0.3...v2.0.4) (2025-08-04)
 
 
